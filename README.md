@@ -4,7 +4,7 @@ Study AID API server and LLM processing jobs for Study AID service.
 
 ## 기술 스택
 
-- **Framework**: Spring Boot (Java)
+- **Framework**: Spring Boot
 - **API Docs**: Swagger/OpenAPI
 - **Database**: PostgreSQL
 - **Cache**: Redis
@@ -71,9 +71,9 @@ make ps                   # 실행 중인 컨테이너 목록
 make pgsql-cli            # PostgreSQL 접속
 make redis-cli            # Redis CLI 접속
 make test                 # 테스트 실행
-make test-coverage        # 테스트 실행 + 커버리지 보고서 생성
-make open-test-report     # 테스트 보고서 브라우저에서 열기
-make open-coverage-report # 테스트 커버리지 보고서 브라우저에서 열기
+make test-coverage        # 테스트 실행 및 커버리지 리포트 생성
+make open-test-report     # 브라우저로 테스트 결과 확인
+make open-coverage-report # 브라우저로 테스트 커버리지 결과 확인
 ```
 
 ## 테스트
