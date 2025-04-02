@@ -1,0 +1,23 @@
+FROM gradle:8.3-jdk17
+
+WORKDIR /app
+
+# Install development tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the project files
+COPY . .
+
+# Expose application port
+EXPOSE 8080
+
+# Set Spring profile to local
+ENV SPRING_PROFILES_ACTIVE=local
+
+# Run Gradle in continuous build mode with live reload
+CMD ["gradle", "bootRun", "--args='--spring.profiles.active=local'", "-x", "test", "--continuous"]
