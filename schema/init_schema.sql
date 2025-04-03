@@ -76,17 +76,16 @@ CREATE INDEX IF NOT EXISTS idx_courses_semester_updated_at
 
 CREATE TABLE IF NOT EXISTS app.course_assessments
 (
-    id              uuid PRIMARY KEY,
-    course_id       uuid        NOT NULL,
-    user_id         uuid        NOT NULL,
+    id         uuid PRIMARY KEY,
+    course_id  uuid      NOT NULL,
+    user_id    uuid      NOT NULL,
 
-    assessment_type varchar(20) NOT NULL, -- e.g., 'assignment', 'attendance'
-    title           varchar(255),
-    score           float       NOT NULL,
-    max_score       float       NOT NULL,
+    title      varchar(255),
+    score      float     NOT NULL,
+    max_score  float     NOT NULL,
 
-    created_at      timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (course_id) REFERENCES app.courses (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
