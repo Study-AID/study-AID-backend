@@ -34,6 +34,8 @@ logs/
 *.zip
 *.tar.gz
 *.rar
+# Exception for Gradle Wrapper
+!gradle/wrapper/gradle-wrapper.jar
 
 # virtual machine crash logs
 hs_err_pid*
