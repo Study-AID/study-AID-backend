@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS app.courses
     FOREIGN KEY (user_id) REFERENCES app.users (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_courses_semester_user_created_at
+CREATE INDEX IF NOT EXISTS idx_courses_semester_created_at
     ON app.courses (semester_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_courses_semester_updated_at
     ON app.courses (semester_id, updated_at);
