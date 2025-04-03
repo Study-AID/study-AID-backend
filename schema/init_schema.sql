@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS app.users
     google_id     varchar(100),
     created_at    timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at    timestamp,
     last_login    timestamp,
     is_active     boolean      NOT NULL DEFAULT TRUE,
     auth_type     varchar(20)  NOT NULL DEFAULT 'email',
@@ -37,6 +38,7 @@ CREATE TABLE IF NOT EXISTS app.semesters
 
     created_at   timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at   timestamp,
 
     -- NOTE(mj): move constraints check to the application layer?
     CONSTRAINT chk_season CHECK (season IN ('spring', 'summer', 'fall', 'winter')),
@@ -64,6 +66,7 @@ CREATE TABLE IF NOT EXISTS app.courses
 
     created_at        timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at        timestamp,
 
     FOREIGN KEY (semester_id) REFERENCES app.semesters (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
@@ -86,6 +89,7 @@ CREATE TABLE IF NOT EXISTS app.course_assessments
 
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp,
 
     FOREIGN KEY (course_id) REFERENCES app.courses (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
@@ -100,8 +104,8 @@ CREATE TABLE IF NOT EXISTS app.course_activity_logs
     course_id        uuid        NOT NULL,
     user_id          uuid        NOT NULL,
 
-    -- e.g., 'add', 'update', 'delete'. NOTE(mj): make it enum?
-    activity_type    varchar(20) NOT NULL,
+    activity_type    varchar(20) NOT NULL, -- e.g., 'add' 'update', 'delete'
+    contents_type    varchar(20) NOT NULL, -- e.g., 'lecture', 'exam', 'quiz'
     activity_details jsonb       NOT NULL,
 
     created_at       timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -125,6 +129,7 @@ CREATE TABLE IF NOT EXISTS app.exams
 
     created_at          timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at          timestamp,
 
     -- NOTE(mj): move constraints check to the application layer?
     CONSTRAINT chk_status CHECK (status IN ('not_started', 'submitted', 'graded')),
@@ -136,7 +141,7 @@ CREATE TABLE IF NOT EXISTS app.exams
 CREATE INDEX IF NOT EXISTS idx_exams_course_created_at
     ON app.exams (course_id, created_at);
 
-CREATE TABLE IF NOT EXISTS app.exam_questions
+CREATE TABLE IF NOT EXISTS app.exam_items
 (
     id             uuid PRIMARY KEY,
     exam_id        uuid        NOT NULL,
@@ -151,15 +156,14 @@ CREATE TABLE IF NOT EXISTS app.exam_questions
     choices        text[]               DEFAULT NULL,
     -- Correct answer indices (for multiple-choice questions)
     answer_indices int[]                DEFAULT NULL,
-    -- Correct short answer (for short answer questions)
-    short_answer   text                 DEFAULT NULL,
-    -- Correct answer (for essay questions)
-    essay_answer   text                 DEFAULT NULL,
+    -- Correct text answer (for short answer and essay questions)
+    text_answer    text                 DEFAULT NULL,
     display_order  int                  DEFAULT 0,
     points         float                DEFAULT 10.0,
 
     created_at     timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at     timestamp,
 
     -- NOTE(mj): move constraints check to the application layer?
     CONSTRAINT chk_question_type CHECK (question_type IN
@@ -170,8 +174,8 @@ CREATE TABLE IF NOT EXISTS app.exam_questions
     FOREIGN KEY (user_id) REFERENCES app.users (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_exam_questions_exam_display_order
-    ON app.exam_questions (exam_id, display_order);
+CREATE INDEX IF NOT EXISTS idx_exam_items_exam_display_order
+    ON app.exam_items (exam_id, display_order);
 
 CREATE TABLE IF NOT EXISTS app.exam_responses
 (
@@ -185,17 +189,16 @@ CREATE TABLE IF NOT EXISTS app.exam_responses
     selected_bool    boolean            DEFAULT NULL,
     -- For multiple-choice quizzes
     selected_indices int[]              DEFAULT NULL,
-    -- For short answer questions
-    short_answer     text               DEFAULT NULL,
-    -- For essay answer questions
-    essay_answer     text               DEFAULT NULL,
+    -- For short answer and essay questions
+    text_answer      text               DEFAULT NULL,
     score            float              DEFAULT 0,
 
     created_at       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at       timestamp,
 
     FOREIGN KEY (exam_id) REFERENCES app.exams (id),
-    FOREIGN KEY (question_id) REFERENCES app.exam_questions (id),
+    FOREIGN KEY (question_id) REFERENCES app.exam_items (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
 );
 
@@ -216,6 +219,7 @@ CREATE TABLE IF NOT EXISTS app.exam_results
     end_time   timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp,
 
     FOREIGN KEY (exam_id) REFERENCES app.exams (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
@@ -236,9 +240,10 @@ CREATE TABLE IF NOT EXISTS app.exam_question_reports
 
     created_at    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at    timestamp,
 
     FOREIGN KEY (exam_id) REFERENCES app.exams (id),
-    FOREIGN KEY (question_id) REFERENCES app.exam_questions (id),
+    FOREIGN KEY (question_id) REFERENCES app.exam_items (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
 );
 
@@ -262,6 +267,7 @@ CREATE TABLE IF NOT EXISTS app.lectures
 
     created_at        timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at        timestamp,
 
     -- NOTE(mj): move constraints check to the application layer?
     CONSTRAINT chk_summary_status CHECK (summary_status IN
@@ -290,6 +296,7 @@ CREATE TABLE IF NOT EXISTS app.quizzes
 
     created_at          timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at          timestamp,
 
     -- NOTE(mj): move constraints check to the application layer?
     CONSTRAINT chk_quiz_status CHECK (status IN ('not_started', 'submitted', 'graded')),
@@ -303,7 +310,7 @@ CREATE INDEX IF NOT EXISTS idx_quizzes_lecture_created_at
 CREATE INDEX IF NOT EXISTS idx_quizzes_lecture_updated_at
     ON app.quizzes (lecture_id, updated_at);
 
-CREATE TABLE IF NOT EXISTS app.quiz_questions
+CREATE TABLE IF NOT EXISTS app.quiz_items
 (
     id             uuid PRIMARY KEY,
     quiz_id        uuid        NOT NULL,
@@ -318,15 +325,14 @@ CREATE TABLE IF NOT EXISTS app.quiz_questions
     choices        text[]               DEFAULT NULL,
     -- Correct answer indices (for multiple-choice questions)
     answer_indices int[]                DEFAULT NULL,
-    -- Correct short answer (for short answer questions)
-    short_answer   text                 DEFAULT NULL,
-    -- Correct answer (for essay questions)
-    essay_answer   text                 DEFAULT NULL,
+    -- Correct text answer (for short answer and essay questions)
+    text_answer    text                 DEFAULT NULL,
     display_order  int                  DEFAULT 0,
     points         float                DEFAULT 10.0,
 
     created_at     timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at     timestamp,
 
     -- NOTE(mj): move constraints check to the application layer?
     CONSTRAINT chk_question_type CHECK (question_type IN
@@ -337,8 +343,8 @@ CREATE TABLE IF NOT EXISTS app.quiz_questions
     FOREIGN KEY (user_id) REFERENCES app.users (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_quiz_questions_quiz_display_order
-    ON app.quiz_questions (quiz_id, display_order);
+CREATE INDEX IF NOT EXISTS idx_quiz_items_quiz_display_order
+    ON app.quiz_items (quiz_id, display_order);
 
 CREATE TABLE IF NOT EXISTS app.quiz_responses
 (
@@ -352,17 +358,16 @@ CREATE TABLE IF NOT EXISTS app.quiz_responses
     selected_bool    boolean            DEFAULT NULL,
     -- For multiple-choice quizzes
     selected_indices int[]              DEFAULT NULL,
-    -- For short answer questions
-    short_answer     text               DEFAULT NULL,
-    -- For essay answer questions
-    essay_answer     text               DEFAULT NULL,
+    -- For short answer and essay questions
+    text_answer      text               DEFAULT NULL,
     score            float              DEFAULT 0,
 
     created_at       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at       timestamp,
 
     FOREIGN KEY (quiz_id) REFERENCES app.quizzes (id),
-    FOREIGN KEY (question_id) REFERENCES app.quiz_questions (id),
+    FOREIGN KEY (question_id) REFERENCES app.quiz_items (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
 );
 
@@ -383,6 +388,7 @@ CREATE TABLE IF NOT EXISTS app.quiz_results
     end_time   timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp,
 
     FOREIGN KEY (quiz_id) REFERENCES app.quizzes (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
@@ -403,16 +409,17 @@ CREATE TABLE IF NOT EXISTS app.quiz_question_reports
 
     created_at    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at    timestamp,
 
     FOREIGN KEY (quiz_id) REFERENCES app.quizzes (id),
-    FOREIGN KEY (question_id) REFERENCES app.quiz_questions (id),
+    FOREIGN KEY (question_id) REFERENCES app.quiz_items (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_quiz_question_reports_created_at
     ON app.quiz_question_reports (created_at);
 
-CREATE TABLE IF NOT EXISTS app.liked_quiz_questions
+CREATE TABLE IF NOT EXISTS app.liked_quiz_items
 (
     id          uuid PRIMARY KEY,
     quiz_id     uuid      NOT NULL,
@@ -422,12 +429,12 @@ CREATE TABLE IF NOT EXISTS app.liked_quiz_questions
     created_at  timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (quiz_id) REFERENCES app.quizzes (id),
-    FOREIGN KEY (question_id) REFERENCES app.quiz_questions (id),
+    FOREIGN KEY (question_id) REFERENCES app.quiz_items (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_liked_quiz_questions_quiz_created_at
-    ON app.liked_quiz_questions (quiz_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_liked_quiz_items_quiz_created_at
+    ON app.liked_quiz_items (quiz_id, created_at);
 
 CREATE TABLE IF NOT EXISTS app.qna_chat
 (
@@ -437,6 +444,7 @@ CREATE TABLE IF NOT EXISTS app.qna_chat
 
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp,
 
     FOREIGN KEY (lecture_id) REFERENCES app.lectures (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
@@ -453,6 +461,7 @@ CREATE TABLE IF NOT EXISTS app.qna_chat_messages
 
     message     text      NOT NULL,
     created_at  timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at  timestamp,
 
     FOREIGN KEY (qna_chat_id) REFERENCES app.qna_chat (id),
     FOREIGN KEY (user_id) REFERENCES app.users (id)
@@ -488,7 +497,8 @@ CREATE TABLE IF NOT EXISTS app.school
     name       varchar(100) NOT NULL,
 
     created_at timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp
 );
 
 CREATE INDEX IF NOT EXISTS idx_school_name ON app.school (name);
@@ -496,19 +506,16 @@ CREATE INDEX IF NOT EXISTS idx_school_name ON app.school (name);
 CREATE TABLE IF NOT EXISTS app.school_calendars
 (
     id         uuid PRIMARY KEY,
-    school_id  uuid        NOT NULL,
+    school_id  uuid      NOT NULL,
 
-    year       int         NOT NULL,
-    season     varchar(20) NOT NULL,
+    year       int       NOT NULL,
 
-    -- NOTE(mj): move constraints check to the application layer?
-    CONSTRAINT chk_season CHECK (season IN ('spring', 'summer', 'fall', 'winter')),
-
-    created_at timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp,
 
     FOREIGN KEY (school_id) REFERENCES app.school (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_school_calendars_school_year_season
-    ON app.school_calendars (school_id, year, season);
+CREATE INDEX IF NOT EXISTS idx_school_calendars_school_yea_season
+    ON app.school_calendars (school_id, year);
