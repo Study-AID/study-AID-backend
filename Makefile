@@ -13,7 +13,9 @@ help:
 	@echo "  make pgsql-cli            - Connect to PostgreSQL CLI"
 	@echo "  make redis-cli            - Connect to Redis CLI"
 	@echo "  make test                 - Run tests"
+	@echo "  make test-win             - Run tests (Windows)"
 	@echo "  make test-coverage        - Run tests with coverage report"
+	@echo "  make test-coverage-win    - Run tests with coverage report (Windows)"
 	@echo "  make open-test-report     - Open test report in browser"
 	@echo "  make open-coverage-report - Open coverage report in browser"
 
@@ -59,9 +61,16 @@ redis-cli:
 test:
 	./gradlew test --info
 
+test_win:
+	gradlew.bat test --info
+
 # Run tests with coverage report
 test-coverage:
 	./gradlew test jacocoTestReport --info
+
+# Run tests with coverage report
+test-coverage_win:
+	gradlew.bat test jacocoTestReport --info
 
 # Open coverage report in browser
 open-coverage-report:
