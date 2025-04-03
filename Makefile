@@ -19,33 +19,33 @@ help:
 
 # Build Docker images
 build:
-	docker-compose build
+	docker compose build
 
 # Start all services
 run:
-	docker-compose up -d
+	docker compose up -d
 	@echo "API Server is running at http://localhost:8080/api"
 	@echo "Swagger UI is available at http://localhost:8080/api/swagger-ui.html"
 
 # Follow logs
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 # Follow API logs
 logs-api:
-	docker-compose logs -f api
+	docker compose logs -f api
 
 # Stop all services
 down:
-	docker-compose down
+	docker compose down
 
 # Remove all containers, volumes, and images
 clean:
-	docker-compose down -v --rmi all
+	docker compose down -v --rmi all
 
 # List running containers
 ps:
-	docker-compose ps
+	docker compose ps
 
 # Connect to PostgreSQL CLI
 pgsql-cli:
