@@ -512,6 +512,8 @@ CREATE TABLE IF NOT EXISTS app.school_calendars
 
     year       int       NOT NULL,
 
+    schedules  jsonb     NOT NULL,
+
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp,
