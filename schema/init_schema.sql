@@ -25,20 +25,22 @@ CREATE INDEX IF NOT EXISTS idx_users_google_id ON app.users (google_id);
 
 CREATE TABLE IF NOT EXISTS app.semesters
 (
-    id           uuid PRIMARY KEY,
-    user_id      uuid         NOT NULL,
+    id                uuid PRIMARY KEY,
+    user_id           uuid         NOT NULL,
 
-    name         varchar(100) NOT NULL,
-    year         int          NOT NULL,
+    name              varchar(100) NOT NULL,
+    year              int          NOT NULL,
     -- e.g., 'Spring', 'Fall' (NOTE(mj): make it enum?)
-    season       varchar(20)  NOT NULL,
-    start_date   date,
-    end_date     date,
-    target_grade float, -- e.g., 3.5
+    season            varchar(20)  NOT NULL,
+    start_date        date,
+    end_date          date,
+    target_grade      float, -- 목표학점, e.g., 3.5
+    earned_grade      float, -- 취득학점, e.g., 3.5
+    completed_credits int,   -- 이수학점, e.g., 3
 
-    created_at   timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at   timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at   timestamp,
+    created_at        timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at        timestamp,
 
     -- NOTE(mj): move constraints check to the application layer?
     CONSTRAINT chk_season CHECK (season IN ('spring', 'summer', 'fall', 'winter')),
