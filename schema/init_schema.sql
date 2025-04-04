@@ -5,10 +5,13 @@ SET search_path TO app, public;
 CREATE TABLE IF NOT EXISTS app.users
 (
     id            uuid PRIMARY KEY,
+    school_id     uuid
+    
     name          varchar(100) NOT NULL,
     email         varchar(255) NOT NULL UNIQUE,
     password_hash varchar(255),
     google_id     varchar(100),
+    
     created_at    timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at    timestamp,
@@ -18,6 +21,8 @@ CREATE TABLE IF NOT EXISTS app.users
 
     -- NOTE(mj): move constraints check to the application layer?
     CONSTRAINT chk_auth_type CHECK (auth_type IN ('email', 'google'))
+
+    FOREIGN KEY (school_id) REFERENCES app.schools (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON app.users (email);
@@ -493,7 +498,7 @@ CREATE INDEX IF NOT EXISTS idx_liked_qna_answers_qna_chat_created_at
 -- The following tables are for the school calendar.
 --
 
-CREATE TABLE IF NOT EXISTS app.school
+CREATE TABLE IF NOT EXISTS app.schools
 (
     id         uuid PRIMARY KEY,
     name       varchar(100) NOT NULL,
@@ -503,7 +508,7 @@ CREATE TABLE IF NOT EXISTS app.school
     deleted_at timestamp
 );
 
-CREATE INDEX IF NOT EXISTS idx_school_name ON app.school (name);
+CREATE INDEX IF NOT EXISTS idx_school_name ON app.schools (name);
 
 CREATE TABLE IF NOT EXISTS app.school_calendars
 (
@@ -518,8 +523,8 @@ CREATE TABLE IF NOT EXISTS app.school_calendars
     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp,
 
-    FOREIGN KEY (school_id) REFERENCES app.school (id)
+    FOREIGN KEY (school_id) REFERENCES app.schools (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_school_calendars_school_yea_season
+CREATE INDEX IF NOT EXISTS idx_school_calendars_school
     ON app.school_calendars (school_id, year);
