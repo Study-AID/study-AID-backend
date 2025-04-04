@@ -17,53 +17,54 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "courses", 
+    name = "quiz_results", 
     schema = "app",
     indexes = {
-        @Index(name = "idx_courses_semester_created_at", columnList = "semester_id, created_at"),
-        @Index(name = "idx_courses_semester_updated_at", columnList = "semester_id, updated_at")
+        @Index(name = "idx_quiz_results_quiz", columnList = "quiz_id")
     }
 )
-public class Course {
+public class QuizResult {
     @Id
     @Column(columnDefinition = "uuid")
     private UUID id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "semester_id", nullable = false)
-    private Semester semester;
-    
+    @JoinColumn(name = "quiz_id", nullable = false)
+    private Quiz quiz;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-    
-    @Column(nullable = false, length = 100)
-    private String name;
-    
-    @Column(name = "target_grade")
-    private Float targetGrade;
-    
-    @Column(name = "earned_grade")
-    private Float earnedGrade;
-    
-    @Column(name = "completed_credits")
-    private Integer completedCredits;
-    
-    @Column(name = "created_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+
+    @Column(nullable = false)
+    private Float score;
+
+    @Column(name = "max_score", nullable = false)
+    private Float maxScore;
+
+    @Column(columnDefinition = "text")
+    private String feedback;
+
+    @Column(name = "start_time", nullable = false)
+    private LocalDateTime startTime;
+
+    @Column(name = "end_time", nullable = false)
+    private LocalDateTime endTime;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-    
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-    
+
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
@@ -76,8 +77,14 @@ public class Course {
         if (updatedAt == null) {
             updatedAt = now;
         }
+        if (startTime == null) {
+            startTime = now;
+        }
+        if (endTime == null) {
+            endTime = now;
+        }
     }
-    
+
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();

@@ -17,53 +17,39 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "courses", 
+    name = "qna_chat", 
     schema = "app",
     indexes = {
-        @Index(name = "idx_courses_semester_created_at", columnList = "semester_id, created_at"),
-        @Index(name = "idx_courses_semester_updated_at", columnList = "semester_id, updated_at")
+        @Index(name = "idx_qna_chat_lecture", columnList = "lecture_id")
     }
 )
-public class Course {
+public class QnaChat {
     @Id
     @Column(columnDefinition = "uuid")
     private UUID id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "semester_id", nullable = false)
-    private Semester semester;
-    
+    @JoinColumn(name = "lecture_id", nullable = false)
+    private Lecture lecture;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-    
-    @Column(nullable = false, length = 100)
-    private String name;
-    
-    @Column(name = "target_grade")
-    private Float targetGrade;
-    
-    @Column(name = "earned_grade")
-    private Float earnedGrade;
-    
-    @Column(name = "completed_credits")
-    private Integer completedCredits;
-    
-    @Column(name = "created_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-    
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-    
+
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
@@ -77,7 +63,7 @@ public class Course {
             updatedAt = now;
         }
     }
-    
+
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();

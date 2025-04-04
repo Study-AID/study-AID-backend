@@ -3,6 +3,7 @@ package com.example.api.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -17,7 +18,13 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "schools", schema = "app")
+@Table(
+    name = "schools",
+    schema = "app",
+    indexes = {
+        @Index(name = "idx_school_name", columnList = "name")
+    }
+)
 public class School {
     @Id
     @Column(columnDefinition = "uuid")

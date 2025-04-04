@@ -1,7 +1,6 @@
 package com.example.api.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
@@ -31,16 +30,16 @@ public class UserRepositoryTest {
 
     @Test
     void testSaveAndFindById() {
-        UUID schoUUID = UUID.randomUUID();
+        UUID schoolUUID = UUID.randomUUID();
         School school = new School();
-        school.setId(schoUUID);
+        school.setId(schoolUUID);
         school.setName("Ajou");
         entityManager.persist(school);
 
         UUID randUUID = UUID.randomUUID();
         User user = new User();
         user.setId(randUUID);
-        user.setSchool(school);
+        //user.setSchool(school);
         user.setName("Hyunjun");
         user.setEmail("test@example.com");
         user.setAuthType(AuthType.email);

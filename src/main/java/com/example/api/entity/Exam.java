@@ -3,8 +3,14 @@ package com.example.api.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.Check;
+
+import com.example.api.entity.enums.Status;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
@@ -23,47 +29,45 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "courses", 
+    name = "exams",
     schema = "app",
     indexes = {
-        @Index(name = "idx_courses_semester_created_at", columnList = "semester_id, created_at"),
-        @Index(name = "idx_courses_semester_updated_at", columnList = "semester_id, updated_at")
+        @Index(name = "idx_exams_course_created_at", columnList = "course_id, created_at")
     }
 )
-public class Course {
+@Check(constraints = "status IN ('not_started', 'submitted', 'graded')")
+public class Exam {
     @Id
     @Column(columnDefinition = "uuid")
     private UUID id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "semester_id", nullable = false)
-    private Semester semester;
-    
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-    
-    @Column(nullable = false, length = 100)
-    private String name;
-    
-    @Column(name = "target_grade")
-    private Float targetGrade;
-    
-    @Column(name = "earned_grade")
-    private Float earnedGrade;
-    
-    @Column(name = "completed_credits")
-    private Integer completedCredits;
-    
+
+    @Column(length = 255)
+    private String title;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private Status status;
+
+    @Column(name = "referenced_lectures", columnDefinition = "uuid[]")
+    private UUID[] referencedLectures;
+
     @Column(name = "created_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
-    
+
     @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime updatedAt;
-    
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-    
+
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
@@ -77,7 +81,7 @@ public class Course {
             updatedAt = now;
         }
     }
-    
+
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();

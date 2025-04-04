@@ -3,6 +3,7 @@ package com.example.api.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import io.swagger.v3.core.util.Json;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -23,47 +24,38 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "courses", 
+    name = "course_activity_logs",
     schema = "app",
     indexes = {
-        @Index(name = "idx_courses_semester_created_at", columnList = "semester_id, created_at"),
-        @Index(name = "idx_courses_semester_updated_at", columnList = "semester_id, updated_at")
+        @Index(name = "idx_course_activity_logs_course_created_at", columnList = "course_id, created_at")
     }
 )
-public class Course {
+public class CourseActivityLog {
     @Id
     @Column(columnDefinition = "uuid")
     private UUID id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "semester_id", nullable = false)
-    private Semester semester;
-    
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-    
-    @Column(nullable = false, length = 100)
-    private String name;
-    
-    @Column(name = "target_grade")
-    private Float targetGrade;
-    
-    @Column(name = "earned_grade")
-    private Float earnedGrade;
-    
-    @Column(name = "completed_credits")
-    private Integer completedCredits;
-    
+
+    @Column(name = "activity_type", nullable = false)
+    private String activityType;
+
+    @Column(name = "contents_type", nullable = false)
+    private String contentsType;
+
+    // String으로 처리
+    @Column(name = "activity_details", columnDefinition = "jsonb", nullable = false)
+    private String activityDetails;
+
     @Column(name = "created_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
-    private LocalDateTime updatedAt;
-    
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-    
+
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
@@ -73,13 +65,5 @@ public class Course {
         if (createdAt == null) {
             createdAt = now;
         }
-        if (updatedAt == null) {
-            updatedAt = now;
-        }
-    }
-    
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 }
