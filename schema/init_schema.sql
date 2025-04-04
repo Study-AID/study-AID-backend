@@ -5,7 +5,7 @@ SET search_path TO app, public;
 CREATE TABLE IF NOT EXISTS app.users
 (
     id            uuid PRIMARY KEY,
-    school_id     uuid
+    school_id     uuid,
     
     name          varchar(100) NOT NULL,
     email         varchar(255) NOT NULL UNIQUE,
