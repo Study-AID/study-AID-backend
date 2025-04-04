@@ -523,8 +523,8 @@ CREATE TABLE IF NOT EXISTS app.school_calendars
     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp,
 
-    FOREIGN KEY (school_id) REFERENCES app.school (id)
+    FOREIGN KEY (school_id) REFERENCES app.schools (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_school_calendars_school_yea_season
+CREATE INDEX IF NOT EXISTS idx_school_calendars_school
     ON app.school_calendars (school_id, year);
