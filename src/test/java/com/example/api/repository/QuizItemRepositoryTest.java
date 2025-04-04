@@ -12,7 +12,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.example.api.entity.Course;
-import com.example.api.entity.ExamItem;
 import com.example.api.entity.Lecture;
 import com.example.api.entity.Quiz;
 import com.example.api.entity.QuizItem;

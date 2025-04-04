@@ -1,6 +1,5 @@
 package com.example.api.repository;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
@@ -13,12 +12,9 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.example.api.entity.Course;
-import com.example.api.entity.CourseAssessment;
 import com.example.api.entity.Exam;
 import com.example.api.entity.ExamItem;
 import com.example.api.entity.ExamQuestionReport;
-import com.example.api.entity.ExamResponse;
-import com.example.api.entity.ExamResult;
 import com.example.api.entity.School;
 import com.example.api.entity.Semester;
 import com.example.api.entity.User;

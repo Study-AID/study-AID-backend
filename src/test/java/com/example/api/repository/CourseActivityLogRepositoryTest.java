@@ -14,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.example.api.entity.Course;
 import com.example.api.entity.CourseActivityLog;
-import com.example.api.entity.CourseAssessment;
 import com.example.api.entity.School;
 import com.example.api.entity.Semester;
 import com.example.api.entity.User;

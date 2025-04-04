@@ -13,7 +13,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.example.api.entity.Course;
-import com.example.api.entity.CourseAssessment;
 import com.example.api.entity.Exam;
 import com.example.api.entity.School;
 import com.example.api.entity.Semester;

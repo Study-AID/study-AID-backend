@@ -16,7 +16,6 @@ import com.example.api.entity.Lecture;
 import com.example.api.entity.Quiz;
 import com.example.api.entity.QuizItem;
 import com.example.api.entity.QuizQuestionReport;
-import com.example.api.entity.QuizResponse;
 import com.example.api.entity.School;
 import com.example.api.entity.Semester;
 import com.example.api.entity.User;

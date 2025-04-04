@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.hibernate.annotations.Check;
 
 import com.example.api.entity.enums.QuestionType;
-import com.example.api.entity.enums.Status;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
