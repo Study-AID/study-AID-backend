@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS app.users
     email         varchar(255) NOT NULL UNIQUE,
     password_hash varchar(255),
     google_id     varchar(100),
+    school        varchar(100),
     created_at    timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at    timestamp,
