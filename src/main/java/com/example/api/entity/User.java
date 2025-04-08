@@ -41,9 +41,9 @@ public class User {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    //@ManyToOne(fetch = FetchType.LAZY)
-    //@JoinColumn(name = "school_id")
-    //private School school;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "school_id")
+    private School school;
     
     @Column(nullable = false, length = 100)
     private String name;
