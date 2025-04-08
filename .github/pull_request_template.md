@@ -5,6 +5,7 @@
 # Slack
 
 <!-- 작업과 관련된 슬랙 스레드 링크를 입력해주세요. -->
+<!-- [Slack Thread](...) -->
 
 # Description
 
