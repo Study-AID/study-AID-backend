@@ -24,6 +24,7 @@ public class SchoolCalendarRepositoryTest {
     @Autowired
     private EntityManager entityManager;
 
+    @Test
     void saveAndFindSchoolCalendarRepositoryTest() {
         UUID schoolUUID = UUID.randomUUID();
         School school = new School();
