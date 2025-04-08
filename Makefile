@@ -18,8 +18,8 @@ help:
 	@echo "  make test-coverage-win    - Run tests with coverage report (Windows)"
 	@echo "  make open-test-report     - Open test report in browser"
 	@echo "  make open-coverage-report - Open coverage report in browser"
-	@echo "  make migrate 			   - Run Flyway migration"
-	@echo "  migrate-info 			   - View information about migration"
+	@echo "  make migrate              - Run Flyway migration"
+	@echo "  make migrate-info         - Check applied SQL migration versions"
 
 
 # Build Docker images
@@ -87,6 +87,6 @@ open-test-report:
 migrate:
 	docker compose run --rm flyway
 
-# View information about migration
+# Check applied SQL migration versions
 migrate-info:
 	docker compose run --rm flyway info
