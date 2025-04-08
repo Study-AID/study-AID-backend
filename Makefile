@@ -1,10 +1,10 @@
-.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test-coverage clean-test clean-test-coverage open-test-report open-coverage-report
+.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win clean-test clean-test-coverage open-test-report open-coverage-report migrate migration-info setup
 
 # Default target
 help:
 	@echo "Available commands:"
 	@echo "  make build                - Build Docker images"
-	@echo "  make run                  - Start all services"
+	@echo "  make run                  - Start services exclude database migration"
 	@echo "  make logs                 - Follow logs from all containers"
 	@echo "  make logs-api             - Follow logs from API service"
 	@echo "  make down                 - Stop all services"
@@ -19,14 +19,15 @@ help:
 	@echo "  make open-test-report     - Open test report in browser"
 	@echo "  make open-coverage-report - Open coverage report in browser"
 	@echo "  make migrate              - Run Flyway migration"
-	@echo "  make migrate-info         - Check applied SQL migration versions"
+	@echo "  make migration-info       - Check migrated schema versions and status"
+	@echo "  make setup                - Start all services include database migration"
 
 
 # Build Docker images
 build:
 	docker compose build
 
-# Start all services
+# Start services exclude database migration
 run:
 	docker compose up -d
 	@echo "API Server is running at http://localhost:8080/api"
@@ -85,8 +86,13 @@ open-test-report:
 
 # Run Flyway migration
 migrate:
-	docker compose run --rm flyway
+	docker compose run --rm flyway -configFiles=/flyway/conf/flyway.conf migrate
 
-# Check applied SQL migration versions
-migrate-info:
-	docker compose run --rm flyway info
+# Check migrated schema versions and status
+migration-info:
+	docker compose run --rm flyway -configFiles=/flyway/conf/flyway.conf info
+
+# Start all services include database migration
+setup:
+	make migrate
+	make run

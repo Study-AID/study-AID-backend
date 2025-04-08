@@ -45,17 +45,9 @@ services:
     container_name: flyway
     depends_on:
       - postgres
-    environment:
-      FLYWAY_URL: jdbc:postgresql://postgres:5432/studyaid
-      FLYWAY_USER: postgres
-      FLYWAY_PASSWORD: postgres
-      FLYWAY_BASELINE_ON_MIGRATE: true
-      FLYWAY_SCHEMAS: app
-      FLYWAY_TABLE: flyway_schema_history
-      #FLYWAY_CLEAN_DISABLED: false
     volumes:
-      - ./sql:/flyway/sql
-    command: migrate
+      - ./flyway/migrations:/flyway/migrations
+      - ./flyway/flyway-local.conf:/flyway/conf/flyway.conf
     networks:
       - app-network
 

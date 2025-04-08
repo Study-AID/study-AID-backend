@@ -49,11 +49,14 @@ Study AID API server and LLM processing jobs for Study AID service.
 
 ## 실행하기
 
-1. 서비스 컨테이너 실행:
+1. 서비스 컨테이너 첫 실행 및 DB에 테이블 생성까지 (혹은 make clean 한 뒤):
+   ```bash
+   make setup
+   ```
+2. 서비스 컨테이너 실행 (작업 중 sql 변경 없이 서비스 다시 실행 혹은 make down 한 뒤):
    ```bash
    make run
    ```
-
 2. API Endpoints:
     - Swagger UI: http://localhost:8080/api/swagger-ui.html
     - Health Check: http://localhost:8080/api/v1/health
@@ -62,6 +65,7 @@ Study AID API server and LLM processing jobs for Study AID service.
 
 ```bash
 make build                # Docker 이미지 빌드
+make setup                # 서비스 시작 및 DB 마이그레이션
 make run                  # 서비스 시작
 make logs                 # 로그 확인
 make logs-api             # API 서비스 로그 확인
@@ -75,7 +79,7 @@ make test-coverage        # 테스트 실행 및 커버리지 리포트 생성
 make open-test-report     # 브라우저로 테스트 결과 확인
 make open-coverage-report # 브라우저로 테스트 커버리지 결과 확인
 make migrate              # 데이터베이스 마이그레이션
-make migrate-info         # 데이터베이스 버전 확인
+make migration-info         # 데이터베이스 버전 확인
 ```
 
 ## 테스트
@@ -102,22 +106,34 @@ make migrate-info         # 데이터베이스 버전 확인
    ```
 
 ## DB 마이그레이션
-SQL 변경사항 없을 시:
+Flyway 컨테이너는 다른 컨테이너들과 별도로 켜졌다 꺼지게 해놓았습니다. 
+따라서 DB에 sql 반영은 일일이 해주셔야 합니다.
 
-   make run 입력하면 sql/ 폴더 내 최신 버전 파일이 자동으로 실행되어 스키마가 구성됩니다.
-
-SQL 변경 시:
-1. sql/ 디렉토리에 새 SQL 파일 생성
+**- 참고: 서비스 컨테이너 첫 실행과 함께 sql로 DB 테이블 생성까지 해놓기**
+   ```bash
+   make setup
+   ```
+   make setup은 make migrate + make run이 한꺼번에 작동하게 해놓았습니다.    
    
-   예: V2__add_school_column_to_user_table.sql
-   **V2__** 같은 형식이어야 읽기 가능
-
-2. 마이그레이션 실행 
+**- SQL 변경하고 DB 마이그레이션 하고 싶을 때:**
+1. flyway/migrations 디렉토리에 새 SQL 파일 생성
+   
+   예: V2__add_school_column_to_user_table.sql   
+   파일명은 반드시 V<버전번호>__<설명>.sql 형식을 따라야 합니다.   
+   
+2. 마이그레이션 단독 실행 (flyway 컨테이너 켜져서 마이그레이션 수행 후 꺼짐)
    ```bash
    make migrate
    ```
-3. 마이그레이션 적용 상태 확인
+   
+3. 마이그레이션 적용 상태 (현재 Schema 상태) 확인
    ```bash
-   make migrate-info
+   make migration-info
    ```
-   또는 데이터베이스 새로고침
+   또는 DB 툴에서 새로고침
+   
+   참고: make migration-info 실행 결과에서 State가 Pending이면 아직 마이그레이션 안 된 상태입니다.
+
+**- DB에 데이터 없고 로컬 개발 단계인데 DB 스키마 롤백하고 싶을 때:**   
+   
+   make clean으로 모든 것을 제거한 다음 (볼륨 포함)   새로 작성한 sql 파일을 삭제하거나 수정   make setup으로 처음부터 다시 시작   
