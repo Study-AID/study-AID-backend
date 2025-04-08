@@ -74,6 +74,8 @@ make test                 # 테스트 실행
 make test-coverage        # 테스트 실행 및 커버리지 리포트 생성
 make open-test-report     # 브라우저로 테스트 결과 확인
 make open-coverage-report # 브라우저로 테스트 커버리지 결과 확인
+make migrate              # 데이터베이스 마이그레이션
+make migrate-info         # 데이터베이스 버전 확인
 ```
 
 ## 테스트
@@ -98,3 +100,21 @@ make open-coverage-report # 브라우저로 테스트 커버리지 결과 확인
    # 커버리지 보고서 브라우저에서 열기
    make open-coverage-report
    ```
+
+## DB 마이그레이션
+SQL 변경사항 없을 시:
+make run 입력하면 sql/ 폴더 내 최신 버전 파일이 자동으로 실행되어 스키마가 구성됩니다.
+
+SQL 변경 시:
+1. sql/ 디렉토리에 새 SQL 파일 생성
+   예: V2__add_school_column_to_user_table.sql
+   V2__ 같은 형식이어야 읽기 가능
+2. 마이그레이션 실행 
+   ```bash
+   make migrate
+   ```
+3. 마이그레이션 적용 상태 확인
+   ```bash
+   make migrate-info
+   ```
+   또는 데이터베이스 새로고침

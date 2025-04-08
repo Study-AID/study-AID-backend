@@ -36,10 +36,28 @@ services:
       POSTGRES_DB: studyaid
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./schema/init_schema.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - app-network
     restart: unless-stopped
+
+  flyway:
+    image: flyway/flyway
+    container_name: flyway
+    depends_on:
+      - postgres
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/studyaid
+      FLYWAY_USER: postgres
+      FLYWAY_PASSWORD: postgres
+      FLYWAY_BASELINE_ON_MIGRATE: true
+      FLYWAY_SCHEMAS: app
+      FLYWAY_TABLE: flyway_schema_history
+      #FLYWAY_CLEAN_DISABLED: false
+    volumes:
+      - ./sql:/flyway/sql
+    command: migrate
+    networks:
+      - app-network
 
   redis:
     image: redis:7-alpine
