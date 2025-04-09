@@ -101,8 +101,8 @@ make migration-info       # 데이터베이스 스키마 버전 확인
    ```
 
 ## SQL 변경과 DB 마이그레이션
-DB에 새로운 sql 반영은 일일이 해주셔야 합니다.   
-서비스 컨테이너 실행과 함께 DB 마이그레이션 시에는 make migrate, make run 순으로 권장합니다. (오류 방지)
+DB에 새로운 sql 반영은 make run 과 별도로 해주셔야 합니다.
+make run 전에 make migrate 를 먼저 실행해 주세요. (스키마 미스매칭 방지)
 
 1. flyway/migrations 디렉토리에 새 SQL 파일 생성
    

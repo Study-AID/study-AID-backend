@@ -85,8 +85,10 @@ open-test-report:
 
 # Run Flyway migration
 migrate:
-	docker compose run --rm flyway -configFiles=/flyway/conf/flyway.conf migrate
+	@echo "Running DB migration with Flyway..."
+	docker compose --profile migration run --rm flyway -configFiles=/flyway/conf/flyway.conf migrate
+	@echo "Migration completed (Flyway container auto-removed)"
 
 # Check migrated schema versions and status
 migration-info:
-	docker compose run --rm flyway -configFiles=/flyway/conf/flyway.conf info
+	docker compose --profile migration-info run --rm flyway -configFiles=/flyway/conf/flyway.conf info

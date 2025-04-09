@@ -42,7 +42,6 @@ services:
 
   flyway:
     image: flyway/flyway
-    container_name: flyway
     depends_on:
       - postgres
     volumes:
@@ -50,6 +49,7 @@ services:
       - ./flyway/flyway-local.conf:/flyway/conf/flyway.conf
     networks:
       - app-network
+    profiles: ["migration"]
 
   redis:
     image: redis:7-alpine
