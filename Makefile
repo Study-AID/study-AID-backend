@@ -91,4 +91,4 @@ migrate:
 
 # Check migrated schema versions and status
 migration-info:
-	docker compose --profile migration-info run --rm flyway -configFiles=/flyway/conf/flyway.conf info
+	docker compose --profile migration run --rm flyway -configFiles=/flyway/conf/flyway.conf info
