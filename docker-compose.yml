@@ -23,7 +23,8 @@ services:
       - app-network
     restart: unless-stopped
     volumes:
-      - ./logs:/app/logs
+      - ./:/app
+      - gradle-cache:/root/.gradle
 
   postgres:
     image: postgres:15-alpine
@@ -69,3 +70,4 @@ networks:
 volumes:
   postgres-data:
   redis-data:
+  gradle-cache:
