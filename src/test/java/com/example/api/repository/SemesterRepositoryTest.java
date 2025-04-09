@@ -31,9 +31,9 @@ public class SemesterRepositoryTest {
 
     @Test
     void saveAndFindSemesterTest() {
-        UUID schoolUUID = UUID.randomUUID();
+        UUID schoolUuid = UUID.randomUUID();
         School school = new School();
-        school.setId(schoolUUID);
+        school.setId(schoolUuid);
         school.setName("Ajou");
         entityManager.persist(school);
    
@@ -41,7 +41,7 @@ public class SemesterRepositoryTest {
         UUID userUuid = UUID.randomUUID();
         User user = new User();
         user.setId(userUuid);
-        //user.setSchool(school);
+        user.setSchool(school);
         user.setName("Test User");
         user.setEmail("test@example.com");
         user.setAuthType(AuthType.email);

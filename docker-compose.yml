@@ -36,10 +36,20 @@ services:
       POSTGRES_DB: studyaid
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./schema/init_schema.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - app-network
     restart: unless-stopped
+
+  flyway:
+    image: flyway/flyway
+    depends_on:
+      - postgres
+    volumes:
+      - ./flyway/migrations:/flyway/migrations
+      - ./flyway/flyway-local.conf:/flyway/conf/flyway.conf
+    networks:
+      - app-network
+    profiles: ["migration"]
 
   redis:
     image: redis:7-alpine

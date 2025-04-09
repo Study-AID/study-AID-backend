@@ -49,12 +49,15 @@ Study AID API server and LLM processing jobs for Study AID service.
 
 ## 실행하기
 
-1. 서비스 컨테이너 실행:
+1. 서비스 컨테이너 실행: 
    ```bash
    make run
    ```
-
-2. API Endpoints:
+2. DB 마이그레이션:
+   ```bash
+   make migrate
+   ```
+3. API Endpoints:
     - Swagger UI: http://localhost:8080/api/swagger-ui.html
     - Health Check: http://localhost:8080/api/v1/health
 
@@ -74,6 +77,8 @@ make test                 # 테스트 실행
 make test-coverage        # 테스트 실행 및 커버리지 리포트 생성
 make open-test-report     # 브라우저로 테스트 결과 확인
 make open-coverage-report # 브라우저로 테스트 커버리지 결과 확인
+make migrate              # 데이터베이스 마이그레이션
+make migration-info       # 데이터베이스 스키마 버전 확인
 ```
 
 ## 테스트
@@ -98,3 +103,24 @@ make open-coverage-report # 브라우저로 테스트 커버리지 결과 확인
    # 커버리지 보고서 브라우저에서 열기
    make open-coverage-report
    ```
+
+## SQL 변경과 DB 마이그레이션
+DB에 새로운 sql 반영은 make run 과 별도로 해주셔야 합니다.
+
+1. flyway/migrations 디렉토리에 새 SQL 파일 생성
+   
+   예: V2__add_school_column_to_user_table.sql   
+   파일명은 반드시 V<버전번호>__<설명>.sql 형식을 따라야 합니다.   
+   
+2. 마이그레이션 단독 실행 
+   ```bash
+   make migrate
+   ```
+   
+3. 마이그레이션 적용 상태 (현재 Schema 상태) 확인
+   ```bash
+   make migration-info
+   ```
+   make migration-info 실행 결과에서 State가 Pending이면 아직 마이그레이션 안 된 상태입니다.
+
+   참고: 로컬 개발 단계에서 DB 스키마 롤백하려면 make clean, 새로 작성한 sql 파일을 삭제/수정, make migrate 

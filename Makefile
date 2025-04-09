@@ -1,4 +1,4 @@
-.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test-coverage clean-test clean-test-coverage open-test-report open-coverage-report
+.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win clean-test clean-test-coverage open-test-report open-coverage-report migrate migration-info
 
 # Default target
 help:
@@ -18,6 +18,9 @@ help:
 	@echo "  make test-coverage-win    - Run tests with coverage report (Windows)"
 	@echo "  make open-test-report     - Open test report in browser"
 	@echo "  make open-coverage-report - Open coverage report in browser"
+	@echo "  make migrate              - Run Flyway migration"
+	@echo "  make migration-info       - Check migrated schema versions and status"
+
 
 # Build Docker images
 build:
@@ -79,3 +82,13 @@ open-coverage-report:
 # Open test report in browser
 open-test-report:
 	open build/reports/tests/test/index.html
+
+# Run Flyway migration
+migrate:
+	@echo "Running DB migration with Flyway..."
+	docker compose --profile migration run --rm flyway -configFiles=/flyway/conf/flyway.conf migrate
+	@echo "Migration completed (Flyway container auto-removed)"
+
+# Check migrated schema versions and status
+migration-info:
+	docker compose --profile migration run --rm flyway -configFiles=/flyway/conf/flyway.conf info

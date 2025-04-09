@@ -5,13 +5,10 @@ SET search_path TO app, public;
 CREATE TABLE IF NOT EXISTS app.users
 (
     id            uuid PRIMARY KEY,
-    school_id     uuid,
-    
     name          varchar(100) NOT NULL,
     email         varchar(255) NOT NULL UNIQUE,
     password_hash varchar(255),
     google_id     varchar(100),
-    
     created_at    timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at    timestamp,
@@ -21,8 +18,6 @@ CREATE TABLE IF NOT EXISTS app.users
 
     -- NOTE(mj): move constraints check to the application layer?
     CONSTRAINT chk_auth_type CHECK (auth_type IN ('email', 'google'))
-
-    FOREIGN KEY (school_id) REFERENCES app.schools (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON app.users (email);
@@ -526,5 +521,5 @@ CREATE TABLE IF NOT EXISTS app.school_calendars
     FOREIGN KEY (school_id) REFERENCES app.schools (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_school_calendars_school
+CREATE INDEX IF NOT EXISTS idx_school_calendars_schools
     ON app.school_calendars (school_id, year);

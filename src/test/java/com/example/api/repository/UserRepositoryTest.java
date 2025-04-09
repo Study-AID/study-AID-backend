@@ -30,16 +30,16 @@ public class UserRepositoryTest {
 
     @Test
     void testSaveAndFindById() {
-        UUID schoolUUID = UUID.randomUUID();
+        UUID schoolUuid = UUID.randomUUID();
         School school = new School();
-        school.setId(schoolUUID);
+        school.setId(schoolUuid);
         school.setName("Ajou");
         entityManager.persist(school);
 
         UUID randUUID = UUID.randomUUID();
         User user = new User();
         user.setId(randUUID);
-        //user.setSchool(school);
+        user.setSchool(school);
         user.setName("Hyunjun");
         user.setEmail("test@example.com");
         user.setAuthType(AuthType.email);

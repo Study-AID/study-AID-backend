@@ -18,6 +18,7 @@ public class SchoolRepositoryTest {
     @Autowired
     private SchoolRepository schoolRepository;
 
+    @Test
     void saveAndFindSchoolRepositoryTest() {
         UUID schoolUUID = UUID.randomUUID();
         School school = new School();
