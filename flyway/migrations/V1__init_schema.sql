@@ -129,6 +129,8 @@ CREATE TABLE IF NOT EXISTS app.exams
     status              varchar(20) NOT NULL,
     referenced_lectures uuid[],
 
+    -- If created_at == updated_at, it means the exam items are being generated.
+    -- If created_at != updated_at, it means the exam items have been generated.
     created_at          timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at          timestamp,
@@ -296,6 +298,8 @@ CREATE TABLE IF NOT EXISTS app.quizzes
     status              varchar(20)  NOT NULL,
     referenced_lectures uuid[],
 
+    -- If created_at == updated_at, it means the quiz items are being generated.
+    -- If created_at != updated_at, it means the quiz items have been generated.
     created_at          timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at          timestamp,

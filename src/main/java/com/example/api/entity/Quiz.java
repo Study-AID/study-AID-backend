@@ -34,6 +34,13 @@ import com.example.api.entity.enums.Status;
         @Index(name = "idx_quizzes_lecture_updated_at", columnList = "lecture_id, updated_at")
     }
 )
+
+/*
+*
+* If created_at == updated_at, it means the quiz items are being generated.
+* If created_at != updated_at, it means the quiz items have been generated.
+*
+*/
 @Check(constraints = "status IN ('not_started', 'submitted', 'graded')")
 public class Quiz {
     @Id

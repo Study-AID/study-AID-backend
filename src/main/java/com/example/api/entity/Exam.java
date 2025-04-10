@@ -35,6 +35,12 @@ import lombok.Setter;
         @Index(name = "idx_exams_course_created_at", columnList = "course_id, created_at")
     }
 )
+/*
+ *
+ * If created_at == updated_at, it means the exam items are being generated.
+ * If created_at != updated_at, it means the exam items have been generated.
+ *
+ */
 @Check(constraints = "status IN ('not_started', 'submitted', 'graded')")
 public class Exam {
     @Id
