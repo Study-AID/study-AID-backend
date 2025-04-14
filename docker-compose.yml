@@ -19,6 +19,7 @@ services:
       DB_PASSWORD: postgres
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     networks:
       - app-network
     restart: unless-stopped
