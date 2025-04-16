@@ -45,7 +45,6 @@ class SemesterServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 테스트 데이터 설정
         userId = UUID.randomUUID();
         semesterId = UUID.randomUUID();
 

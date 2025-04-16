@@ -53,13 +53,11 @@ class SemesterControllerTest {
         userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
         semesterId = UUID.randomUUID();
 
-        // 테스트 사용자 설정
         testUser = new User();
         testUser.setId(userId);
         testUser.setName("Test User");
         testUser.setEmail("test@example.com");
 
-        // 테스트 학기 설정
         testSemester = new Semester();
         testSemester.setId(semesterId);
         testSemester.setUser(testUser);

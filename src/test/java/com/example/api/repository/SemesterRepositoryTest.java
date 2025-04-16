@@ -38,13 +38,11 @@ public class SemesterRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        // School 생성 및 저장
         School testSchool = new School();
         testSchool.setId(UUID.randomUUID());
         testSchool.setName("Ajou University");
         entityManager.persist(testSchool);
 
-        // User 생성 및 저장
         testUser = new User();
         testUser.setId(UUID.randomUUID());
         testUser.setSchool(testSchool);
@@ -55,7 +53,6 @@ public class SemesterRepositoryTest {
         testUser.setUpdatedAt(LocalDateTime.now());
         entityManager.persist(testUser);
 
-        // 기본 Semester 생성 (저장은 각 테스트에서 필요에 따라)
         testSemester = new Semester();
         testSemester.setId(UUID.randomUUID());
         testSemester.setUser(testUser);
@@ -70,13 +67,13 @@ public class SemesterRepositoryTest {
     @Test
     @DisplayName("학기 저장 및 ID로 조회 테스트")
     void saveAndFindSemesterTest() {
-        // Given: 테스트 학기 저장
+        // Given
         semesterRepository.save(testSemester);
 
-        // When: ID로 조회
+        // When
         Optional<Semester> found = semesterRepository.findById(testSemester.getId());
 
-        // Then: 조회 결과 검증
+        // Then
         assertTrue(found.isPresent());
         assertEquals("2025 봄학기", found.get().getName());
         assertEquals(2025, found.get().getYear());
@@ -86,7 +83,7 @@ public class SemesterRepositoryTest {
     @Test
     @DisplayName("사용자 ID로 학기 목록 조회 테스트")
     void findByUserIdTest() {
-        // Given: 여러 학기 저장
+        // Given
         semesterRepository.save(testSemester);
 
         Semester fallSemester = new Semester();
@@ -97,10 +94,10 @@ public class SemesterRepositoryTest {
         fallSemester.setSeason(Season.fall);
         semesterRepository.save(fallSemester);
 
-        // When: 사용자 ID로 학기 목록 조회
+        // When
         List<Semester> semesters = semesterRepository.findByUserId(testUser.getId());
 
-        // Then: 조회 결과 검증
+        // Then
         assertThat(semesters).hasSize(2);
         assertThat(semesters).extracting("name")
                 .containsExactlyInAnyOrder("2025 봄학기", "2025 가을학기");
@@ -109,14 +106,14 @@ public class SemesterRepositoryTest {
     @Test
     @DisplayName("사용자 ID, 연도, 학기로 특정 학기 조회 테스트")
     void findByUserIdAndYearAndSeasonTest() {
-        // Given: 학기 저장
+        // Given
         semesterRepository.save(testSemester);
 
-        // When: 사용자 ID, 연도, 학기로 조회
+        // When
         Optional<Semester> found = semesterRepository.findByUserIdAndYearAndSeason(
                 testUser.getId(), 2025, Season.spring);
 
-        // Then: 조회 결과 검증
+        // Then
         if (found.isEmpty()) {
             fail("학기를 찾을 수 없습니다");
         } else {
@@ -129,23 +126,23 @@ public class SemesterRepositoryTest {
     @Test
     @DisplayName("존재하지 않는 학기 조회 시 null 반환 테스트")
     void findNonExistentSemesterTest() {
-        // Given: 학기 저장하지 않음
+        // Given
 
-        // When: 존재하지 않는 학기 조회
+        // When
         Optional<Semester> found = semesterRepository.findByUserIdAndYearAndSeason(
                 testUser.getId(), 2024, Season.winter);
 
-        // Then: isPresent이 false여야 함
+        // Then
         assertFalse(found.isPresent(), "존재하지 않는 학기는 조회되지 않아야 합니다");
     }
 
     @Test
     @DisplayName("학기 생성 테스트")
     void createSemesterTest() {
-        // When: createSemester 메서드로 학기 생성
+        // When
         Semester created = semesterRepository.createSemester(testSemester);
 
-        // Then: 생성 결과 검증
+        // Then
         assertNotNull(created.getId());
 
         Semester fromDb = entityManager.find(Semester.class, created.getId());
@@ -156,7 +153,7 @@ public class SemesterRepositoryTest {
     @Test
     @DisplayName("중복 학기 생성 시 예외 발생 테스트")
     void createDuplicateSemesterTest() {
-        // Given: 학기 먼저 저장
+        // Given
         semesterRepository.createSemester(testSemester);
 
         entityManager.flush();
@@ -183,16 +180,16 @@ public class SemesterRepositoryTest {
     @Test
     @DisplayName("학기 업데이트 테스트")
     void updateSemesterTest() {
-        // Given: 학기 저장
+        // Given
         semesterRepository.createSemester(testSemester);
 
-        // When: 학기 정보 변경 후 업데이트
+        // When
         testSemester.setName("2025 수정된 봄학기");
         testSemester.setYear(2026);
 
         Semester updated = semesterRepository.updateSemester(testSemester);
 
-        // Then: 업데이트 결과 검증
+        // Then
         assertEquals("2025 수정된 봄학기", updated.getName());
         assertEquals(2026, updated.getYear());
 
@@ -204,14 +201,14 @@ public class SemesterRepositoryTest {
     @Test
     @DisplayName("학기 soft delete 테스트")
     void deleteSemesterTest() {
-        // Given: 학기 저장
+        // Given
         semesterRepository.createSemester(testSemester);
         UUID semesterId = testSemester.getId();
 
-        // When: 학기 삭제
+        // When
         semesterRepository.deleteSemester(semesterId);
 
-        // Then: findById로는 찾을 수 없어야 함
+        // Then
         Optional<Semester> foundAfterDelete = semesterRepository.findByUserIdAndYearAndSeason(
                 testUser.getId(), 2025, Season.spring);
         assertTrue(foundAfterDelete.isEmpty(), "Soft delete 된 학기는 조회되지 않아야 합니다");
@@ -225,7 +222,7 @@ public class SemesterRepositoryTest {
     @Test
     @DisplayName("존재하지 않는 학기 삭제 시 오류 없이 처리되는지 테스트")
     void deleteNonExistentSemesterTest() {
-        // Given: 존재하지 않는 UUID
+        // Given
         UUID nonExistentId = UUID.randomUUID();
 
         // When/Then: 존재하지 않는 학기 삭제 시도해도 예외 발생하지 않음
