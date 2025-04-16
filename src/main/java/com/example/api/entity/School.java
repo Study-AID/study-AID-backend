@@ -1,12 +1,6 @@
 package com.example.api.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,24 +13,24 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "schools",
-    schema = "app",
-    indexes = {
-        @Index(name = "idx_school_name", columnList = "name")
-    }
+        name = "schools",
+        schema = "app",
+        indexes = {
+                @Index(name = "idx_school_name", columnList = "name")
+        }
 )
 public class School {
     @Id
-    @Column(columnDefinition = "uuid")
+    @Column()
     private UUID id;
 
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(name = "created_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @Column(name = "deleted_at")

@@ -1,21 +1,12 @@
 package com.example.api.entity;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 @Getter
@@ -23,15 +14,15 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "exam_responses",
-    schema = "app",
-    indexes = {
-        @Index(name = "idx_exam_responses_exam", columnList = "exam_id")
-    }
+        name = "exam_responses",
+        schema = "app",
+        indexes = {
+                @Index(name = "idx_exam_responses_exam", columnList = "exam_id")
+        }
 )
 public class ExamResponse {
     @Id
-    @Column(columnDefinition = "uuid")
+    @Column()
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,19 +43,19 @@ public class ExamResponse {
     @Column(name = "selected_bool")
     private Boolean selectedBool;
 
-    @Column(name = "selected_indices", columnDefinition = "int[]")
+    @Column(name = "selected_indices")
     private Boolean selectedIndices;
 
-    @Column(name = "text_answer", columnDefinition = "text")
+    @Column(name = "text_answer")
     private String textAnswer;
 
-    @Column(name = "score", columnDefinition = "float")
+    @Column(name = "score")
     private Float score;
 
-    @Column(name = "created_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @Column(name = "deleted_at")

@@ -1,29 +1,25 @@
 package com.example.api.repository;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.example.api.entity.*;
+import com.example.api.entity.enums.AuthType;
+import com.example.api.entity.enums.Season;
+import com.example.api.entity.enums.SummaryStatus;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-
-import com.example.api.entity.Course;
-import com.example.api.entity.Lecture;
-import com.example.api.entity.School;
-import com.example.api.entity.Semester;
-import com.example.api.entity.User;
-import com.example.api.entity.enums.AuthType;
-import com.example.api.entity.enums.Season;
-import com.example.api.entity.enums.SummaryStatus;
-
-import jakarta.persistence.EntityManager;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 public class LectureRepositoryTest {
     @Autowired
     private LectureRepository lectureRepository;
@@ -38,11 +34,11 @@ public class LectureRepositoryTest {
         school.setId(schoolUUID);
         school.setName("Ajou");
         entityManager.persist(school);
-   
+
         UUID userUuid = UUID.randomUUID();
         User user = new User();
         user.setId(userUuid);
-        //user.setSchool(school);
+        user.setSchool(school);
         user.setName("Test User");
         user.setEmail("test@example.com");
         user.setAuthType(AuthType.email);
@@ -79,7 +75,7 @@ public class LectureRepositoryTest {
         lecture.setMaterialType("pdf");
         lecture.setDisplayOrderLex("");
         lecture.setSummaryStatus(SummaryStatus.not_started);
-    
+
         lectureRepository.save(lecture);
         Optional<Lecture> found = lectureRepository.findById(lectureUuid);
 

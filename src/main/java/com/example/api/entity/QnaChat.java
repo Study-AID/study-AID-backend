@@ -1,36 +1,27 @@
 package com.example.api.entity;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "qna_chat", 
-    schema = "app",
-    indexes = {
-        @Index(name = "idx_qna_chat_lecture", columnList = "lecture_id")
-    }
+        name = "qna_chat",
+        schema = "app",
+        indexes = {
+                @Index(name = "idx_qna_chat_lecture", columnList = "lecture_id")
+        }
 )
 public class QnaChat {
     @Id
-    @Column(columnDefinition = "uuid")
+    @Column()
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)

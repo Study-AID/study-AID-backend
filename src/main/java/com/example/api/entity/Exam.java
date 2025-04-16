@@ -1,27 +1,14 @@
 package com.example.api.entity;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import org.hibernate.annotations.Check;
-
 import com.example.api.entity.enums.Status;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 @Getter
@@ -29,16 +16,16 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "exams",
-    schema = "app",
-    indexes = {
-        @Index(name = "idx_exams_course_created_at", columnList = "course_id, created_at")
-    }
+        name = "exams",
+        schema = "app",
+        indexes = {
+                @Index(name = "idx_exams_course_created_at", columnList = "course_id, created_at")
+        }
 )
 @Check(constraints = "status IN ('not_started', 'submitted', 'graded')")
 public class Exam {
     @Id
-    @Column(columnDefinition = "uuid")
+    @Column()
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -56,13 +43,13 @@ public class Exam {
     @Column(length = 20, nullable = false)
     private Status status;
 
-    @Column(name = "referenced_lectures", columnDefinition = "uuid[]")
+    @Column(name = "referenced_lectures")
     private UUID[] referencedLectures;
 
-    @Column(name = "created_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @Column(name = "deleted_at")
