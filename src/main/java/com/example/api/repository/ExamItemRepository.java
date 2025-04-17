@@ -1,10 +1,9 @@
 package com.example.api.repository;
 
-import java.util.UUID;
-
+import com.example.api.entity.ExamItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.example.api.entity.ExamItem;
+import java.util.UUID;
 
 public interface ExamItemRepository extends JpaRepository<ExamItem, UUID> {
 

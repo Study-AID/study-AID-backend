@@ -13,9 +13,8 @@ import java.util.List;
 
 @Component
 public class OpenAIAdapter implements LLMAdapter {
-    private final OpenAiChatClient openAiChatClient;
-
     private static final String PROVIDER_NAME = "OpenAI";
+    private final OpenAiChatClient openAiChatClient;
 
     public OpenAIAdapter(OpenAiChatClient openAiChatClient) {
         this.openAiChatClient = openAiChatClient;

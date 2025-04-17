@@ -1,31 +1,26 @@
 package com.example.api.repository;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.example.api.entity.*;
+import com.example.api.entity.enums.AuthType;
+import com.example.api.entity.enums.Season;
+import com.example.api.entity.enums.Status;
+import com.example.api.entity.enums.SummaryStatus;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-
-import com.example.api.entity.Course;
-import com.example.api.entity.Lecture;
-import com.example.api.entity.Quiz;
-import com.example.api.entity.School;
-import com.example.api.entity.Semester;
-import com.example.api.entity.User;
-import com.example.api.entity.enums.AuthType;
-import com.example.api.entity.enums.Season;
-import com.example.api.entity.enums.Status;
-import com.example.api.entity.enums.SummaryStatus;
-
-import jakarta.persistence.EntityManager;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 public class QuizRepositoryTest {
     @Autowired
     private QuizRepository quizRepository;
@@ -40,7 +35,7 @@ public class QuizRepositoryTest {
         school.setId(schoolUUID);
         school.setName("Ajou");
         entityManager.persist(school);
-   
+
         UUID userUuid = UUID.randomUUID();
         User user = new User();
         user.setId(userUuid);
@@ -81,7 +76,7 @@ public class QuizRepositoryTest {
         lecture.setMaterialType("pdf");
         lecture.setDisplayOrderLex("");
         lecture.setSummaryStatus(SummaryStatus.not_started);
-        
+
         entityManager.persist(lecture);
 
         UUID quizUuid = UUID.randomUUID();
@@ -91,7 +86,7 @@ public class QuizRepositoryTest {
         quiz.setUser(user);
         quiz.setTitle("Quiz 1");
         quiz.setStatus(Status.not_started);
-    
+
         quizRepository.save(quiz);
         Optional<Quiz> found = quizRepository.findById(quizUuid);
 

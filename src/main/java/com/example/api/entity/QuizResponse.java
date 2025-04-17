@@ -1,36 +1,27 @@
 package com.example.api.entity;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "quiz_responses", 
-    schema = "app",
-    indexes = {
-        @Index(name = "idx_quiz_responses_quiz", columnList = "quiz_id")
-    }
+        name = "quiz_responses",
+        schema = "app",
+        indexes = {
+                @Index(name = "idx_quiz_responses_quiz", columnList = "quiz_id")
+        }
 )
 public class QuizResponse {
     @Id
-    @Column(columnDefinition = "uuid")
+    @Column()
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -51,10 +42,10 @@ public class QuizResponse {
     @Column(name = "selected_bool")
     private Boolean selectedBool;
 
-    @Column(name = "selected_indices", columnDefinition = "int[]")
+    @Column(name = "selected_indices")
     private Integer[] selectedIndices;
 
-    @Column(name = "text_answer", columnDefinition = "text")
+    @Column(name = "text_answer")
     private String textAnswer;
 
     @Column

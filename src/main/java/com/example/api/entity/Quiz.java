@@ -1,43 +1,31 @@
 package com.example.api.entity;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import com.example.api.entity.enums.Status;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Check;
 
-import com.example.api.entity.enums.Status;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "quizzes", 
-    schema = "app",
-    indexes = {
-        @Index(name = "idx_quizzes_lecture_created_at", columnList = "lecture_id, created_at"),
-        @Index(name = "idx_quizzes_lecture_updated_at", columnList = "lecture_id, updated_at")
-    }
+        name = "quizzes",
+        schema = "app",
+        indexes = {
+                @Index(name = "idx_quizzes_lecture_created_at", columnList = "lecture_id, created_at"),
+                @Index(name = "idx_quizzes_lecture_updated_at", columnList = "lecture_id, updated_at")
+        }
 )
 @Check(constraints = "status IN ('not_started', 'submitted', 'graded')")
 public class Quiz {
     @Id
-    @Column(columnDefinition = "uuid")
+    @Column()
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -55,7 +43,7 @@ public class Quiz {
     @Column(nullable = false, length = 20)
     private Status status;
 
-    @Column(name = "referenced_lectures", columnDefinition = "uuid[]")
+    @Column(name = "referenced_lectures")
     private UUID[] referencedLectures;
 
     @Column(name = "created_at", nullable = false)

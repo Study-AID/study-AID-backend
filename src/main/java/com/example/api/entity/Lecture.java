@@ -1,44 +1,32 @@
 package com.example.api.entity;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import com.example.api.entity.enums.SummaryStatus;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Check;
 
-import com.example.api.entity.enums.SummaryStatus;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(
-    name = "lectures", 
-    schema = "app",
-    indexes = {
-        @Index(name = "idx_lectures_course_created_at", columnList = "course_id, created_at"),
-        @Index(name = "idx_lectures_course_updated_at", columnList = "course_id, updated_at"),
-        @Index(name = "idx_lectures_course_display_order_lex", columnList = "course_id, display_order_lex")
-    }
+        name = "lectures",
+        schema = "app",
+        indexes = {
+                @Index(name = "idx_lectures_course_created_at", columnList = "course_id, created_at"),
+                @Index(name = "idx_lectures_course_updated_at", columnList = "course_id, updated_at"),
+                @Index(name = "idx_lectures_course_display_order_lex", columnList = "course_id, display_order_lex")
+        }
 )
-@Check(constraints = " IN ('not_started', 'in_progress', 'completed')")
+@Check(constraints = "summary_status IN ('not_started', 'in_progress', 'completed')")
 public class Lecture {
     @Id
-    @Column(columnDefinition = "uuid")
+    @Column()
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)

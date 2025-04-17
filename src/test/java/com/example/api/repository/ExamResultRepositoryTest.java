@@ -1,31 +1,26 @@
 package com.example.api.repository;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.example.api.entity.*;
+import com.example.api.entity.enums.AuthType;
+import com.example.api.entity.enums.Season;
+import com.example.api.entity.enums.Status;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-
-import com.example.api.entity.Course;
-import com.example.api.entity.Exam;
-import com.example.api.entity.ExamResult;
-import com.example.api.entity.School;
-import com.example.api.entity.Semester;
-import com.example.api.entity.User;
-import com.example.api.entity.enums.AuthType;
-import com.example.api.entity.enums.Season;
-import com.example.api.entity.enums.Status;
-
-import jakarta.persistence.EntityManager;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 public class ExamResultRepositoryTest {
     @Autowired
     private ExamResultRepository examResultRepository;
@@ -40,7 +35,7 @@ public class ExamResultRepositoryTest {
         school.setId(schoolUUID);
         school.setName("Ajou");
         entityManager.persist(school);
-   
+
         UUID userUuid = UUID.randomUUID();
         User user = new User();
         user.setId(userUuid);
@@ -87,7 +82,7 @@ public class ExamResultRepositoryTest {
         examResult.setUser(user);
         examResult.setScore(10.0f);
         examResult.setMaxScore(10.0f);
-        
+
         examResultRepository.save(examResult);
         Optional<ExamResult> found = examResultRepository.findById(examResultUuid);
 

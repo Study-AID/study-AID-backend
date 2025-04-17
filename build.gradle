@@ -46,6 +46,8 @@ dependencies {
     implementation 'org.flywaydb:flyway-core'
 
     // Test
+    runtimeOnly 'com.h2database:h2:2.2.224'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
