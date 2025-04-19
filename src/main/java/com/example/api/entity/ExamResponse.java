@@ -44,7 +44,7 @@ public class ExamResponse {
     private Boolean selectedBool;
 
     @Column(name = "selected_indices")
-    private Boolean selectedIndices;
+    private Integer[] selectedIndices;
 
     @Column(name = "text_answer")
     private String textAnswer;

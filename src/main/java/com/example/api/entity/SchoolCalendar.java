@@ -31,7 +31,7 @@ public class SchoolCalendar {
     @Column(nullable = false)
     private Integer year;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "jsonb", nullable = false)
     private String schedules;
 
     @Column(name = "created_at", nullable = false)
