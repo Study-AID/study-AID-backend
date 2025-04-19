@@ -43,8 +43,8 @@ public class Quiz {
     @Column(nullable = false, length = 20)
     private Status status;
 
-    @Column(name = "referenced_lectures")
-    private UUID[] referencedLectures;
+    @Column(name = "contents_generated_at")
+    private LocalDateTime contentsGenerateAt;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
