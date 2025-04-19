@@ -39,7 +39,7 @@ public class CourseActivityLog {
     @Column(name = "contents_type", nullable = false)
     private String contentsType;
 
-    @Column(name = "activity_details") // (columnDefinition = "jsonb")
+    @Column(name = "activity_details", columnDefinition = "jsonb", nullable = false)
     private String activityDetails;
 
     @Column(name = "created_at", nullable = false)
