@@ -18,7 +18,7 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
         default_schema: app
 
@@ -49,5 +49,5 @@ springdoc:
 # JWT Configuration
 jwt:
   issuer: studyaid
-  access-token-validity: 900000  # 15분 (밀리초)
-  refresh-token-validity: 1209600000  # 2주 (밀리초)
+  access-token-ttl-ms: 900000  # 15분
+  refresh-token-ttl-ms: 1209600000  # 2주

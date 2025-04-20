@@ -6,7 +6,7 @@ import com.example.api.dto.request.*;
 import com.example.api.dto.response.*;
 import com.example.api.entity.User;
 import com.example.api.entity.enums.AuthType;
-import com.example.api.jwt.JwtService;
+import com.example.api.security.jwt.JwtProvider;
 import com.example.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,13 +16,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final JwtService jwtService;
+    private final JwtProvider jwtProvider;
     private final RedisService redisService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public UserSummaryResponse signup(SignupRequest req) {
+    public UserSummaryResponse signupWithEmail(EmailSignupRequest req) {
         if (userRepository.findByEmail(req.getEmail()).isPresent()) {
             throw new RuntimeException("이미 가입된 이메일입니다.");
         }
@@ -38,7 +38,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse login(LoginRequest req) {
+    public AuthResponse loginWithEmail(EmailLoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 이메일입니다."));
 
@@ -50,8 +50,8 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
-        String accessToken = jwtService.createAccessToken(user);
-        String refreshToken = jwtService.createRefreshToken(user);
+        String accessToken = jwtProvider.createAccessToken(user.getId());
+        String refreshToken = jwtProvider.createRefreshToken(user.getId());
         redisService.saveRefreshToken(user.getId(), refreshToken);
 
         return new AuthResponse(
@@ -62,19 +62,19 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(LogoutRequest req) {
-        UUID userId = jwtService.extractUserId(req.getRefreshToken());
+        UUID userId = jwtProvider.extractUserId(req.getRefreshToken());
         redisService.deleteRefreshToken(userId);
     }
 
     @Override
-    public AuthResponse refresh(RefreshRequest req) {
+    public AuthResponse tokenRefresh(TokenRefreshRequest req) {
         String refreshToken = req.getRefreshToken();
 
-        if (!jwtService.isValid(refreshToken)) {
+        if (!jwtProvider.isValid(refreshToken)) {
             throw new RuntimeException("유효하지 않은 리프레시 토큰입니다.");
         }
 
-        UUID userId = jwtService.extractUserId(refreshToken);
+        UUID userId = jwtProvider.extractUserId(refreshToken);
         String storedRefreshToken = redisService.getRefreshToken(userId);
 
         if (storedRefreshToken == null || !storedRefreshToken.equals(refreshToken)) {
@@ -84,8 +84,8 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        String newAccessToken = jwtService.createAccessToken(user);
-        String newRefreshToken = jwtService.createRefreshToken(user);
+        String newAccessToken = jwtProvider.createAccessToken(user.getId());
+        String newRefreshToken = jwtProvider.createRefreshToken(user.getId());
         redisService.saveRefreshToken(userId, newRefreshToken);
 
         return new AuthResponse(

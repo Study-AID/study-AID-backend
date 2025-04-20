@@ -5,8 +5,8 @@ import com.example.api.dto.response.AuthResponse;
 import com.example.api.dto.response.UserSummaryResponse;
 
 public interface AuthService {
-    UserSummaryResponse signup(SignupRequest req);
-    AuthResponse login(LoginRequest req);
+    UserSummaryResponse signupWithEmail(EmailSignupRequest req);
+    AuthResponse loginWithEmail(EmailLoginRequest req);
     void logout(LogoutRequest req);
-    AuthResponse refresh(RefreshRequest req);
+    AuthResponse tokenRefresh(TokenRefreshRequest req);
 }

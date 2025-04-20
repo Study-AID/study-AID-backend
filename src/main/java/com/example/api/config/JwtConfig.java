@@ -1,4 +1,4 @@
-package com.example.api.jwt;
+package com.example.api.config;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 @Getter
 @Component
 @ConfigurationProperties("jwt")
-public class JwtProperties {
+public class JwtConfig {
     private String issuer;
     private String secretKey;
-    private long accessTokenValidity;
-    private long refreshTokenValidity;
+    private long accessTokenTtlMs;
+    private long refreshTokenTtlMs;
 }

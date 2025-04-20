@@ -3,7 +3,7 @@ package com.example.api.service;
 import java.util.UUID;
 import java.time.Duration;
 
-import com.example.api.jwt.JwtProperties;
+import com.example.api.config.JwtConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ public class RedisServiceImpl implements RedisService {
 
     private final StringRedisTemplate redisTemplate;
 
-    private final JwtProperties jwtProperties;
+    private final JwtConfig jwtConfig;
     private static final String PREFIX = "userUuid:";
 
     @Override
@@ -22,7 +22,7 @@ public class RedisServiceImpl implements RedisService {
         redisTemplate.opsForValue().set(
                 PREFIX + userId.toString(),
                 refreshToken,
-                Duration.ofMillis(jwtProperties.getRefreshTokenValidity())
+                Duration.ofMillis(jwtConfig.getRefreshTokenTtlMs())
         );
     }
 

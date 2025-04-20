@@ -22,7 +22,7 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/signup")
+    @PostMapping("/signup/email")
     @Operation(summary = "이메일 회원가입", description = "이메일과 비밀번호, 이름으로 회원가입을 진행합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원가입 성공"),
@@ -41,12 +41,12 @@ public class AuthController {
                     )
             )
     })
-    public ResponseEntity<CommonResponse<UserSummaryResponse>> signup(@RequestBody SignupRequest req) {
-        UserSummaryResponse userSummaryResponse = authService.signup(req);
+    public ResponseEntity<CommonResponse<UserSummaryResponse>> signupWithEmail(@RequestBody EmailSignupRequest req) {
+        UserSummaryResponse userSummaryResponse = authService.signupWithEmail(req);
         return ResponseEntity.ok(new CommonResponse<>("회원가입 성공", userSummaryResponse));
     }
 
-    @PostMapping("/login")
+    @PostMapping("/login/email")
     @Operation(summary = "이메일 로그인", description = "이메일과 비밀번호로 로그인합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "로그인 성공"),
@@ -65,8 +65,8 @@ public class AuthController {
                     )
             )
     })
-    public ResponseEntity<CommonResponse<AuthResponse>> login(@RequestBody LoginRequest req) {
-        AuthResponse authResponse = authService.login(req);
+    public ResponseEntity<CommonResponse<AuthResponse>> loginWithEmail(@RequestBody EmailLoginRequest req) {
+        AuthResponse authResponse = authService.loginWithEmail(req);
         return ResponseEntity.ok(new CommonResponse<>("로그인 성공", authResponse));
     }
 
@@ -99,8 +99,8 @@ public class AuthController {
                     )
             )
     })
-    public ResponseEntity<CommonResponse<AuthResponse>> refresh(@RequestBody RefreshRequest req) {
-        AuthResponse authResponse = authService.refresh(req);
+    public ResponseEntity<CommonResponse<AuthResponse>> tokenRefresh(@RequestBody TokenRefreshRequest req) {
+        AuthResponse authResponse = authService.tokenRefresh(req);
         return ResponseEntity.ok(new CommonResponse<>("토큰 재발급 성공", authResponse));
     }
 }

@@ -1,4 +1,4 @@
-package com.example.api.jwt;
+package com.example.api.security.jwt;
 
 import com.example.api.entity.User;
 import com.example.api.repository.UserRepository;
@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
+    private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
 
     @Override
@@ -38,12 +38,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        if (!jwtService.isValid(token)) {
+        if (!jwtProvider.isValid(token)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        UUID userId = jwtService.extractUserId(token);
+        UUID userId = jwtProvider.extractUserId(token);
         User user = userRepository.findById(userId).orElse(null);
 
         if (user != null && SecurityContextHolder.getContext().getAuthentication() == null) {

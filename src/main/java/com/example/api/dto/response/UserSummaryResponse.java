@@ -16,10 +16,8 @@ public class UserSummaryResponse {
     private UUID id;
     private String email;
     private String name;
-    private String passwordHash;
-    private AuthType authType;
 
     public static UserSummaryResponse from(User user) {
-        return new UserSummaryResponse(user.getId(), user.getEmail(), user.getName(), user.getPasswordHash(), user.getAuthType());
+        return new UserSummaryResponse(user.getId(), user.getEmail(), user.getName());
     }
 }

@@ -2,7 +2,6 @@ package com.example.api.controller;
 
 import com.example.api.dto.request.*;
 import com.example.api.dto.response.*;
-import com.example.api.entity.enums.AuthType;
 import com.example.api.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,22 +41,20 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("회원가입 성공 테스트")
-    void signupTest() throws Exception {
+    @DisplayName("이메일 회원가입 성공 테스트")
+    void emailSignupTest() throws Exception {
         // given
-        SignupRequest request = new SignupRequest("test@example.com", "password1234", "테스트");
+        EmailSignupRequest request = new EmailSignupRequest("test@example.com", "password1234", "테스트");
         UserSummaryResponse response = new UserSummaryResponse(
                 userId,
                 "test@example.com",
-                "테스트",
-                "hashedPassword",
-                AuthType.email
+                "테스트"
         );
 
-        when(authService.signup(any(SignupRequest.class))).thenReturn(response);
+        when(authService.signupWithEmail(any(EmailSignupRequest.class))).thenReturn(response);
 
         // when & then
-        mockMvc.perform(post("/v1/auth/signup")
+        mockMvc.perform(post("/v1/auth/signup/email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -66,28 +63,26 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.email").value("test@example.com"))
                 .andExpect(jsonPath("$.data.name").value("테스트"));
 
-        verify(authService, times(1)).signup(any(SignupRequest.class));
+        verify(authService, times(1)).signupWithEmail(any(EmailSignupRequest.class));
     }
 
     @Test
-    @DisplayName("로그인 성공 테스트")
-    void loginTest() throws Exception {
+    @DisplayName("이메일 로그인 성공 테스트")
+    void emailLoginTest() throws Exception {
         // given
-        LoginRequest request = new LoginRequest("test@example.com", "password1234");
+        EmailLoginRequest request = new EmailLoginRequest("test@example.com", "password1234");
         TokenResponse tokenResponse = new TokenResponse("sample-access-token", "sample-refresh-token");
         UserSummaryResponse userResponse = new UserSummaryResponse(
                 userId,
                 "test@example.com",
-                "테스트",
-                "hashedPassword",
-                AuthType.email
+                "테스트"
         );
-        AuthResponse response = new AuthResponse(tokenResponse, userResponse);
+        AuthResponse authResponse = new AuthResponse(tokenResponse, userResponse);
 
-        when(authService.login(any(LoginRequest.class))).thenReturn(response);
+        when(authService.loginWithEmail(any(EmailLoginRequest.class))).thenReturn(authResponse);
 
         // when & then
-        mockMvc.perform(post("/v1/auth/login")
+        mockMvc.perform(post("/v1/auth/login/email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -98,7 +93,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
                 .andExpect(jsonPath("$.data.user.name").value("테스트"));
 
-        verify(authService, times(1)).login(any(LoginRequest.class));
+        verify(authService, times(1)).loginWithEmail(any(EmailLoginRequest.class));
     }
 
     @Test
@@ -123,20 +118,18 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("토큰 재발급 성공 테스트")
-    void refreshTest() throws Exception {
+    void tokenRefreshTest() throws Exception {
         // given
-        RefreshRequest request = new RefreshRequest("sample-refresh-token");
+        TokenRefreshRequest request = new TokenRefreshRequest("sample-refresh-token");
         TokenResponse tokenResponse = new TokenResponse("new-access-token", "new-refresh-token");
         UserSummaryResponse userResponse = new UserSummaryResponse(
                 userId,
                 "test@example.com",
-                "테스트",
-                "hashedPassword",
-                AuthType.email
+                "테스트"
         );
-        AuthResponse response = new AuthResponse(tokenResponse, userResponse);
+        AuthResponse authResponse = new AuthResponse(tokenResponse, userResponse);
 
-        when(authService.refresh(any(RefreshRequest.class))).thenReturn(response);
+        when(authService.tokenRefresh(any(TokenRefreshRequest.class))).thenReturn(authResponse);
 
         // when & then
         mockMvc.perform(post("/v1/auth/refresh")
@@ -150,6 +143,6 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
                 .andExpect(jsonPath("$.data.user.name").value("테스트"));
 
-        verify(authService, times(1)).refresh(any(RefreshRequest.class));
+        verify(authService, times(1)).tokenRefresh(any(TokenRefreshRequest.class));
     }
 }
