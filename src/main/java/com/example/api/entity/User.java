@@ -22,7 +22,7 @@ import java.util.UUID;
                 @Index(name = "idx_users_google_id", columnList = "google_id")
         }
 )
-@Check(constraints = "auth_type IN ('email', 'goolgle')")
+@Check(constraints = "auth_type IN ('email', 'google')")
 public class User {
     @Id
     @Column()

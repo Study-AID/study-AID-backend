@@ -1,6 +1,8 @@
 spring:
   application:
     name: api-server
+  profiles:
+    active: local
   
   # Database Configuration
   datasource:
@@ -24,10 +26,11 @@ spring:
   flyway:
     enabled: false
 
-  # Redis Configuration (Optional)
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
+  # Redis Configuration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 # Server Configuration
 server:
@@ -42,3 +45,9 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operationsSorter: method
+
+# JWT Configuration
+jwt:
+  issuer: studyaid
+  access-token-validity: 900000  # 15분 (밀리초)
+  refresh-token-validity: 1209600000  # 2주 (밀리초)

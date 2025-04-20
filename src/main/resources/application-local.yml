@@ -1,36 +1,10 @@
 spring:
-  # Database Configuration
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:studyaid}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
-  
-  # JPA Configuration
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
           model: gpt-4o
-
-# Server Configuration
-server:
-  port: 8080
-
-# Swagger UI Configuration
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-    operationsSorter: method
-    enabled: true
 
 # Logging
 logging:
@@ -39,3 +13,7 @@ logging:
     com.example.api: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# JWT Configuration
+jwt:
+  secret_key: ${JWT_SECRET_KEY}
