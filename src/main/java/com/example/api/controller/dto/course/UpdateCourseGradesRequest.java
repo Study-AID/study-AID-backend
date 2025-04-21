@@ -8,7 +8,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Schema(description = "Course grade update request")
 public class UpdateCourseGradesRequest {
+    @Schema(description = "Updated target grade for the course")
     private float targetGrade;
+
+    @Schema(description = "Updated earned grade for the course")
     private float earnedGrade;
+
+    @Schema(description = "Updated completed credits for the course")
     private int completedCredits;
 }

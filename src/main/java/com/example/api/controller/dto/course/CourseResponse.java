@@ -14,14 +14,31 @@ import java.util.UUID;
 @AllArgsConstructor
 @Schema(description = "Course response")
 public class CourseResponse {
+    @Schema(description = "Unique ID of the course")
     private UUID id;
+
+    @Schema(description = "Unique ID of the semester")
     private UUID semesterId;
+
+    @Schema(description = "Unique ID of the user")
     private UUID userId;
+
+    @Schema(description = "Name of the course")
     private String name;
+
+    @Schema(description = "Target grade for the course")
     private Float targetGrade;
+
+    @Schema(description = "Earned grade for the course")
     private Float earnedGrade;
+
+    @Schema(description = "Completed credits for the course")
     private Integer completedCredits;
+
+    @Schema(description = "Creation timestamp of the course")
     private LocalDateTime createdAt;
+
+    @Schema(description = "Last update timestamp of the course")
     private LocalDateTime updatedAt;
 
     public static CourseResponse fromServiceDto(CourseOutput course) {

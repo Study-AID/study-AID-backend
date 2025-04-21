@@ -12,5 +12,6 @@ import java.util.List;
 @NoArgsConstructor
 @Schema(description = "List of courses response")
 public class CourseListResponse {
+    @Schema(description = "List of course responses")
     private List<CourseResponse> courses;
 }
