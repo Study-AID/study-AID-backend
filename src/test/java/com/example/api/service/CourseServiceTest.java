@@ -6,10 +6,7 @@ import com.example.api.entity.User;
 import com.example.api.repository.CourseRepository;
 import com.example.api.repository.SemesterRepository;
 import com.example.api.repository.UserRepository;
-import com.example.api.service.dto.course.CourseOutput;
-import com.example.api.service.dto.course.CreateCourseInput;
-import com.example.api.service.dto.course.UpdateCourseGradesInput;
-import com.example.api.service.dto.course.UpdateCourseInput;
+import com.example.api.service.dto.course.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,7 +77,7 @@ class CourseServiceTest {
         testCourse.setCompletedCredits(3);
         testCourse.setCreatedAt(LocalDateTime.now());
         testCourse.setUpdatedAt(LocalDateTime.now());
-        
+
         testCourseOutput = CourseOutput.fromEntity(testCourse);
     }
 
@@ -91,31 +88,15 @@ class CourseServiceTest {
         when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
 
         // When
-        Optional<CourseOutput> course = courseService.findCourseById(courseId);
+        Optional<CourseOutput> output = courseService.findCourseById(courseId);
 
         // Then
-        assertTrue(course.isPresent());
-        assertEquals(testCourseOutput.getId(), course.get().getId());
-        assertEquals(testCourseOutput.getName(), course.get().getName());
+        assertTrue(output.isPresent());
+        assertEquals(testCourseOutput.getId(), output.get().getId());
+        assertEquals(testCourseOutput.getName(), output.get().getName());
         verify(courseRepository).findById(courseId);
     }
-    
-    @Test
-    @DisplayName("사용자 ID로 과목 목록 조회")
-    void findCoursesByUserId() {
-        // Given
-        when(courseRepository.findByUserId(userId)).thenReturn(Arrays.asList(testCourse));
 
-        // When
-        List<CourseOutput> courses = courseService.findCoursesByUserId(userId);
-
-        // Then
-        assertThat(courses).hasSize(1);
-        assertEquals(testCourseOutput.getId(), courses.get(0).getId());
-        assertEquals(testCourseOutput.getName(), courses.get(0).getName());
-        verify(courseRepository).findByUserId(userId);
-    }
-    
     @Test
     @DisplayName("학기 ID로 과목 목록 조회")
     void findCoursesBySemesterId() {
@@ -123,12 +104,12 @@ class CourseServiceTest {
         when(courseRepository.findBySemesterId(semesterId)).thenReturn(Arrays.asList(testCourse));
 
         // When
-        List<CourseOutput> courses = courseService.findCoursesBySemesterId(semesterId);
+        CourseListOutput output = courseService.findCoursesBySemesterId(semesterId);
 
         // Then
-        assertThat(courses).hasSize(1);
-        assertEquals(testCourseOutput.getId(), courses.get(0).getId());
-        assertEquals(testCourseOutput.getName(), courses.get(0).getName());
+        assertThat(output.getCourses()).hasSize(1);
+        assertEquals(testCourseOutput.getId(), output.getCourses().get(0).getId());
+        assertEquals(testCourseOutput.getName(), output.getCourses().get(0).getName());
         verify(courseRepository).findBySemesterId(semesterId);
     }
 
@@ -140,7 +121,7 @@ class CourseServiceTest {
         input.setUserId(userId);
         input.setSemesterId(semesterId);
         input.setName("운영체제");
-        
+
         when(userRepository.getReferenceById(userId)).thenReturn(testUser);
         when(semesterRepository.getReferenceById(semesterId)).thenReturn(testSemester);
         when(courseRepository.createCourse(any(Course.class))).thenReturn(testCourse);
@@ -165,7 +146,7 @@ class CourseServiceTest {
         input.setUserId(userId);
         input.setSemesterId(semesterId);
         input.setName("운영체제");
-        
+
         when(userRepository.getReferenceById(userId)).thenReturn(testUser);
         when(semesterRepository.getReferenceById(semesterId)).thenReturn(testSemester);
         when(courseRepository.createCourse(any(Course.class)))
@@ -188,7 +169,7 @@ class CourseServiceTest {
         UpdateCourseInput input = new UpdateCourseInput();
         input.setId(courseId);
         input.setName("고급 운영체제");
-        
+
         Course updatedCourse = new Course();
         updatedCourse.setId(courseId);
         updatedCourse.setUser(testUser);
@@ -199,9 +180,9 @@ class CourseServiceTest {
         updatedCourse.setCompletedCredits(testCourse.getCompletedCredits());
         updatedCourse.setCreatedAt(testCourse.getCreatedAt());
         updatedCourse.setUpdatedAt(LocalDateTime.now());
-        
+
         CourseOutput updatedCourseOutput = CourseOutput.fromEntity(updatedCourse);
-        
+
         when(courseRepository.updateCourse(any(Course.class))).thenReturn(updatedCourse);
 
         // When
@@ -236,7 +217,7 @@ class CourseServiceTest {
         updatedCourse.setCompletedCredits(3);
         updatedCourse.setCreatedAt(testCourse.getCreatedAt());
         updatedCourse.setUpdatedAt(LocalDateTime.now());
-        
+
         when(courseRepository.updateCourse(any(Course.class))).thenReturn(updatedCourse);
 
         // When

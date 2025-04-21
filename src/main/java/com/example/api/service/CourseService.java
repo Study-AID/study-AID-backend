@@ -1,13 +1,10 @@
 package com.example.api.service;
 
-import com.example.api.service.dto.course.CourseOutput;
-import com.example.api.service.dto.course.CreateCourseInput;
-import com.example.api.service.dto.course.UpdateCourseGradesInput;
-import com.example.api.service.dto.course.UpdateCourseInput;
+import com.example.api.service.dto.course.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import javax.swing.text.html.Option;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,9 +12,7 @@ import java.util.UUID;
 public interface CourseService {
     Optional<CourseOutput> findCourseById(UUID courseId);
 
-    List<CourseOutput> findCoursesByUserId(UUID userId);
-
-    List<CourseOutput> findCoursesBySemesterId(UUID semesterId);
+    CourseListOutput findCoursesBySemesterId(UUID semesterId);
 
     @Transactional
     CourseOutput createCourse(CreateCourseInput input);
@@ -26,7 +21,7 @@ public interface CourseService {
     CourseOutput updateCourse(UpdateCourseInput input);
 
     @Transactional
-    void updateCourseGrades(UpdateCourseGradesInput input);
+    CourseOutput updateCourseGrades(UpdateCourseGradesInput input);
 
     @Transactional
     void deleteCourse(UUID courseId);

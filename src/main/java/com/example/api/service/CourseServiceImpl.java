@@ -6,10 +6,7 @@ import com.example.api.entity.User;
 import com.example.api.repository.CourseRepository;
 import com.example.api.repository.SemesterRepository;
 import com.example.api.repository.UserRepository;
-import com.example.api.service.dto.course.CourseOutput;
-import com.example.api.service.dto.course.CreateCourseInput;
-import com.example.api.service.dto.course.UpdateCourseGradesInput;
-import com.example.api.service.dto.course.UpdateCourseInput;
+import com.example.api.service.dto.course.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class CourseServiceImpl implements CourseService {
@@ -43,19 +39,12 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public List<CourseOutput> findCoursesByUserId(UUID userId) {
-        return courseRepo.findByUserId(userId)
+    public CourseListOutput findCoursesBySemesterId(UUID semesterId) {
+        List<CourseOutput> courses = courseRepo.findBySemesterId(semesterId)
                 .stream()
                 .map(CourseOutput::fromEntity)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<CourseOutput> findCoursesBySemesterId(UUID semesterId) {
-        return courseRepo.findBySemesterId(semesterId)
-                .stream()
-                .map(CourseOutput::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
+        return new CourseListOutput(courses);
     }
 
     @Override
@@ -85,13 +74,14 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     @Transactional
-    public void updateCourseGrades(UpdateCourseGradesInput input) {
+    public CourseOutput updateCourseGrades(UpdateCourseGradesInput input) {
         Course course = new Course();
         course.setId(input.getId());
         course.setTargetGrade(input.getTargetGrade());
         course.setEarnedGrade(input.getEarnedGrade());
         course.setCompletedCredits(input.getCompletedCredits());
-        courseRepo.updateCourse(course);
+        Course updatedCourse = courseRepo.updateCourse(course);
+        return CourseOutput.fromEntity(updatedCourse);
     }
 
     @Override

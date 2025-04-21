@@ -3,10 +3,7 @@ package com.example.api.controller;
 import com.example.api.controller.dto.course.*;
 import com.example.api.service.CourseService;
 import com.example.api.service.SemesterService;
-import com.example.api.service.dto.course.CourseOutput;
-import com.example.api.service.dto.course.CreateCourseInput;
-import com.example.api.service.dto.course.UpdateCourseGradesInput;
-import com.example.api.service.dto.course.UpdateCourseInput;
+import com.example.api.service.dto.course.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -22,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/v1/courses")
@@ -37,43 +33,6 @@ public class CourseController {
     public CourseController(CourseService courseService, SemesterService semesterService) {
         this.courseService = courseService;
         this.semesterService = semesterService;
-    }
-
-    @GetMapping
-    @Operation(
-            summary = "Get all courses for the user",
-            description = "Retrieves a list of all courses for a user",
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Successfully retrieved courses",
-                            content = @Content(schema = @Schema(implementation = ListCourseResponse.class))
-                    ),
-                    @ApiResponse(
-                            responseCode = "500",
-                            description = "Internal server error"
-                    )
-            }
-    )
-    public ResponseEntity<ListCourseResponse> getCourses() {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
-
-        List<CourseOutput> courses = courseService.findCoursesByUserId(userId);
-        if (courses.isEmpty()) {
-            return ResponseEntity.ok(new ListCourseResponse(List.of()));
-        }
-        // Ownership check.
-        if (!courses.get(0).getUserId().equals(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        List<CourseResponse> courseDtos = courses.stream()
-                .map(this::convertToControllerDto)
-                .collect(Collectors.toList());
-
-        ListCourseResponse response = new ListCourseResponse(courseDtos);
-        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/semester/{semesterId}")
@@ -92,7 +51,7 @@ public class CourseController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Successfully retrieved courses",
-                            content = @Content(schema = @Schema(implementation = ListCourseResponse.class))
+                            content = @Content(schema = @Schema(implementation = CourseListResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "403",
@@ -108,7 +67,7 @@ public class CourseController {
                     )
             }
     )
-    public ResponseEntity<ListCourseResponse> getCoursesBySemester(@PathVariable UUID semesterId) {
+    public ResponseEntity<CourseListResponse> getCoursesBySemester(@PathVariable UUID semesterId) {
         // TODO(mj): Get authenticated user ID from security context
         UUID userId = PLACEHOLDER_USER_ID;
 
@@ -121,13 +80,10 @@ public class CourseController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        List<CourseOutput> courses = courseService.findCoursesBySemesterId(semesterId);
-        List<CourseResponse> courseDtos = courses.stream()
-                .map(this::convertToControllerDto)
-                .collect(Collectors.toList());
-
-        ListCourseResponse response = new ListCourseResponse(courseDtos);
-        return ResponseEntity.ok(response);
+        CourseListOutput courseListOutput = courseService.findCoursesBySemesterId(semesterId);
+        List<CourseResponse> courseListResponse = courseListOutput.getCourses().stream().map(
+                CourseResponse::fromServiceDto).toList();
+        return ResponseEntity.ok(new CourseListResponse(courseListResponse));
     }
 
     @GetMapping("/{id}")
@@ -167,16 +123,15 @@ public class CourseController {
 
         try {
             // Check course exists and user owns it.
-            Optional<CourseOutput> course = courseService.findCourseById(id);
-            if (course.isEmpty()) {
+            Optional<CourseOutput> courseOutput = courseService.findCourseById(id);
+            if (courseOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!course.get().getUserId().equals(userId)) {
+            if (!courseOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            CourseResponse responseDto = convertToControllerDto(course.get());
-            return ResponseEntity.ok(responseDto);
+            return ResponseEntity.ok(CourseResponse.fromServiceDto(courseOutput.get()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -230,16 +185,14 @@ public class CourseController {
                 return ResponseEntity.badRequest().build();
             }
 
-            // Convert controller DTO to service DTO
             CreateCourseInput serviceInput = new CreateCourseInput();
             serviceInput.setUserId(userId);
             serviceInput.setSemesterId(request.getSemesterId());
             serviceInput.setName(request.getName());
 
-            CourseOutput createdCourse = courseService.createCourse(serviceInput);
-
-            CourseResponse responseDto = convertToControllerDto(createdCourse);
-            return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+            CourseOutput createdCourseOutput = courseService.createCourse(serviceInput);
+            CourseResponse courseResponse = CourseResponse.fromServiceDto(createdCourseOutput);
+            return ResponseEntity.status(HttpStatus.CREATED).body(courseResponse);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
@@ -308,15 +261,13 @@ public class CourseController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            // Convert controller DTO to service DTO
             UpdateCourseInput serviceInput = new UpdateCourseInput();
             serviceInput.setId(id);
             serviceInput.setName(request.getName());
 
-            CourseOutput updatedCourse = courseService.updateCourse(serviceInput);
-
-            CourseResponse responseDto = convertToControllerDto(updatedCourse);
-            return ResponseEntity.ok(responseDto);
+            CourseOutput updatedCourseOutput = courseService.updateCourse(serviceInput);
+            CourseResponse courseResponse = CourseResponse.fromServiceDto(updatedCourseOutput);
+            return ResponseEntity.ok(courseResponse);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
@@ -391,7 +342,6 @@ public class CourseController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            // Convert controller DTO to service DTO
             UpdateCourseGradesInput serviceInput = new UpdateCourseGradesInput();
             serviceInput.setId(id);
             serviceInput.setTargetGrade(request.getTargetGrade());
@@ -460,20 +410,5 @@ public class CourseController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
-    }
-
-    // Helper method to convert service DTO to controller DTO
-    private CourseResponse convertToControllerDto(CourseOutput courseDto) {
-        CourseResponse response = new CourseResponse();
-        response.setId(courseDto.getId());
-        response.setUserId(courseDto.getUserId());
-        response.setSemesterId(courseDto.getSemesterId());
-        response.setName(courseDto.getName());
-        response.setTargetGrade(courseDto.getTargetGrade());
-        response.setEarnedGrade(courseDto.getEarnedGrade());
-        response.setCompletedCredits(courseDto.getCompletedCredits());
-        response.setCreatedAt(courseDto.getCreatedAt());
-        response.setUpdatedAt(courseDto.getUpdatedAt());
-        return response;
     }
 }

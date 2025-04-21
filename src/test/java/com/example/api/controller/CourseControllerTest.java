@@ -8,10 +8,7 @@ import com.example.api.entity.Semester;
 import com.example.api.entity.User;
 import com.example.api.service.CourseService;
 import com.example.api.service.SemesterService;
-import com.example.api.service.dto.course.CourseOutput;
-import com.example.api.service.dto.course.CreateCourseInput;
-import com.example.api.service.dto.course.UpdateCourseGradesInput;
-import com.example.api.service.dto.course.UpdateCourseInput;
+import com.example.api.service.dto.course.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,8 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -93,47 +89,13 @@ class CourseControllerTest {
     }
 
     @Test
-    @DisplayName("모든 과목 목록 조회")
-    void getCourses() throws Exception {
-        // Given
-        when(courseService.findCoursesByUserId(userId))
-                .thenReturn(Arrays.asList(testCourseOutput));
-
-        // When/Then
-        mockMvc.perform(get("/v1/courses"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.courses", hasSize(1)))
-                .andExpect(jsonPath("$.courses[0].id", is(courseId.toString())))
-                .andExpect(jsonPath("$.courses[0].userId", is(userId.toString())))
-                .andExpect(jsonPath("$.courses[0].semesterId", is(semesterId.toString())))
-                .andExpect(jsonPath("$.courses[0].name", is("운영체제")));
-
-        verify(courseService).findCoursesByUserId(userId);
-    }
-
-    @Test
-    @DisplayName("과목이 없을 때 빈 목록 반환")
-    void getCourses_WhenNoCourses_ReturnsEmptyList() throws Exception {
-        // Given
-        when(courseService.findCoursesByUserId(userId))
-                .thenReturn(Collections.emptyList());
-
-        // When/Then
-        mockMvc.perform(get("/v1/courses"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.courses", hasSize(0)));
-
-        verify(courseService).findCoursesByUserId(userId);
-    }
-
-    @Test
     @DisplayName("학기별 과목 목록 조회")
     void getCoursesBySemester() throws Exception {
         // Given
         when(semesterService.findSemesterById(semesterId))
                 .thenReturn(Optional.of(testSemester));
         when(courseService.findCoursesBySemesterId(semesterId))
-                .thenReturn(Arrays.asList(testCourseOutput));
+                .thenReturn(new CourseListOutput(List.of(testCourseOutput)));
 
         // When/Then
         mockMvc.perform(get("/v1/courses/semester/{semesterId}", semesterId))
@@ -398,19 +360,31 @@ class CourseControllerTest {
     @DisplayName("과목 성적 정보 업데이트")
     void updateCourseGrades() throws Exception {
         // Given
-        UpdateCourseGradesRequest gradesRequest = new UpdateCourseGradesRequest();
-        gradesRequest.setTargetGrade(4.3f);
-        gradesRequest.setEarnedGrade(3.8f);
-        gradesRequest.setCompletedCredits(3);
+        UpdateCourseGradesRequest updateGradesRequest = new UpdateCourseGradesRequest();
+        updateGradesRequest.setTargetGrade(4.3f);
+        updateGradesRequest.setEarnedGrade(3.8f);
+        updateGradesRequest.setCompletedCredits(3);
+
+        CourseOutput updatedCourseOutput = new CourseOutput();
+        updatedCourseOutput.setId(courseId);
+        updatedCourseOutput.setUserId(userId);
+        updatedCourseOutput.setSemesterId(semesterId);
+        updatedCourseOutput.setName("고급 운영체제");
+        updatedCourseOutput.setTargetGrade(testCourse.getTargetGrade());
+        updatedCourseOutput.setEarnedGrade(testCourse.getEarnedGrade());
+        updatedCourseOutput.setCompletedCredits(testCourse.getCompletedCredits());
+        updatedCourseOutput.setCreatedAt(testCourse.getCreatedAt());
+        updatedCourseOutput.setUpdatedAt(LocalDateTime.now());
 
         when(courseService.findCourseById(courseId))
                 .thenReturn(Optional.of(testCourseOutput));
-        doNothing().when(courseService).updateCourseGrades(any(UpdateCourseGradesInput.class));
+        when(courseService.updateCourse(any(UpdateCourseInput.class)))
+                .thenReturn(updatedCourseOutput);
 
         // When/Then
         mockMvc.perform(put("/v1/courses/{id}/grades", courseId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(gradesRequest)))
+                        .content(objectMapper.writeValueAsString(updateGradesRequest)))
                 .andExpect(status().isNoContent());
 
         verify(courseService).findCourseById(courseId);
@@ -426,15 +400,15 @@ class CourseControllerTest {
     @DisplayName("유효하지 않은 성적 정보로 업데이트")
     void updateCourseGrades_InvalidGrades() throws Exception {
         // Given
-        UpdateCourseGradesRequest gradesRequest = new UpdateCourseGradesRequest();
-        gradesRequest.setTargetGrade(5.0f); // 4.5 초과 (컨트롤러에서 지정된 최대값)
-        gradesRequest.setEarnedGrade(3.8f);
-        gradesRequest.setCompletedCredits(3);
+        UpdateCourseGradesRequest updateGradesRequest = new UpdateCourseGradesRequest();
+        updateGradesRequest.setTargetGrade(5.0f); // 4.5 초과 (컨트롤러에서 지정된 최대값)
+        updateGradesRequest.setEarnedGrade(3.8f);
+        updateGradesRequest.setCompletedCredits(3);
 
         // When/Then
         mockMvc.perform(put("/v1/courses/{id}/grades", courseId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(gradesRequest)))
+                        .content(objectMapper.writeValueAsString(updateGradesRequest)))
                 .andExpect(status().isBadRequest());
 
         verify(courseService, never()).updateCourseGrades(any(UpdateCourseGradesInput.class));
