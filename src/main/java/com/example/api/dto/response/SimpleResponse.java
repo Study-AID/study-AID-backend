@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommonResponse<T> {
+public class SimpleResponse<T> {
     private String message;
     private T data;
 }

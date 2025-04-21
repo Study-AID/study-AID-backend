@@ -13,14 +13,17 @@ import org.springframework.stereotype.Service;
 public class RedisServiceImpl implements RedisService {
 
     private final StringRedisTemplate redisTemplate;
-
     private final JwtConfig jwtConfig;
-    private static final String PREFIX = "userUuid:";
 
+    private static final String USER_REFRESH_TOKEN_KEY_FORMAT = "user:<%s>";
+
+    private String buildUserRefTokenKey(UUID userId) {
+        return String.format(USER_REFRESH_TOKEN_KEY_FORMAT, userId);
+    }
     @Override
     public void saveRefreshToken(UUID userId, String refreshToken) {
         redisTemplate.opsForValue().set(
-                PREFIX + userId.toString(),
+                buildUserRefTokenKey(userId),
                 refreshToken,
                 Duration.ofMillis(jwtConfig.getRefreshTokenTtlMs())
         );
@@ -28,11 +31,11 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public String getRefreshToken(UUID userId) {
-        return redisTemplate.opsForValue().get(PREFIX + userId.toString());
+        return redisTemplate.opsForValue().get(buildUserRefTokenKey(userId));
     }
 
     @Override
     public void deleteRefreshToken(UUID userId) {
-        redisTemplate.delete(PREFIX + userId.toString());
+        redisTemplate.delete(buildUserRefTokenKey(userId));
     }
 }

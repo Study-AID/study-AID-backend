@@ -31,7 +31,7 @@ public class AuthController {
                     description = "이미 가입된 이메일",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = CommonResponse.class),
+                            schema = @Schema(implementation = SimpleResponse.class),
                             examples = @ExampleObject(value = """
                     {
                       "message": "이미 가입된 이메일입니다.",
@@ -41,9 +41,9 @@ public class AuthController {
                     )
             )
     })
-    public ResponseEntity<CommonResponse<UserSummaryResponse>> signupWithEmail(@RequestBody EmailSignupRequest req) {
+    public ResponseEntity<SimpleResponse<UserSummaryResponse>> signupWithEmail(@RequestBody EmailSignupRequest req) {
         UserSummaryResponse userSummaryResponse = authService.signupWithEmail(req);
-        return ResponseEntity.ok(new CommonResponse<>("회원가입 성공", userSummaryResponse));
+        return ResponseEntity.ok(new SimpleResponse<>("회원가입 성공", userSummaryResponse));
     }
 
     @PostMapping("/login/email")
@@ -55,7 +55,7 @@ public class AuthController {
                     description = "존재하지 않는 이메일 or 비밀번호 불일치 or 이메일 로그인 사용자가 아님",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = CommonResponse.class),
+                            schema = @Schema(implementation = SimpleResponse.class),
                             examples = @ExampleObject(value = """
                     {
                       "message": "비밀번호가 일치하지 않습니다.",
@@ -65,9 +65,9 @@ public class AuthController {
                     )
             )
     })
-    public ResponseEntity<CommonResponse<AuthResponse>> loginWithEmail(@RequestBody EmailLoginRequest req) {
+    public ResponseEntity<SimpleResponse<AuthResponse>> loginWithEmail(@RequestBody EmailLoginRequest req) {
         AuthResponse authResponse = authService.loginWithEmail(req);
-        return ResponseEntity.ok(new CommonResponse<>("로그인 성공", authResponse));
+        return ResponseEntity.ok(new SimpleResponse<>("로그인 성공", authResponse));
     }
 
     @PostMapping("/logout")
@@ -75,9 +75,9 @@ public class AuthController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "로그아웃 성공")
     })
-    public ResponseEntity<CommonResponse<Void>> logout(@RequestBody LogoutRequest req) {
+    public ResponseEntity<SimpleResponse<Void>> logout(@RequestBody LogoutRequest req) {
         authService.logout(req);
-        return ResponseEntity.ok(new CommonResponse<>("로그아웃 성공", null));
+        return ResponseEntity.ok(new SimpleResponse<>("로그아웃 성공", null));
     }
 
     @PostMapping("/refresh")
@@ -89,7 +89,7 @@ public class AuthController {
                     description = "유효하지 않거나 저장된 토큰과 불일치, 사용자 없음",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = CommonResponse.class),
+                            schema = @Schema(implementation = SimpleResponse.class),
                             examples = @ExampleObject(value = """
                     {
                       "message": "유효하지 않은 리프레시 토큰입니다.",
@@ -99,8 +99,10 @@ public class AuthController {
                     )
             )
     })
-    public ResponseEntity<CommonResponse<AuthResponse>> tokenRefresh(@RequestBody TokenRefreshRequest req) {
+    public ResponseEntity<SimpleResponse<AuthResponse>> tokenRefresh(@RequestBody TokenRefreshRequest req) {
         AuthResponse authResponse = authService.tokenRefresh(req);
-        return ResponseEntity.ok(new CommonResponse<>("토큰 재발급 성공", authResponse));
+        return ResponseEntity.ok(new SimpleResponse<>("토큰 재발급 성공", authResponse));
     }
+
+
 }
