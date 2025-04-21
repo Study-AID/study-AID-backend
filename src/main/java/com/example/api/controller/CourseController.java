@@ -43,7 +43,7 @@ public class CourseController {
                     @Parameter(
                             name = "semesterId",
                             description = "ID of the semester",
-                            required = true,
+                            required = true
                     )
             },
             responses = {
