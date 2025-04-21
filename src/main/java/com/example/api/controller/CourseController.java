@@ -44,7 +44,6 @@ public class CourseController {
                             name = "semesterId",
                             description = "ID of the semester",
                             required = true,
-                            in = ParameterIn.PATH
                     )
             },
             responses = {
