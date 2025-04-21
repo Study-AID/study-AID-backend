@@ -15,7 +15,7 @@ import java.util.UUID;
 @Schema(description = "Course creation request")
 public class CreateCourseRequest {
     @NotNull
-    @Schema(description = "ID of the semester the course belongs to")
+    @Schema(description = "ID of the semester")
     private UUID semesterId;
 
     @NotBlank

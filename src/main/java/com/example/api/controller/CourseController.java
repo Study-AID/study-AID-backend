@@ -42,7 +42,7 @@ public class CourseController {
             parameters = {
                     @Parameter(
                             name = "semesterId",
-                            description = "UUID of the semester",
+                            description = "ID of the semester",
                             required = true,
                             in = ParameterIn.PATH
                     )
@@ -93,7 +93,7 @@ public class CourseController {
             parameters = {
                     @Parameter(
                             name = "id",
-                            description = "UUID of the course to retrieve",
+                            description = "ID of the course to retrieve",
                             required = true
                     )
             },
@@ -207,7 +207,7 @@ public class CourseController {
             parameters = {
                     @Parameter(
                             name = "id",
-                            description = "UUID of the course to update",
+                            description = "ID of the course to update",
                             required = true
                     )
             },
@@ -284,7 +284,7 @@ public class CourseController {
             parameters = {
                     @Parameter(
                             name = "id",
-                            description = "UUID of the course to update grades for",
+                            description = "ID of the course to update grades for",
                             required = true
                     )
             },
@@ -366,7 +366,7 @@ public class CourseController {
             parameters = {
                     @Parameter(
                             name = "id",
-                            description = "UUID of the course to delete",
+                            description = "ID of the course to delete",
                             required = true
                     )
             },
