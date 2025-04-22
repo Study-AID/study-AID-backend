@@ -30,12 +30,12 @@ public class AuthController {
     @PostMapping("/signup/email")
     @Operation(summary = "이메일 회원가입", description = "이메일과 비밀번호, 이름으로 회원가입을 진행합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "회원가입 성공",
+            @ApiResponse(responseCode = "200", description = "이메일 회원가입 성공",
                     content = @Content(
                             mediaType = "application/json",
                             examples = @ExampleObject(value = """
                                 {
-                                  "message": "회원가입 성공",
+                                  "message": "이메일 회원가입 성공",
                                   "data": {
                                     "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
                                     "email": "test@example.com",
@@ -59,67 +59,55 @@ public class AuthController {
     })
     public ResponseEntity<SimpleResponse<UserSummaryResponse>> signupWithEmail(@RequestBody EmailSignupRequest req) {
         UserSummaryResponse userSummaryResponse = authService.signupWithEmail(req);
-        return ResponseEntity.ok(new SimpleResponse<>("회원가입 성공", userSummaryResponse));
+        return ResponseEntity.ok(new SimpleResponse<>("이메일 회원가입 성공", userSummaryResponse));
     }
 
     @PostMapping("/login/email")
     @Operation(summary = "이메일 로그인", description = "이메일과 비밀번호로 로그인합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "로그인 성공",
+            @ApiResponse(responseCode = "200", description = "이메일 로그인 성공",
                     content = @Content(
                             mediaType = "application/json",
                             examples = @ExampleObject(value = """
-                                {
-                                  "message": "로그인 성공",
-                                  "data": {
-                                    "token": {
-                                      "accessToken": "sample-access-token",
-                                      "refreshToken": "sample-refresh-token"
-                                    },
-                                    "user": {
-                                      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                                      "email": "test@example.com",
-                                      "name": "테스트"
-                                    }
-                                  }
+                            {
+                              "message": "이메일 로그인 성공",
+                              "data": {
+                                "token": {
+                                  "accessToken": "sample-access-token",
+                                  "refreshToken": "sample-refresh-token"
+                                },
+                                "user": {
+                                  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                                  "email": "test@example.com",
+                                  "name": "테스트"
                                 }
-                            """)
+                              }
+                            }
+                        """)
                     )
             ),
-            @ApiResponse(responseCode = "400", description = "존재하지 않는 이메일",
+            @ApiResponse(responseCode = "400", description = "이메일/비밀번호 입력 오류 또는 로그인 방식 오류",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                {
-                                  "message": "존재하지 않는 이메일입니다.",
-                                  "data": null
-                                }
-                            """)
-                    )),
-            @ApiResponse(responseCode = "401", description = "비밀번호 불일치",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                {
-                                  "message": "비밀번호가 일치하지 않습니다.",
-                                  "data": null
-                                }
-                            """)
-                    )),
-            @ApiResponse(responseCode = "403", description = "이메일 로그인 사용자가 아님",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                {
-                                  "message": "이메일 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.",
-                                  "data": null
-                                }
-                            """)
+                            examples = {
+                                    @ExampleObject(name = "wrong-login-input", value = """
+                                    {
+                                      "message": "이메일 또는 비밀번호가 올바르지 않습니다.",
+                                      "data": null
+                                    }
+                                """),
+                                    @ExampleObject(name = "wrong-auth-type", value = """
+                                    {
+                                      "message": "이메일 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.",
+                                      "data": null
+                                    }
+                                """)
+                            }
                     ))
     })
     public ResponseEntity<SimpleResponse<AuthResponse>> loginWithEmail(@RequestBody EmailLoginRequest req) {
         AuthResponse authResponse = authService.loginWithEmail(req);
-        return ResponseEntity.ok(new SimpleResponse<>("로그인 성공", authResponse));
+        return ResponseEntity.ok(new SimpleResponse<>("이메일 로그인 성공", authResponse));
     }
 
     @PostMapping("/logout")

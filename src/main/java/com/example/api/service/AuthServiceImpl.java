@@ -6,9 +6,10 @@ import com.example.api.dto.request.*;
 import com.example.api.dto.response.*;
 import com.example.api.entity.User;
 import com.example.api.entity.enums.AuthType;
+import com.example.api.exception.auth.*;
 import com.example.api.repository.RefreshTokenRepository;
-import com.example.api.security.jwt.JwtProvider;
 import com.example.api.repository.UserRepository;
+import com.example.api.security.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public UserSummaryResponse signupWithEmail(EmailSignupRequest req) {
         if (userRepository.findByEmail(req.getEmail()).isPresent()) {
-            throw new RuntimeException("이미 가입된 이메일입니다.");
+            throw new EmailAlreadyExistsException();
         }
 
         User user = new User();
@@ -41,14 +42,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse loginWithEmail(EmailLoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 이메일입니다."));
-
-        if (user.getAuthType() != AuthType.email) {
-            throw new RuntimeException("이메일 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.");
-        }
+                .orElseThrow(WrongLoginInputException::new);
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+            throw new WrongLoginInputException();
+        }
+
+        if (user.getAuthType() != AuthType.email) {
+            throw new WrongAuthTypeException();
         }
 
         String accessToken = jwtProvider.createAccessToken(user.getId());
@@ -72,18 +73,18 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = req.getRefreshToken();
 
         if (!jwtProvider.isValid(refreshToken)) {
-            throw new RuntimeException("유효하지 않은 리프레시 토큰입니다.");
+            throw new InvalidRefreshTokenException();
         }
 
         UUID userId = jwtProvider.extractUserId(refreshToken);
         String storedRefreshToken = refreshTokenRepository.getRefreshToken(userId);
 
         if (storedRefreshToken == null || !storedRefreshToken.equals(refreshToken)) {
-            throw new RuntimeException("리프레시 토큰이 일치하지 않습니다.");
+            throw new RefreshTokenMismatchException();
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         String newAccessToken = jwtProvider.createAccessToken(user.getId());
         String newRefreshToken = jwtProvider.createRefreshToken(user.getId());
@@ -98,11 +99,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public UserSummaryResponse getCurrentUserInfo(User user) {
         if (user == null) {
-            throw new RuntimeException("유효하지 않은 액세스 토큰입니다.");
+            throw new InvalidAccessTokenException();
         }
 
         User currentUser = userRepository.findById(user.getId())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         return UserSummaryResponse.from(currentUser);
     }
