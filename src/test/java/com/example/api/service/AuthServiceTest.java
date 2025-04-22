@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.example.api.dto.response.AuthResponse;
 import com.example.api.dto.response.UserSummaryResponse;
+import com.example.api.repository.RefreshTokenRepository;
 import com.example.api.security.jwt.JwtProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.*;
 class AuthServiceTest {
 
     @Mock private JwtProvider jwtProvider;
-    @Mock private RedisService redisService;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
     @Mock private UserRepository userRepository;
     @Mock private PasswordEncoder passwordEncoder;
 
@@ -48,8 +49,8 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 성공")
-    void signupSuccess() {
+    @DisplayName("이메일 회원가입 성공")
+    void emailSignupSuccess() {
         // Given
         EmailSignupRequest req = new EmailSignupRequest("new@example.com", "newPassword", "회원가입 할 유저");
 
@@ -71,8 +72,8 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 실패 - 이미 가입된 이메일")
-    void signupFailEmailAlreadyExists() {
+    @DisplayName("이메일 회원가입 실패 - 이미 가입된 이메일")
+    void emailSignupFail_emailAlreadyExists() {
         // Given
         EmailSignupRequest req = new EmailSignupRequest("new@example.com", "newPassword", "회원가입 하려는 유저");
         when(userRepository.findByEmail(req.getEmail())).thenReturn(Optional.of(user));
@@ -87,8 +88,8 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("로그인 성공")
-    void loginSuccess() {
+    @DisplayName("이메일 로그인 성공")
+    void emailLoginSuccess() {
         // Given
         EmailLoginRequest req = new EmailLoginRequest("test@example.com", "password123");
 
@@ -105,12 +106,12 @@ class AuthServiceTest {
         assertThat(authResponse.getToken().getRefreshToken()).isEqualTo("refresh-token"); 
         assertThat(authResponse.getUser().getEmail()).isEqualTo(user.getEmail()); 
         assertThat(authResponse.getUser().getName()).isEqualTo(user.getName()); 
-        verify(redisService).saveRefreshToken(user.getId(), "refresh-token");
+        verify(refreshTokenRepository).saveRefreshToken(user.getId(), "refresh-token");
     }
 
     @Test
-    @DisplayName("로그인 실패 - 존재하지 않는 이메일")
-    void loginFailEmailNotFound() {
+    @DisplayName("이메일 로그인 실패 - 존재하지 않는 이메일")
+    void emailLoginFail_emailNotFound() {
         // Given
         EmailLoginRequest req = new EmailLoginRequest("nonexistent@example.com", "password");
         when(userRepository.findByEmail(req.getEmail())).thenReturn(Optional.empty());
@@ -124,8 +125,8 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("로그인 실패 - 비밀번호 불일치")
-    void loginFailWrongPassword() {
+    @DisplayName("이메일 로그인 실패 - 비밀번호 불일치")
+    void emailLoginFail_wrongPassword() {
         // Given
         EmailLoginRequest req = new EmailLoginRequest("test@example.com", "wrongPassword");
 
@@ -142,7 +143,7 @@ class AuthServiceTest {
 
     @Test
     @DisplayName("로그인 실패 - 이메일 로그인 사용자가 아님")
-    void loginFailNotEmailUser() {
+    void emailLoginFail_notEmailUser() {
         // Given
         EmailLoginRequest req = new EmailLoginRequest("test@gmail.com", "password");
         User socialUser = new User();
@@ -160,33 +161,33 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("토큰 재발급(refresh) 성공")
-    void refreshSuccess() {
+    @DisplayName("토큰 재발급 성공")
+    void tokenRefreshSuccess() {
         // Given
         String oldRefreshToken = "old-refresh-token";
         TokenRefreshRequest req = new TokenRefreshRequest(oldRefreshToken);
 
         when(jwtProvider.isValid(oldRefreshToken)).thenReturn(true);
         when(jwtProvider.extractUserId(oldRefreshToken)).thenReturn(userId);
-        when(redisService.getRefreshToken(userId)).thenReturn(oldRefreshToken);
+        when(refreshTokenRepository.getRefreshToken(userId)).thenReturn(oldRefreshToken);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(jwtProvider.createAccessToken(user.getId())).thenReturn("new-access-token");
         when(jwtProvider.createRefreshToken(user.getId())).thenReturn("new-refresh-token");
 
         // When
-        AuthResponse authResponse = authService.tokenRefresh(req);
+        AuthResponse authResponse = authService.refreshToken(req);
 
         // Then
         assertThat(authResponse.getToken().getAccessToken()).isEqualTo("new-access-token"); // 변경
         assertThat(authResponse.getToken().getRefreshToken()).isEqualTo("new-refresh-token"); // 변경
         assertThat(authResponse.getUser().getEmail()).isEqualTo(user.getEmail()); // 변경
         assertThat(authResponse.getUser().getName()).isEqualTo(user.getName()); // 변경
-        verify(redisService).saveRefreshToken(userId, "new-refresh-token");
+        verify(refreshTokenRepository).saveRefreshToken(userId, "new-refresh-token");
     }
 
     @Test
-    @DisplayName("토큰 재발급(refresh) 실패 - 유효하지 않은 토큰")
-    void refreshFailInvalidToken() {
+    @DisplayName("토큰 재발급 실패 - 유효하지 않은 토큰")
+    void tokenRefreshFail_invalidToken() {
         // Given
         String invalidToken = "invalid-token";
         TokenRefreshRequest req = new TokenRefreshRequest(invalidToken);
@@ -195,65 +196,65 @@ class AuthServiceTest {
 
         // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            authService.tokenRefresh(req);
+            authService.refreshToken(req);
         });
 
         assertThat(exception.getMessage()).isEqualTo("유효하지 않은 리프레시 토큰입니다.");
     }
 
     @Test
-    @DisplayName("토큰 재발급(refresh) 실패 - 저장된 리프레시 토큰과 불일치")
-    void refreshFailTokenMismatch() {
+    @DisplayName("토큰 재발급 실패 - 저장된 리프레시 토큰과 불일치")
+    void tokenRefreshFail_tokenMismatch() {
         // Given
         String refreshToken = "refresh-token";
         TokenRefreshRequest req = new TokenRefreshRequest(refreshToken);
 
         when(jwtProvider.isValid(refreshToken)).thenReturn(true);
         when(jwtProvider.extractUserId(refreshToken)).thenReturn(userId);
-        when(redisService.getRefreshToken(userId)).thenReturn("different-token");
+        when(refreshTokenRepository.getRefreshToken(userId)).thenReturn("different-token");
 
         // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            authService.tokenRefresh(req);
+            authService.refreshToken(req);
         });
 
         assertThat(exception.getMessage()).isEqualTo("리프레시 토큰이 일치하지 않습니다.");
     }
 
     @Test
-    @DisplayName("토큰 재발급(refresh) 실패 - 저장된 리프레시 토큰이 없음")
-    void refreshFailNoStoredToken() {
+    @DisplayName("토큰 재발급 실패 - 저장된 리프레시 토큰이 없음")
+    void tokenRefreshFail_noStoredToken() {
         // Given
         String refreshToken = "refresh-token";
         TokenRefreshRequest req = new TokenRefreshRequest(refreshToken);
 
         when(jwtProvider.isValid(refreshToken)).thenReturn(true);
         when(jwtProvider.extractUserId(refreshToken)).thenReturn(userId);
-        when(redisService.getRefreshToken(userId)).thenReturn(null);
+        when(refreshTokenRepository.getRefreshToken(userId)).thenReturn(null);
 
         // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            authService.tokenRefresh(req);
+            authService.refreshToken(req);
         });
 
         assertThat(exception.getMessage()).isEqualTo("리프레시 토큰이 일치하지 않습니다.");
     }
 
     @Test
-    @DisplayName("토큰 재발급(refresh) 실패 - 사용자를 찾을 수 없음")
-    void refreshFailUserNotFound() {
+    @DisplayName("토큰 재발급 실패 - 사용자를 찾을 수 없음")
+    void tokenRefreshFail_userNotFound() {
         // Given
         String refreshToken = "refresh-token";
         TokenRefreshRequest req = new TokenRefreshRequest(refreshToken);
 
         when(jwtProvider.isValid(refreshToken)).thenReturn(true);
         when(jwtProvider.extractUserId(refreshToken)).thenReturn(userId);
-        when(redisService.getRefreshToken(userId)).thenReturn(refreshToken);
+        when(refreshTokenRepository.getRefreshToken(userId)).thenReturn(refreshToken);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            authService.tokenRefresh(req);
+            authService.refreshToken(req);
         });
 
         assertThat(exception.getMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
@@ -272,6 +273,47 @@ class AuthServiceTest {
         authService.logout(req);
 
         // Then
-        verify(redisService).deleteRefreshToken(userId);
+        verify(refreshTokenRepository).deleteRefreshToken(userId);
+    }
+
+    @Test
+    @DisplayName("사용자 정보 조회 실패 - 액세스 토큰이 null (유효하지 않은 토큰)")
+    void getCurrentUserInfoFail_invalidToken() {
+        // when & then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            authService.getCurrentUserInfo(null);
+        });
+
+        assertThat(exception.getMessage()).isEqualTo("유효하지 않은 액세스 토큰입니다.");
+    }
+
+    @Test
+    @DisplayName("사용자 정보 조회 실패 - 사용자 없음")
+    void getCurrentUserInfoFail_userNotFound() {
+        // given
+        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+
+        // when & then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            authService.getCurrentUserInfo(user);
+        });
+
+        assertThat(exception.getMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
+    }
+
+
+    @Test
+    @DisplayName("사용자 정보 조회 성공")
+    void getCurrentUserInfoSuccess() {
+        // Given
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        // when
+        UserSummaryResponse response = authService.getCurrentUserInfo(user);
+
+        // then
+        assertThat(response.getId()).isEqualTo(user.getId());
+        assertThat(response.getEmail()).isEqualTo(user.getEmail());
+        assertThat(response.getName()).isEqualTo(user.getName());
     }
 }

@@ -20,6 +20,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -129,7 +130,7 @@ class AuthControllerTest {
         );
         AuthResponse authResponse = new AuthResponse(tokenResponse, userResponse);
 
-        when(authService.tokenRefresh(any(TokenRefreshRequest.class))).thenReturn(authResponse);
+        when(authService.refreshToken(any(TokenRefreshRequest.class))).thenReturn(authResponse);
 
         // when & then
         mockMvc.perform(post("/v1/auth/refresh")
@@ -143,6 +144,30 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
                 .andExpect(jsonPath("$.data.user.name").value("테스트"));
 
-        verify(authService, times(1)).tokenRefresh(any(TokenRefreshRequest.class));
+        verify(authService, times(1)).refreshToken(any(TokenRefreshRequest.class));
     }
+
+    @Test
+    @DisplayName("사용자 정보 조회 성공 테스트")
+    void getCurrentUserInfoTest() throws Exception {
+        // given
+        UserSummaryResponse response = new UserSummaryResponse(
+                userId,
+                "test@example.com",
+                "테스트"
+        );
+
+        when(authService.getCurrentUserInfo(any())).thenReturn(response);
+
+        // when & then
+        mockMvc.perform(get("/v1/auth/me"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("사용자 정보 조회 성공"))
+                .andExpect(jsonPath("$.data.email").value("test@example.com"))
+                .andExpect(jsonPath("$.data.name").value("테스트"));
+
+        verify(authService, times(1)).getCurrentUserInfo(any());
+    }
+
 }

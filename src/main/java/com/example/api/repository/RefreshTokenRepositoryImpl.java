@@ -1,4 +1,4 @@
-package com.example.api.service;
+package com.example.api.repository;
 
 import java.util.UUID;
 import java.time.Duration;
@@ -6,16 +6,16 @@ import java.time.Duration;
 import com.example.api.config.JwtConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 
-@Service
+@Repository
 @RequiredArgsConstructor
-public class RedisServiceImpl implements RedisService {
+public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
 
     private final StringRedisTemplate redisTemplate;
     private final JwtConfig jwtConfig;
 
-    private static final String USER_REFRESH_TOKEN_KEY_FORMAT = "user:<%s>";
+    private static final String USER_REFRESH_TOKEN_KEY_FORMAT = "refresh_token:user:%s";
 
     private String buildUserRefTokenKey(UUID userId) {
         return String.format(USER_REFRESH_TOKEN_KEY_FORMAT, userId);

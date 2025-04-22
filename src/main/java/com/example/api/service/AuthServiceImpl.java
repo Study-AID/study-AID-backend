@@ -6,6 +6,7 @@ import com.example.api.dto.request.*;
 import com.example.api.dto.response.*;
 import com.example.api.entity.User;
 import com.example.api.entity.enums.AuthType;
+import com.example.api.repository.RefreshTokenRepository;
 import com.example.api.security.jwt.JwtProvider;
 import com.example.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Service;
 public class AuthServiceImpl implements AuthService {
 
     private final JwtProvider jwtProvider;
-    private final RedisService redisService;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -52,7 +53,7 @@ public class AuthServiceImpl implements AuthService {
 
         String accessToken = jwtProvider.createAccessToken(user.getId());
         String refreshToken = jwtProvider.createRefreshToken(user.getId());
-        redisService.saveRefreshToken(user.getId(), refreshToken);
+        refreshTokenRepository.saveRefreshToken(user.getId(), refreshToken);
 
         return new AuthResponse(
                 new TokenResponse(accessToken, refreshToken),
@@ -63,11 +64,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(LogoutRequest req) {
         UUID userId = jwtProvider.extractUserId(req.getRefreshToken());
-        redisService.deleteRefreshToken(userId);
+        refreshTokenRepository.deleteRefreshToken(userId);
     }
 
     @Override
-    public AuthResponse tokenRefresh(TokenRefreshRequest req) {
+    public AuthResponse refreshToken(TokenRefreshRequest req) {
         String refreshToken = req.getRefreshToken();
 
         if (!jwtProvider.isValid(refreshToken)) {
@@ -75,7 +76,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         UUID userId = jwtProvider.extractUserId(refreshToken);
-        String storedRefreshToken = redisService.getRefreshToken(userId);
+        String storedRefreshToken = refreshTokenRepository.getRefreshToken(userId);
 
         if (storedRefreshToken == null || !storedRefreshToken.equals(refreshToken)) {
             throw new RuntimeException("리프레시 토큰이 일치하지 않습니다.");
@@ -86,11 +87,23 @@ public class AuthServiceImpl implements AuthService {
 
         String newAccessToken = jwtProvider.createAccessToken(user.getId());
         String newRefreshToken = jwtProvider.createRefreshToken(user.getId());
-        redisService.saveRefreshToken(userId, newRefreshToken);
+        refreshTokenRepository.saveRefreshToken(userId, newRefreshToken);
 
         return new AuthResponse(
                 new TokenResponse(newAccessToken, newRefreshToken),
                 UserSummaryResponse.from(user)
         );
+    }
+
+    @Override
+    public UserSummaryResponse getCurrentUserInfo(User user) {
+        if (user == null) {
+            throw new RuntimeException("유효하지 않은 액세스 토큰입니다.");
+        }
+
+        User currentUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        return UserSummaryResponse.from(currentUser);
     }
 }
