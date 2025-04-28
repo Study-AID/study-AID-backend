@@ -5,11 +5,11 @@ import com.example.api.entity.User;
 import com.example.api.entity.enums.Season;
 import com.example.api.repository.SemesterRepository;
 import com.example.api.repository.UserRepository;
+import com.example.api.service.dto.semester.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,71 +26,90 @@ public class SemesterServiceImpl implements SemesterService {
         this.semesterRepo = semesterRepo;
     }
 
-    public Optional<Semester> findSemesterById(UUID semesterId) {
-        return semesterRepo.findById(semesterId);
+    @Override
+    public Optional<SemesterOutput> findSemesterById(UUID semesterId) {
+        Optional<Semester> semester = semesterRepo.findById(semesterId);
+        return semester.map(SemesterOutput::fromEntity);
     }
 
-
-    public List<Semester> findSemestersByUserId(UUID userId) {
-        return semesterRepo.findByUserId(userId);
+    @Override
+    public SemesterListOutput findSemestersByUserId(UUID userId) {
+        List<Semester> semesters = semesterRepo.findByUserId(userId);
+        return SemesterListOutput.fromEntities(semesters);
     }
 
-
-    public Optional<Semester> findSemesterByUserAndYearAndSeason(UUID userId, int year, Season season) {
-        return semesterRepo.findByUserIdAndYearAndSeason(userId, year, season);
+    @Override
+    public Optional<SemesterOutput> findSemesterByUserAndYearAndSeason(UUID userId, int year, Season season) {
+        Optional<Semester> semester = semesterRepo.findByUserIdAndYearAndSeason(userId, year, season);
+        return semester.map(SemesterOutput::fromEntity);
     }
 
+    @Override
     @Transactional
-    public Semester createSemester(UUID userId, String name, int year, Season season) {
-        User user = userRepo.getReferenceById(userId);
+    public SemesterOutput createSemester(CreateSemesterInput input) {
+        User user = userRepo.getReferenceById(input.getUserId());
 
         Semester semester = new Semester();
         semester.setUser(user);
+        String name = input.getName();
         if (Objects.equals(name, "")) {
-            name = defaultSemesterName(year, season);
+            name = defaultSemesterName(input.getYear(), input.getSeason());
         }
         semester.setName(name);
-        semester.setYear(year);
-        semester.setSeason(season);
-        return semesterRepo.createSemester(semester);
+        semester.setYear(input.getYear());
+        semester.setSeason(input.getSeason());
+
+        Semester createdSemester = semesterRepo.createSemester(semester);
+        return SemesterOutput.fromEntity(createdSemester);
     }
 
+    @Override
     @Transactional
-    public Semester updateSemester(UUID id, String name, int year, Season season) {
+    public SemesterOutput updateSemester(UpdateSemesterInput input) {
         Semester semester = new Semester();
-        semester.setId(id);
+        semester.setId(input.getId());
+        String name = input.getName();
         if (Objects.equals(name, "")) {
-            name = defaultSemesterName(year, season);
+            name = defaultSemesterName(input.getYear(), input.getSeason());
         }
         semester.setName(name);
-        semester.setYear(year);
-        semester.setSeason(season);
-        return semesterRepo.updateSemester(semester);
+        semester.setYear(input.getYear());
+        semester.setSeason(input.getSeason());
+
+        Semester updatedSemester = semesterRepo.updateSemester(semester);
+        return SemesterOutput.fromEntity(updatedSemester);
     }
 
+    @Override
     @Transactional
-    public void updateSemesterDates(UUID id, LocalDate startDate, LocalDate endDate) {
-        if (endDate.isBefore(startDate)) {
+    public SemesterOutput updateSemesterDates(UpdateSemesterDatesInput input) {
+        if (input.getEndDate().isBefore(input.getStartDate())) {
             throw new IllegalArgumentException("End date cannot be before start date");
         }
 
         Semester semester = new Semester();
-        semester.setId(id);
-        semester.setStartDate(startDate);
-        semester.setEndDate(endDate);
-        semesterRepo.updateSemester(semester);
+        semester.setId(input.getId());
+        semester.setStartDate(input.getStartDate());
+        semester.setEndDate(input.getEndDate());
+
+        Semester updatedSemester = semesterRepo.updateSemester(semester);
+        return SemesterOutput.fromEntity(updatedSemester);
     }
 
+    @Override
     @Transactional
-    public void updateSemesterGrades(UUID id, float targetGrade, float earnedGrade, int completedCredits) {
+    public SemesterOutput updateSemesterGrades(UpdateSemesterGradesInput input) {
         Semester semester = new Semester();
-        semester.setId(id);
-        semester.setTargetGrade(targetGrade);
-        semester.setEarnedGrade(earnedGrade);
-        semester.setCompletedCredits(completedCredits);
-        semesterRepo.updateSemester(semester);
+        semester.setId(input.getId());
+        semester.setTargetGrade(input.getTargetGrade());
+        semester.setEarnedGrade(input.getEarnedGrade());
+        semester.setCompletedCredits(input.getCompletedCredits());
+
+        Semester updatedSemester = semesterRepo.updateSemester(semester);
+        return SemesterOutput.fromEntity(updatedSemester);
     }
 
+    @Override
     @Transactional
     public void deleteSemester(UUID semesterId) {
         semesterRepo.deleteSemester(semesterId);

@@ -3,17 +3,19 @@ package com.example.api.controller;
 import com.example.api.controller.dto.course.CreateCourseRequest;
 import com.example.api.controller.dto.course.UpdateCourseGradesRequest;
 import com.example.api.controller.dto.course.UpdateCourseRequest;
-import com.example.api.entity.Course;
-import com.example.api.entity.Semester;
-import com.example.api.entity.User;
+import com.example.api.repository.UserRepository;
+import com.example.api.security.jwt.JwtProvider;
 import com.example.api.service.CourseService;
 import com.example.api.service.SemesterService;
 import com.example.api.service.dto.course.*;
+import com.example.api.service.dto.semester.SemesterOutput;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -34,7 +36,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(CourseController.class)
+@WebMvcTest(
+        controllers = CourseController.class,
+        excludeAutoConfiguration = {
+                SecurityAutoConfiguration.class,
+                SecurityFilterAutoConfiguration.class
+        }
+)
 @ActiveProfiles("test")
 class CourseControllerTest {
     @Autowired
@@ -42,6 +50,12 @@ class CourseControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockBean
+    private JwtProvider jwtProvider;
+
+    @MockBean
+    private UserRepository userRepository;
 
     @MockBean
     private CourseService courseService;
@@ -52,9 +66,7 @@ class CourseControllerTest {
     private UUID userId;
     private UUID semesterId;
     private UUID courseId;
-    private User testUser;
-    private Semester testSemester;
-    private Course testCourse;
+    private SemesterOutput testSemesterOutput;
     private CourseOutput testCourseOutput;
 
     @BeforeEach
@@ -64,28 +76,23 @@ class CourseControllerTest {
         semesterId = UUID.randomUUID();
         courseId = UUID.randomUUID();
 
-        testUser = new User();
-        testUser.setId(userId);
-        testUser.setName("Test User");
-        testUser.setEmail("test@example.com");
+        // 직접 SemesterOutput 생성
+        testSemesterOutput = new SemesterOutput();
+        testSemesterOutput.setId(semesterId);
+        testSemesterOutput.setUserId(userId);
+        testSemesterOutput.setName("2025 봄학기");
 
-        testSemester = new Semester();
-        testSemester.setId(semesterId);
-        testSemester.setUser(testUser);
-        testSemester.setName("2025 봄학기");
-
-        testCourse = new Course();
-        testCourse.setId(courseId);
-        testCourse.setUser(testUser);
-        testCourse.setSemester(testSemester);
-        testCourse.setName("운영체제");
-        testCourse.setTargetGrade(4.0f);
-        testCourse.setEarnedGrade(0.0f);
-        testCourse.setCompletedCredits(3);
-        testCourse.setCreatedAt(LocalDateTime.now());
-        testCourse.setUpdatedAt(LocalDateTime.now());
-
-        testCourseOutput = CourseOutput.fromEntity(testCourse);
+        // 직접 CourseOutput 생성
+        testCourseOutput = new CourseOutput();
+        testCourseOutput.setId(courseId);
+        testCourseOutput.setUserId(userId);
+        testCourseOutput.setSemesterId(semesterId);
+        testCourseOutput.setName("운영체제");
+        testCourseOutput.setTargetGrade(4.0f);
+        testCourseOutput.setEarnedGrade(0.0f);
+        testCourseOutput.setCompletedCredits(3);
+        testCourseOutput.setCreatedAt(LocalDateTime.now());
+        testCourseOutput.setUpdatedAt(LocalDateTime.now());
     }
 
     @Test
@@ -93,7 +100,7 @@ class CourseControllerTest {
     void getCoursesBySemester() throws Exception {
         // Given
         when(semesterService.findSemesterById(semesterId))
-                .thenReturn(Optional.of(testSemester));
+                .thenReturn(Optional.of(testSemesterOutput));
         when(courseService.findCoursesBySemesterId(semesterId))
                 .thenReturn(new CourseListOutput(List.of(testCourseOutput)));
 
@@ -127,15 +134,13 @@ class CourseControllerTest {
     @DisplayName("다른 사용자의 학기로 과목 조회")
     void getCoursesBySemester_Forbidden() throws Exception {
         // Given
-        User otherUser = new User();
-        otherUser.setId(UUID.randomUUID());
-
-        Semester otherSemester = new Semester();
-        otherSemester.setId(semesterId);
-        otherSemester.setUser(otherUser);
+        UUID otherUserId = UUID.randomUUID();
+        SemesterOutput otherSemesterOutput = new SemesterOutput();
+        otherSemesterOutput.setId(semesterId);
+        otherSemesterOutput.setUserId(otherUserId);
 
         when(semesterService.findSemesterById(semesterId))
-                .thenReturn(Optional.of(otherSemester));
+                .thenReturn(Optional.of(otherSemesterOutput));
 
         // When/Then
         mockMvc.perform(get("/v1/courses/semester/{semesterId}", semesterId))
@@ -181,9 +186,10 @@ class CourseControllerTest {
     @DisplayName("ID로 과목 조회 시 권한 없음")
     void getCourseById_Forbidden() throws Exception {
         // Given
+        UUID otherUserId = UUID.randomUUID();
         CourseOutput forbiddenCourseOutput = new CourseOutput();
         forbiddenCourseOutput.setId(courseId);
-        forbiddenCourseOutput.setUserId(UUID.randomUUID()); // Different user ID
+        forbiddenCourseOutput.setUserId(otherUserId); // Different user ID
         forbiddenCourseOutput.setSemesterId(semesterId);
         forbiddenCourseOutput.setName("권한없는 과목");
 
@@ -206,7 +212,7 @@ class CourseControllerTest {
         createRequest.setName("운영체제");
 
         when(semesterService.findSemesterById(semesterId))
-                .thenReturn(Optional.of(testSemester));
+                .thenReturn(Optional.of(testSemesterOutput));
         when(courseService.createCourse(any(CreateCourseInput.class)))
                 .thenReturn(testCourseOutput);
 
@@ -237,7 +243,7 @@ class CourseControllerTest {
         createRequest.setName("운영체제");
 
         when(semesterService.findSemesterById(semesterId))
-                .thenReturn(Optional.of(testSemester));
+                .thenReturn(Optional.of(testSemesterOutput));
         when(courseService.createCourse(any(CreateCourseInput.class)))
                 .thenThrow(new IllegalArgumentException("Course with the same name already exists in this semester"));
 
@@ -284,10 +290,10 @@ class CourseControllerTest {
         updatedCourseOutput.setUserId(userId);
         updatedCourseOutput.setSemesterId(semesterId);
         updatedCourseOutput.setName("고급 운영체제");
-        updatedCourseOutput.setTargetGrade(testCourse.getTargetGrade());
-        updatedCourseOutput.setEarnedGrade(testCourse.getEarnedGrade());
-        updatedCourseOutput.setCompletedCredits(testCourse.getCompletedCredits());
-        updatedCourseOutput.setCreatedAt(testCourse.getCreatedAt());
+        updatedCourseOutput.setTargetGrade(testCourseOutput.getTargetGrade());
+        updatedCourseOutput.setEarnedGrade(testCourseOutput.getEarnedGrade());
+        updatedCourseOutput.setCompletedCredits(testCourseOutput.getCompletedCredits());
+        updatedCourseOutput.setCreatedAt(testCourseOutput.getCreatedAt());
         updatedCourseOutput.setUpdatedAt(LocalDateTime.now());
 
         when(courseService.findCourseById(courseId))
@@ -337,9 +343,10 @@ class CourseControllerTest {
         UpdateCourseRequest updateRequest = new UpdateCourseRequest();
         updateRequest.setName("고급 운영체제");
 
+        UUID otherUserId = UUID.randomUUID();
         CourseOutput forbiddenCourseOutput = new CourseOutput();
         forbiddenCourseOutput.setId(courseId);
-        forbiddenCourseOutput.setUserId(UUID.randomUUID()); // Different user ID
+        forbiddenCourseOutput.setUserId(otherUserId); // Different user ID
         forbiddenCourseOutput.setSemesterId(semesterId);
         forbiddenCourseOutput.setName("운영체제");
 
@@ -369,16 +376,16 @@ class CourseControllerTest {
         updatedCourseOutput.setId(courseId);
         updatedCourseOutput.setUserId(userId);
         updatedCourseOutput.setSemesterId(semesterId);
-        updatedCourseOutput.setName("고급 운영체제");
-        updatedCourseOutput.setTargetGrade(testCourse.getTargetGrade());
-        updatedCourseOutput.setEarnedGrade(testCourse.getEarnedGrade());
-        updatedCourseOutput.setCompletedCredits(testCourse.getCompletedCredits());
-        updatedCourseOutput.setCreatedAt(testCourse.getCreatedAt());
+        updatedCourseOutput.setName(testCourseOutput.getName());
+        updatedCourseOutput.setTargetGrade(4.3f);
+        updatedCourseOutput.setEarnedGrade(3.8f);
+        updatedCourseOutput.setCompletedCredits(3);
+        updatedCourseOutput.setCreatedAt(testCourseOutput.getCreatedAt());
         updatedCourseOutput.setUpdatedAt(LocalDateTime.now());
 
         when(courseService.findCourseById(courseId))
                 .thenReturn(Optional.of(testCourseOutput));
-        when(courseService.updateCourse(any(UpdateCourseInput.class)))
+        when(courseService.updateCourseGrades(any(UpdateCourseGradesInput.class)))
                 .thenReturn(updatedCourseOutput);
 
         // When/Then
@@ -449,9 +456,10 @@ class CourseControllerTest {
     @DisplayName("다른 사용자의 과목 삭제")
     void deleteCourse_Forbidden() throws Exception {
         // Given
+        UUID otherUserId = UUID.randomUUID();
         CourseOutput forbiddenCourseOutput = new CourseOutput();
         forbiddenCourseOutput.setId(courseId);
-        forbiddenCourseOutput.setUserId(UUID.randomUUID()); // Different user ID
+        forbiddenCourseOutput.setUserId(otherUserId); // Different user ID
         forbiddenCourseOutput.setSemesterId(semesterId);
         forbiddenCourseOutput.setName("운영체제");
 

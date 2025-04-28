@@ -1,8 +1,9 @@
 package com.example.api.controller;
 
-import com.example.api.entity.Semester;
+import com.example.api.controller.dto.semester.*;
 import com.example.api.entity.enums.Season;
 import com.example.api.service.SemesterService;
+import com.example.api.service.dto.semester.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -11,20 +12,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/v1/semesters")
@@ -47,7 +40,7 @@ public class SemesterController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Successfully retrieved semesters",
-                            content = @Content(schema = @Schema(implementation = SemesterListResponseDto.class))
+                            content = @Content(schema = @Schema(implementation = SemesterListResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "500",
@@ -55,24 +48,25 @@ public class SemesterController {
                     )
             }
     )
-    public ResponseEntity<SemesterListResponseDto> getSemesters() {
+    public ResponseEntity<SemesterListResponse> getSemesters() {
         // TODO(mj): Get authenticated user ID from security context
         UUID userId = PLACEHOLDER_USER_ID;
 
-        List<Semester> semesters = semesterService.findSemestersByUserId(userId);
-        if (semesters.isEmpty()) {
-            return ResponseEntity.ok(new SemesterListResponseDto(List.of()));
+        SemesterListOutput semesterListOutput = semesterService.findSemestersByUserId(userId);
+        if (semesterListOutput.getSemesters().isEmpty()) {
+            return ResponseEntity.ok(new SemesterListResponse());
         }
-        // Ownership check.
-        if (!semesters.get(0).getUser().getId().equals(userId)) {
+
+        // Ownership check (optional if service layer enforces this)
+        if (!semesterListOutput.getSemesters().get(0).getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        List<SemesterResponseDto> semesterDtos = semesters.stream()
-                .map(SemesterResponseDto::fromEntity)
-                .collect(Collectors.toList());
-
-        SemesterListResponseDto response = new SemesterListResponseDto(semesterDtos);
+        SemesterListResponse response = new SemesterListResponse(
+                semesterListOutput.getSemesters().stream()
+                        .map(SemesterResponse::fromServiceDto)
+                        .toList()
+        );
         return ResponseEntity.ok(response);
     }
 
@@ -99,7 +93,7 @@ public class SemesterController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Successfully retrieved semester",
-                            content = @Content(schema = @Schema(implementation = SemesterResponseDto.class))
+                            content = @Content(schema = @Schema(implementation = SemesterResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "400",
@@ -119,33 +113,39 @@ public class SemesterController {
                     )
             }
     )
-    public ResponseEntity<SemesterResponseDto> getSemesterByYearAndSeason(
+    public ResponseEntity<SemesterResponse> getSemesterByYearAndSeason(
             @RequestParam int year,
-            @RequestParam Season season) {
+            @RequestParam String season) {
         // TODO(mj): Obtain authenticated user ID instead of placeholder
         UUID userId = PLACEHOLDER_USER_ID;
 
-        if (year < 0) {
-            return ResponseEntity.badRequest().build();
-        }
-        if (season == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        if (!Arrays.asList(Season.values()).contains(season)) {
-            return ResponseEntity.badRequest().build();
-        }
+        try {
+            // Validate year
+            if (year < 0) {
+                return ResponseEntity.badRequest().build();
+            }
+            // Check if the season is valid
+            if (season == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            Season seasonVal = Season.fromString(season);
 
-        // Check semester exists and user owns it.
-        Optional<Semester> semester = semesterService.findSemesterByUserAndYearAndSeason(userId, year, season);
-        if (semester.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        if (!semester.get().getUser().getId().equals(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+            // Check semester exists and user owns it.
+            Optional<SemesterOutput> semesterOutput = semesterService.findSemesterByUserAndYearAndSeason(userId, year, seasonVal);
+            if (semesterOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!semesterOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
 
-        SemesterResponseDto responseDto = SemesterResponseDto.fromEntity(semester.get());
-        return ResponseEntity.ok(responseDto);
+            SemesterResponse responseDto = SemesterResponse.fromServiceDto(semesterOutput.get());
+            return ResponseEntity.ok(responseDto);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/{id}")
@@ -163,7 +163,7 @@ public class SemesterController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Successfully retrieved semester",
-                            content = @Content(schema = @Schema(implementation = SemesterResponseDto.class))
+                            content = @Content(schema = @Schema(implementation = SemesterResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "403",
@@ -179,21 +179,21 @@ public class SemesterController {
                     )
             }
     )
-    public ResponseEntity<SemesterResponseDto> getSemesterById(@PathVariable UUID id) {
+    public ResponseEntity<SemesterResponse> getSemesterById(@PathVariable UUID id) {
         // TODO(mj): Get authenticated user ID from security context
         UUID userId = PLACEHOLDER_USER_ID;
 
         try {
             // Check semester exists and user owns it.
-            Optional<Semester> semester = semesterService.findSemesterById(id);
-            if (semester.isEmpty()) {
+            Optional<SemesterOutput> semesterOutput = semesterService.findSemesterById(id);
+            if (semesterOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!semester.get().getUser().getId().equals(userId)) {
+            if (!semesterOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            SemesterResponseDto responseDto = SemesterResponseDto.fromEntity(semester.get());
+            SemesterResponse responseDto = SemesterResponse.fromServiceDto(semesterOutput.get());
             return ResponseEntity.ok(responseDto);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
@@ -207,13 +207,13 @@ public class SemesterController {
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Semester details (name, year, season)",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = SemesterCreateDto.class))
+                    content = @Content(schema = @Schema(implementation = CreateSemesterRequest.class))
             ),
             responses = {
                     @ApiResponse(
                             responseCode = "201",
                             description = "Semester created successfully",
-                            content = @Content(schema = @Schema(implementation = SemesterResponseDto.class))
+                            content = @Content(schema = @Schema(implementation = SemesterResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "400",
@@ -225,32 +225,30 @@ public class SemesterController {
                     )
             }
     )
-    public ResponseEntity<SemesterResponseDto> createSemester(
-            @RequestBody SemesterCreateDto semesterDto) {
+    public ResponseEntity<SemesterResponse> createSemester(
+            @RequestBody CreateSemesterRequest request) {
         // TODO(mj): Obtain authenticated user ID instead of placeholder
         UUID userId = PLACEHOLDER_USER_ID;
 
         try {
             // Validate year
-            if (semesterDto.getYear() < 0) {
+            if (request.getYear() < 0) {
                 return ResponseEntity.badRequest().build();
             }
             // Check if the season is valid
-            if (semesterDto.getSeason() == null) {
+            if (request.getSeason() == null) {
                 return ResponseEntity.badRequest().build();
             }
-            if (!Arrays.asList(Season.values()).contains(semesterDto.getSeason())) {
-                return ResponseEntity.badRequest().build();
-            }
+            Season season = Season.fromString(request.getSeason());
 
-            Semester createdSemester = semesterService.createSemester(
-                    userId,
-                    semesterDto.getName(),
-                    semesterDto.getYear(),
-                    semesterDto.getSeason()
-            );
+            CreateSemesterInput input = new CreateSemesterInput();
+            input.setUserId(userId);
+            input.setName(request.getName());
+            input.setYear(request.getYear());
+            input.setSeason(season);
 
-            SemesterResponseDto responseDto = SemesterResponseDto.fromEntity(createdSemester);
+            SemesterOutput createdSemesterOutput = semesterService.createSemester(input);
+            SemesterResponse responseDto = SemesterResponse.fromServiceDto(createdSemesterOutput);
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -273,13 +271,13 @@ public class SemesterController {
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Updated semester details",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = SemesterUpdateDto.class))
+                    content = @Content(schema = @Schema(implementation = UpdateSemesterRequest.class))
             ),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Semester updated successfully",
-                            content = @Content(schema = @Schema(implementation = SemesterResponseDto.class))
+                            content = @Content(schema = @Schema(implementation = SemesterResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "400",
@@ -299,42 +297,40 @@ public class SemesterController {
                     )
             }
     )
-    public ResponseEntity<SemesterResponseDto> updateSemester(
+    public ResponseEntity<SemesterResponse> updateSemester(
             @PathVariable UUID id,
-            @RequestBody SemesterUpdateDto semesterDto) {
+            @RequestBody UpdateSemesterRequest request) {
         // TODO(mj): Get authenticated user ID from security context
         UUID userId = PLACEHOLDER_USER_ID;
 
         try {
             // Validate year
-            if (semesterDto.getYear() < 0) {
+            if (request.getYear() < 0) {
                 return ResponseEntity.badRequest().build();
             }
             // Check if the season is valid
-            if (semesterDto.getSeason() == null) {
+            if (request.getSeason() == null) {
                 return ResponseEntity.badRequest().build();
             }
-            if (!Arrays.asList(Season.values()).contains(semesterDto.getSeason())) {
-                return ResponseEntity.badRequest().build();
-            }
+            Season season = Season.fromString(request.getSeason());
 
             // Check semester exists and user owns it.
-            Optional<Semester> existingSemester = semesterService.findSemesterById(id);
-            if (existingSemester.isEmpty()) {
+            Optional<SemesterOutput> existingSemesterOutput = semesterService.findSemesterById(id);
+            if (existingSemesterOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!existingSemester.get().getUser().getId().equals(userId)) {
+            if (!existingSemesterOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            Semester updatedSemester = semesterService.updateSemester(
-                    id,
-                    semesterDto.getName(),
-                    semesterDto.getYear(),
-                    semesterDto.getSeason()
-            );
+            UpdateSemesterInput input = new UpdateSemesterInput();
+            input.setId(id);
+            input.setName(request.getName());
+            input.setYear(request.getYear());
+            input.setSeason(season);
 
-            SemesterResponseDto responseDto = SemesterResponseDto.fromEntity(updatedSemester);
+            SemesterOutput updatedSemesterOutput = semesterService.updateSemester(input);
+            SemesterResponse responseDto = SemesterResponse.fromServiceDto(updatedSemesterOutput);
             return ResponseEntity.ok(responseDto);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -359,12 +355,13 @@ public class SemesterController {
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Updated start and end dates",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = SemesterUpdateDatesDto.class))
+                    content = @Content(schema = @Schema(implementation = UpdateSemesterDatesRequest.class))
             ),
             responses = {
                     @ApiResponse(
-                            responseCode = "204",
-                            description = "Semester dates updated successfully"
+                            responseCode = "200",
+                            description = "Semester dates updated successfully",
+                            content = @Content(schema = @Schema(implementation = SemesterResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "400",
@@ -384,33 +381,39 @@ public class SemesterController {
                     )
             }
     )
-    public ResponseEntity<Void> updateSemesterDates(
+    public ResponseEntity<SemesterResponse> updateSemesterDates(
             @PathVariable UUID id,
-            @RequestBody SemesterUpdateDatesDto datesDto) {
+            @RequestBody UpdateSemesterDatesRequest request) {
         // TODO(mj): Get authenticated user ID from security context
         UUID userId = PLACEHOLDER_USER_ID;
 
         try {
             // Check if start and end dates are provided
-            if (datesDto.getStartDate() == null || datesDto.getEndDate() == null) {
+            if (request.getStartDate() == null || request.getEndDate() == null) {
                 return ResponseEntity.badRequest().build();
             }
             // Check if start date is before end date
-            if (datesDto.getEndDate().isBefore(datesDto.getStartDate())) {
+            if (request.getEndDate().isBefore(request.getStartDate())) {
                 return ResponseEntity.badRequest().build();
             }
 
             // Check semester exists and user owns it.
-            Optional<Semester> existingSemester = semesterService.findSemesterById(id);
-            if (existingSemester.isEmpty()) {
+            Optional<SemesterOutput> existingSemesterOutput = semesterService.findSemesterById(id);
+            if (existingSemesterOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!existingSemester.get().getUser().getId().equals(userId)) {
+            if (!existingSemesterOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            semesterService.updateSemesterDates(id, datesDto.getStartDate(), datesDto.getEndDate());
-            return ResponseEntity.noContent().build();
+            UpdateSemesterDatesInput input = new UpdateSemesterDatesInput();
+            input.setId(id);
+            input.setStartDate(request.getStartDate());
+            input.setEndDate(request.getEndDate());
+
+            SemesterOutput updatedSemesterOutput = semesterService.updateSemesterDates(input);
+            SemesterResponse responseDto = SemesterResponse.fromServiceDto(updatedSemesterOutput);
+            return ResponseEntity.ok(responseDto);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
@@ -434,12 +437,13 @@ public class SemesterController {
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Updated grade information",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = SemesterUpdateGradesDto.class))
+                    content = @Content(schema = @Schema(implementation = UpdateSemesterGradesRequest.class))
             ),
             responses = {
                     @ApiResponse(
-                            responseCode = "204",
-                            description = "Semester grades updated successfully"
+                            responseCode = "200",
+                            description = "Semester grades updated successfully",
+                            content = @Content(schema = @Schema(implementation = SemesterResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "400",
@@ -459,39 +463,41 @@ public class SemesterController {
                     )
             }
     )
-    public ResponseEntity<Void> updateSemesterGrades(
+    public ResponseEntity<SemesterResponse> updateSemesterGrades(
             @PathVariable UUID id,
-            @RequestBody SemesterUpdateGradesDto gradesDto) {
+            @RequestBody UpdateSemesterGradesRequest request) {
         // TODO(mj): Get authenticated user ID from security context
         UUID userId = PLACEHOLDER_USER_ID;
 
         try {
             // Validate grade values
-            if (gradesDto.getTargetGrade() < 0 || gradesDto.getTargetGrade() > 4.5 ||
-                    gradesDto.getEarnedGrade() < 0 || gradesDto.getEarnedGrade() > 4.5) {
+            if (request.getTargetGrade() < 0 || request.getTargetGrade() > 4.5 ||
+                    request.getEarnedGrade() < 0 || request.getEarnedGrade() > 4.5) {
                 return ResponseEntity.badRequest().build();
             }
             // Validate credits
-            if (gradesDto.getCompletedCredits() < 0) {
+            if (request.getCompletedCredits() < 0) {
                 return ResponseEntity.badRequest().build();
             }
 
             // Check semester exists and user owns it.
-            Optional<Semester> existingSemester = semesterService.findSemesterById(id);
-            if (existingSemester.isEmpty()) {
+            Optional<SemesterOutput> existingSemesterOutput = semesterService.findSemesterById(id);
+            if (existingSemesterOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!existingSemester.get().getUser().getId().equals(userId)) {
+            if (!existingSemesterOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            semesterService.updateSemesterGrades(
-                    id,
-                    gradesDto.getTargetGrade(),
-                    gradesDto.getEarnedGrade(),
-                    gradesDto.getCompletedCredits()
-            );
-            return ResponseEntity.noContent().build();
+            UpdateSemesterGradesInput input = new UpdateSemesterGradesInput();
+            input.setId(id);
+            input.setTargetGrade(request.getTargetGrade());
+            input.setEarnedGrade(request.getEarnedGrade());
+            input.setCompletedCredits(request.getCompletedCredits());
+
+            SemesterOutput updatedSemesterOutput = semesterService.updateSemesterGrades(input);
+            SemesterResponse responseDto = SemesterResponse.fromServiceDto(updatedSemesterOutput);
+            return ResponseEntity.ok(responseDto);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
@@ -537,11 +543,11 @@ public class SemesterController {
 
         try {
             // Check semester exists and user owns it.
-            Optional<Semester> existingSemester = semesterService.findSemesterById(id);
-            if (existingSemester.isEmpty()) {
+            Optional<SemesterOutput> existingSemesterOutput = semesterService.findSemesterById(id);
+            if (existingSemesterOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!existingSemester.get().getUser().getId().equals(userId)) {
+            if (!existingSemesterOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
@@ -552,81 +558,5 @@ public class SemesterController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "Semester response Dto")
-    static class SemesterResponseDto {
-        private UUID id;
-        private UUID userId;
-        private String name;
-        private int year;
-        private Season season;
-        private LocalDate startDate;
-        private LocalDate endDate;
-        private Float targetGrade;
-        private Float earnedGrade;
-        private Integer completedCredits;
-        private LocalDateTime createdAt;
-        private LocalDateTime updatedAt;
-
-        // Convert from entity to DTO
-        public static SemesterResponseDto fromEntity(Semester semester) {
-            SemesterResponseDto dto = new SemesterResponseDto();
-            dto.setId(semester.getId());
-            dto.setUserId(semester.getUser() != null ? semester.getUser().getId() : null);
-            dto.setName(semester.getName());
-            dto.setYear(semester.getYear());
-            dto.setSeason(semester.getSeason());
-            dto.setStartDate(semester.getStartDate());
-            dto.setEndDate(semester.getEndDate());
-            dto.setTargetGrade(semester.getTargetGrade());
-            dto.setEarnedGrade(semester.getEarnedGrade());
-            dto.setCompletedCredits(semester.getCompletedCredits());
-            dto.setCreatedAt(semester.getCreatedAt() != null ? semester.getCreatedAt() : null);
-            dto.setUpdatedAt(semester.getUpdatedAt() != null ? semester.getUpdatedAt() : null);
-            return dto;
-        }
-    }
-
-    @Data
-    @NoArgsConstructor
-    static class SemesterCreateDto {
-        private String name;
-        private int year;
-        private Season season;
-    }
-
-    @Data
-    @NoArgsConstructor
-    static class SemesterUpdateDto {
-        private String name;
-        private int year;
-        private Season season;
-    }
-
-    @Data
-    @NoArgsConstructor
-    static class SemesterUpdateDatesDto {
-        private LocalDate startDate;
-        private LocalDate endDate;
-    }
-
-    @Data
-    @NoArgsConstructor
-    public static class SemesterUpdateGradesDto {
-        private float targetGrade;
-        private float earnedGrade;
-        private int completedCredits;
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Schema(description = "List of semesters response")
-    static class SemesterListResponseDto {
-        private List<SemesterResponseDto> semesters;
     }
 }
