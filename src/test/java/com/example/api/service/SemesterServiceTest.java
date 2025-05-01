@@ -5,6 +5,7 @@ import com.example.api.entity.User;
 import com.example.api.entity.enums.Season;
 import com.example.api.repository.SemesterRepository;
 import com.example.api.repository.UserRepository;
+import com.example.api.service.dto.semester.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -66,11 +66,15 @@ class SemesterServiceTest {
         when(semesterRepository.findById(semesterId)).thenReturn(Optional.of(testSemester));
 
         // When
-        Optional<Semester> semester = semesterService.findSemesterById(semesterId);
+        Optional<SemesterOutput> semesterOutput = semesterService.findSemesterById(semesterId);
 
         // Then
-        assertTrue(semester.isPresent());
-        assertEquals(testSemester, semester.get());
+        assertTrue(semesterOutput.isPresent());
+        assertEquals(semesterId, semesterOutput.get().getId());
+        assertEquals(userId, semesterOutput.get().getUserId());
+        assertEquals("2025 spring 학기", semesterOutput.get().getName());
+        assertEquals(2025, semesterOutput.get().getYear());
+        assertEquals(Season.spring, semesterOutput.get().getSeason());
         verify(semesterRepository).findById(semesterId);
     }
 
@@ -82,10 +86,13 @@ class SemesterServiceTest {
         when(semesterRepository.findByUserId(userId)).thenReturn(expectedSemesters);
 
         // When
-        List<Semester> actualSemesters = semesterService.findSemestersByUserId(userId);
+        SemesterListOutput semesterListOutput = semesterService.findSemestersByUserId(userId);
 
         // Then
-        assertThat(actualSemesters).isEqualTo(expectedSemesters);
+        assertNotNull(semesterListOutput);
+        assertEquals(1, semesterListOutput.getSemesters().size());
+        assertEquals(semesterId, semesterListOutput.getSemesters().get(0).getId());
+        assertEquals(userId, semesterListOutput.getSemesters().get(0).getUserId());
         verify(semesterRepository).findByUserId(userId);
     }
 
@@ -97,27 +104,35 @@ class SemesterServiceTest {
                 .thenReturn(Optional.of(testSemester));
 
         // When
-        Optional<Semester> semester = semesterService.findSemesterByUserAndYearAndSeason(userId, 2025, Season.spring);
+        Optional<SemesterOutput> semesterOutput = semesterService.findSemesterByUserAndYearAndSeason(userId, 2025, Season.spring);
 
         // Then
-        assertTrue(semester.isPresent());
-        assertEquals(testSemester, semester.get());
+        assertTrue(semesterOutput.isPresent());
+        assertEquals(semesterId, semesterOutput.get().getId());
+        assertEquals(userId, semesterOutput.get().getUserId());
         verify(semesterRepository).findByUserIdAndYearAndSeason(userId, 2025, Season.spring);
     }
 
     @Test
     @DisplayName("학기 생성")
     void createSemester() {
-        // Givengst
+        // Given
         when(userRepository.getReferenceById(userId)).thenReturn(testUser);
         when(semesterRepository.createSemester(any(Semester.class))).thenReturn(testSemester);
 
+        CreateSemesterInput input = new CreateSemesterInput();
+        input.setUserId(userId);
+        input.setName("2025-1학기");
+        input.setYear(2025);
+        input.setSeason(Season.spring);
+
         // When
-        Semester createdSemester = semesterService.createSemester(userId, "2025-1학기", 2025, Season.spring);
+        SemesterOutput createdSemester = semesterService.createSemester(input);
 
         // Then
         assertNotNull(createdSemester);
-        assertEquals(testSemester, createdSemester);
+        assertEquals(semesterId, createdSemester.getId());
+        assertEquals(userId, createdSemester.getUserId());
         verify(userRepository).getReferenceById(userId);
         verify(semesterRepository).createSemester(any(Semester.class));
     }
@@ -130,9 +145,15 @@ class SemesterServiceTest {
         when(semesterRepository.createSemester(any(Semester.class)))
                 .thenThrow(new InvalidDataAccessApiUsageException("Semester with the same year and season already exists"));
 
+        CreateSemesterInput input = new CreateSemesterInput();
+        input.setUserId(userId);
+        input.setName("2025-1학기");
+        input.setYear(2025);
+        input.setSeason(Season.spring);
+
         // When/Then
         Exception exception = assertThrows(InvalidDataAccessApiUsageException.class, () -> {
-            semesterService.createSemester(userId, "2025-1학기", 2025, Season.spring);
+            semesterService.createSemester(input);
         });
         assertTrue(exception.getMessage().contains("already exists"));
         verify(userRepository).getReferenceById(userId);
@@ -148,13 +169,18 @@ class SemesterServiceTest {
         when(semesterRepository.updateSemester(any(Semester.class))).
                 thenReturn(expectedSemester);
 
+        UpdateSemesterInput input = new UpdateSemesterInput();
+        input.setId(semesterId);
+        input.setName("");
+        input.setYear(2025);
+        input.setSeason(Season.spring);
+
         // When
-        Semester updatedSemester = semesterService.updateSemester(
-                expectedSemester.getId(), "", 2025, Season.spring
-        );
+        SemesterOutput updatedSemester = semesterService.updateSemester(input);
 
         // Then
-        assertEquals(expectedSemester, updatedSemester);
+        assertEquals(semesterId, updatedSemester.getId());
+        assertEquals("2025-spring", updatedSemester.getName());
         verify(semesterRepository).updateSemester(argThat(semester ->
                 semester.getId().equals(semesterId) &&
                         semester.getName().equals(expectedSemester.getName()) &&
@@ -176,10 +202,16 @@ class SemesterServiceTest {
         when(semesterRepository.updateSemester(any(Semester.class))).
                 thenReturn(testSemester);
 
+        UpdateSemesterDatesInput input = new UpdateSemesterDatesInput();
+        input.setId(semesterId);
+        input.setStartDate(startDate);
+        input.setEndDate(endDate);
+
         // When
-        semesterService.updateSemesterDates(semesterId, startDate, endDate);
+        SemesterOutput updatedSemester = semesterService.updateSemesterDates(input);
 
         // Then
+        assertNotNull(updatedSemester);
         verify(semesterRepository).updateSemester(argThat(semester ->
                 semester.getId().equals(semesterId) &&
                         semester.getStartDate().equals(startDate) &&
@@ -194,13 +226,14 @@ class SemesterServiceTest {
         LocalDate startDate = LocalDate.of(2025, 3, 1);
         LocalDate endDate = LocalDate.of(2025, 2, 1);
 
-        Semester expectedSemester = testSemester;
-        expectedSemester.setStartDate(startDate);
-        expectedSemester.setEndDate(endDate);
+        UpdateSemesterDatesInput input = new UpdateSemesterDatesInput();
+        input.setId(semesterId);
+        input.setStartDate(startDate);
+        input.setEndDate(endDate);
 
         // When/Then
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            semesterService.updateSemesterDates(semesterId, startDate, endDate);
+            semesterService.updateSemesterDates(input);
         });
         assertTrue(exception.getMessage().contains("End date cannot be before start date"));
     }
@@ -220,10 +253,20 @@ class SemesterServiceTest {
         when(semesterRepository.updateSemester(any(Semester.class))).
                 thenReturn(expectedSemester);
 
+        UpdateSemesterGradesInput input = new UpdateSemesterGradesInput();
+        input.setId(semesterId);
+        input.setTargetGrade(targetGrade);
+        input.setEarnedGrade(earnedGrade);
+        input.setCompletedCredits(completedCredits);
+
         // When
-        semesterService.updateSemesterGrades(semesterId, targetGrade, earnedGrade, completedCredits);
+        SemesterOutput updatedSemester = semesterService.updateSemesterGrades(input);
 
         // Then
+        assertNotNull(updatedSemester);
+        assertEquals(targetGrade, updatedSemester.getTargetGrade());
+        assertEquals(earnedGrade, updatedSemester.getEarnedGrade());
+        assertEquals(completedCredits, updatedSemester.getCompletedCredits());
         verify(semesterRepository).updateSemester(argThat(semester ->
                 semester.getId().equals(semesterId) &&
                         semester.getTargetGrade() == targetGrade &&

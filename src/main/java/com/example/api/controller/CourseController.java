@@ -70,11 +70,11 @@ public class CourseController {
         UUID userId = PLACEHOLDER_USER_ID;
 
         // Check if semester exists and user owns it.
-        var semesterOpt = semesterService.findSemesterById(semesterId);
-        if (semesterOpt.isEmpty()) {
+        var semesterOutput = semesterService.findSemesterById(semesterId);
+        if (semesterOutput.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        if (!semesterOpt.get().getUser().getId().equals(userId)) {
+        if (!semesterOutput.get().getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -170,11 +170,11 @@ public class CourseController {
 
         try {
             // Validate semester exists and user has access to it
-            var semesterOpt = semesterService.findSemesterById(request.getSemesterId());
-            if (semesterOpt.isEmpty()) {
+            var semesterOutput = semesterService.findSemesterById(request.getSemesterId());
+            if (semesterOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!semesterOpt.get().getUser().getId().equals(userId)) {
+            if (!semesterOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
@@ -251,11 +251,11 @@ public class CourseController {
             }
 
             // Check course exists and user owns it.
-            Optional<CourseOutput> existingCourse = courseService.findCourseById(id);
-            if (existingCourse.isEmpty()) {
+            Optional<CourseOutput> existingCourseOutput = courseService.findCourseById(id);
+            if (existingCourseOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!existingCourse.get().getUserId().equals(userId)) {
+            if (!existingCourseOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
@@ -332,11 +332,11 @@ public class CourseController {
             }
 
             // Check course exists and user owns it.
-            Optional<CourseOutput> existingCourse = courseService.findCourseById(id);
-            if (existingCourse.isEmpty()) {
+            Optional<CourseOutput> existingCourseOutput = courseService.findCourseById(id);
+            if (existingCourseOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!existingCourse.get().getUserId().equals(userId)) {
+            if (!existingCourseOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
@@ -393,11 +393,11 @@ public class CourseController {
 
         try {
             // Check course exists and user owns it.
-            Optional<CourseOutput> existingCourse = courseService.findCourseById(id);
-            if (existingCourse.isEmpty()) {
+            Optional<CourseOutput> existingCourseOutput = courseService.findCourseById(id);
+            if (existingCourseOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            if (!existingCourse.get().getUserId().equals(userId)) {
+            if (!existingCourseOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
