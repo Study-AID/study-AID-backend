@@ -6,7 +6,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 
 @Getter
 @Setter
@@ -31,8 +36,10 @@ public class SchoolCalendar {
     @Column(nullable = false)
     private Integer year;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
-    private String schedules;
+    private Map<String, Object> schedules;
+    // private String schedules;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
