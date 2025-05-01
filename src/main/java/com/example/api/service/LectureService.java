@@ -22,9 +22,6 @@ public interface LectureService {
     LectureOutput updateLecture(UpdateLectureInput input);
 
     @Transactional
-    LectureOutput updateLectureSummaryStatus(UpdateLectureSummaryStatusInput input);
-
-    @Transactional
     LectureOutput updateLectureDisplayOrderLex(UpdateLectureDisplayOrderLexInput input);
 
     @Transactional

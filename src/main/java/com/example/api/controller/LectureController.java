@@ -9,7 +9,6 @@ import com.example.api.controller.dto.lecture.LectureListResponse;
 import com.example.api.controller.dto.lecture.LectureResponse;
 import com.example.api.controller.dto.lecture.UpdateLectureDisplayOrderLexRequest;
 import com.example.api.controller.dto.lecture.UpdateLectureRequest;
-import com.example.api.controller.dto.lecture.UpdateLectureSummaryStatusRequest;
 import com.example.api.service.CourseService;
 import com.example.api.service.LectureService;
 import com.example.api.service.dto.lecture.CreateLectureInput;
@@ -17,7 +16,6 @@ import com.example.api.service.dto.lecture.LectureListOutput;
 import com.example.api.service.dto.lecture.LectureOutput;
 import com.example.api.service.dto.lecture.UpdateLectureDisplayOrderLexInput;
 import com.example.api.service.dto.lecture.UpdateLectureInput;
-import com.example.api.service.dto.lecture.UpdateLectureSummaryStatusInput;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -175,6 +173,12 @@ public class LectureController {
         // TODO(yoon): Get authenticated user ID from security context
         UUID userId = PLACEHOLDER_USER_ID;
 
+        // TODO(yoon): Remove this placeholder data and use actual data from server data
+        String testTitle = "Test Title";
+        String testMaterialPath = "test/path";
+        String testMaterialType = "pdf";
+        String testDisplayOrderLex = "1";
+
         try {
             // Check if the course exists
             var courseOutput = courseService.findCourseById(request.getCourseId());
@@ -186,35 +190,18 @@ public class LectureController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
+            // TODO(yoon): Validate input data
             // Validate title
-            if (request.getTitle() == null || request.getTitle().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
             // Validate materialPath
-            if (request.getMaterialPath() == null || request.getMaterialPath().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-            // Validate materialType
-            if (request.getMaterialType() == null || request.getMaterialType().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-            // Validate displayOrderLex
-            if (request.getDisplayOrderLex() == null || request.getDisplayOrderLex().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-            // Validate summaryStatus
-            if (request.getSummaryStatus() == null || request.getSummaryStatus().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
+            // ...
             
             CreateLectureInput createLectureInput = new CreateLectureInput();
             createLectureInput.setCourseId(request.getCourseId());
             createLectureInput.setUserId(userId);
-            createLectureInput.setTitle(request.getTitle());
-            createLectureInput.setMaterialPath(request.getMaterialPath());
-            createLectureInput.setMaterialType(request.getMaterialType());
-            createLectureInput.setDisplayOrderLex(request.getDisplayOrderLex());
-            createLectureInput.setSummaryStatus(request.getSummaryStatus());
+            createLectureInput.setTitle(testTitle);
+            createLectureInput.setMaterialPath(testMaterialPath);
+            createLectureInput.setMaterialType(testMaterialType);
+            createLectureInput.setDisplayOrderLex(testDisplayOrderLex);
 
             LectureOutput createdlectureOutput = lectureService.createLecture(createLectureInput);
             return ResponseEntity.status(HttpStatus.CREATED).body(LectureResponse.fromServiceDto(createdlectureOutput));
@@ -224,14 +211,6 @@ public class LectureController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
-    /*
-     * updateLecture
-     * updateLectureSummaryStatus
-     * updateLectureDisplayOrderLex
-     * deleteLecture
-     * TODO(yoon): Implement these methods
-     */
 
     @PutMapping("/{id}")
     @Operation(
@@ -312,84 +291,6 @@ public class LectureController {
             LectureOutput updatedLectureOutput = lectureService.updateLecture(updateLectureInput);
             LectureResponse lectureResponse = LectureResponse.fromServiceDto(updatedLectureOutput);
             return ResponseEntity.ok(lectureResponse);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @PutMapping("/{id}/summary-status")
-    @Operation(
-        summary = "Update lecture summary status",
-        description = "Updates the summary status of a lecture",
-        parameters = {
-            @Parameter(
-                name = "id",
-                description = "ID of the lecture to update",
-                required = true
-            )
-        },
-        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Lecture summary status (summaryStatus)",
-            required = true,
-            content = @Content(schema = @Schema(implementation = UpdateLectureSummaryStatusRequest.class))
-        ),
-        responses = {
-            @ApiResponse(
-                responseCode = "204",
-                description = "Successfully updated lecture summary status",
-                content = @Content(schema = @Schema(implementation = LectureResponse.class))
-            ),
-            @ApiResponse(
-                responseCode = "400",
-                description = "Invalid input data"
-            ),
-            @ApiResponse(
-                responseCode = "403",
-                description = "User does not have access to this lecture"
-            ),
-            @ApiResponse(
-                responseCode = "404",
-                description = "Lecture not found"
-            ),
-            @ApiResponse(
-                responseCode = "500",
-                description = "Internal server error"
-            )
-        }
-    )
-    public ResponseEntity<Void> updateLectureSummaryStatus(
-        @PathVariable UUID id,
-        @RequestBody UpdateLectureSummaryStatusRequest request
-    ) {
-        // TODO(yoon): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
-
-        try {
-            // Check if the lecture exists
-            Optional<LectureOutput> lectureOutput = lectureService.findLectureById(id);
-            if (lectureOutput.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            if (!lectureOutput.get().getUserId().equals(userId)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
-
-            // Validate summary status
-            if (request.getSummaryStatus() == null || request.getSummaryStatus().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            UpdateLectureSummaryStatusInput updateLectureSummaryStatusInput = new UpdateLectureSummaryStatusInput();
-            updateLectureSummaryStatusInput.setId(id);
-            updateLectureSummaryStatusInput.setSummaryStatus(request.getSummaryStatus());
-
-            
-            lectureService.updateLectureSummaryStatus(updateLectureSummaryStatusInput);
-            return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {

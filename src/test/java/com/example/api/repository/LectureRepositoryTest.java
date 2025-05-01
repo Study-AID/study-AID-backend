@@ -28,10 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-public class LectureRepositoryTest {
-    @Autowired
-    private CourseRepository courseRepository;
-    
+public class LectureRepositoryTest {    
     @Autowired
     private LectureRepository lectureRepository;
 

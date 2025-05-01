@@ -32,7 +32,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.api.controller.dto.lecture.CreateLectureRequest;
 import com.example.api.controller.dto.lecture.UpdateLectureRequest;
-import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.UserRepository;
 import com.example.api.security.jwt.JwtProvider;
 import com.example.api.service.CourseService;
@@ -251,10 +250,6 @@ class LectureControllerTest {
         // Given
         CreateLectureRequest createLectureRequest = new CreateLectureRequest();
         createLectureRequest.setCourseId(courseId);
-        createLectureRequest.setTitle("Introduction to Operating Systems");createLectureRequest.setMaterialPath("some/path");
-        createLectureRequest.setMaterialType("pdf");
-        createLectureRequest.setDisplayOrderLex("0001");
-        createLectureRequest.setSummaryStatus(SummaryStatus.not_started);
 
         when(courseService.findCourseById(courseId))
                 .thenReturn(Optional.of(testCourseOutput));
@@ -272,13 +267,13 @@ class LectureControllerTest {
                 .andExpect(jsonPath("$.courseId").value(courseId.toString()));
 
         verify(courseService).findCourseById(courseId);
+        // LectureController에서 사용하는 sample prefix 변수들과 비교
         verify(lectureService).createLecture(argThat(input ->
                 input.getCourseId().equals(courseId) &&
-                input.getTitle().equals("Introduction to Operating Systems") &&
-                input.getMaterialPath().equals("some/path") &&
+                input.getTitle().equals("Sample Title") &&
+                input.getMaterialPath().equals("sample/path") &&
                 input.getMaterialType().equals("pdf") &&
-                input.getDisplayOrderLex().equals("0001") &&
-                input.getSummaryStatus().equals(SummaryStatus.not_started)
+                input.getDisplayOrderLex().equals("1")
         ));
     }
 

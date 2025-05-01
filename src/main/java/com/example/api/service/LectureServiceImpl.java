@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.api.entity.Course;
 import com.example.api.entity.Lecture;
 import com.example.api.entity.User;
+import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.CourseRepository;
 import com.example.api.repository.LectureRepository;
 import com.example.api.repository.UserRepository;
@@ -19,7 +20,6 @@ import com.example.api.service.dto.lecture.LectureListOutput;
 import com.example.api.service.dto.lecture.LectureOutput;
 import com.example.api.service.dto.lecture.UpdateLectureDisplayOrderLexInput;
 import com.example.api.service.dto.lecture.UpdateLectureInput;
-import com.example.api.service.dto.lecture.UpdateLectureSummaryStatusInput;
 
 
 @Service
@@ -73,7 +73,7 @@ public class LectureServiceImpl implements LectureService {
         lecture.setMaterialPath(input.getMaterialPath());
         lecture.setMaterialType(input.getMaterialType());
         lecture.setDisplayOrderLex(input.getDisplayOrderLex());
-        lecture.setSummaryStatus(input.getSummaryStatus());
+        lecture.setSummaryStatus(SummaryStatus.not_started);
 
         Lecture createdLecture = lectureRepo.createLecture(lecture);
         return LectureOutput.fromEntity(createdLecture);
@@ -87,17 +87,6 @@ public class LectureServiceImpl implements LectureService {
         lecture.setTitle(input.getTitle());
         lecture.setMaterialPath(input.getMaterialPath());
         lecture.setMaterialType(input.getMaterialType());
-
-        Lecture updatedLecture = lectureRepo.updateLecture(lecture);
-        return LectureOutput.fromEntity(updatedLecture);
-    }
-
-    @Override
-    @Transactional
-    public LectureOutput updateLectureSummaryStatus(UpdateLectureSummaryStatusInput input) {
-        Lecture lecture = new Lecture();
-        lecture.setId(input.getId());
-        lecture.setSummaryStatus(input.getSummaryStatus());
 
         Lecture updatedLecture = lectureRepo.updateLecture(lecture);
         return LectureOutput.fromEntity(updatedLecture);
