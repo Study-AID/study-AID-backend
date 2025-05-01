@@ -75,7 +75,7 @@ public class CourseActivityLogRepositoryTest {
         courseActivityLog.setActivityType("activity");
         courseActivityLog.setContentsType("contents");
         JSONObject jsonObject = new JSONObject();
-        courseActivityLog.setActivityDetails(jsonObject.toJSONString());
+        courseActivityLog.setActivityDetails(jsonObject);
 
         courseActivityLogRepository.save(courseActivityLog);
         Optional<CourseActivityLog> found = courseActivityLogRepository.findById(courseActivityLogUuid);
