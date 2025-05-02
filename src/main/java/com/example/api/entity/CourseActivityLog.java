@@ -6,7 +6,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 
 
 @Getter
@@ -39,8 +44,10 @@ public class CourseActivityLog {
     @Column(name = "contents_type", nullable = false)
     private String contentsType;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "activity_details", columnDefinition = "jsonb", nullable = false)
-    private String activityDetails;
+    private Map<String, Object> activityDetails;
+    // private String activityDetails;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

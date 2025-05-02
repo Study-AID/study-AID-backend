@@ -1,13 +1,17 @@
 package com.example.api.entity;
 
 import com.example.api.entity.enums.SummaryStatus;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Check;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -49,11 +53,13 @@ public class Lecture {
     @Column(name = "display_order_lex", nullable = false, length = 255)
     private String displayOrderLex;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private String note;
+    private Map<String, Object> note;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private String summary;
+    private Map<String, Object> summary;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "summary_status", nullable = false, length = 20)
