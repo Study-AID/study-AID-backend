@@ -8,7 +8,12 @@
 
 ### 사전 요구 사항
 
+<<<<<<< Updated upstream
 - 테스트시 실제 OpenAI API를 호출하기 때문에 API Key가 필요합니다. 
+=======
+- Docker와 Docker Compose가 시스템에 설치되어 있어야 합니다.
+- OpenAI API key가 필요합니다. (테스트시 실제 OpenAI API를 호출합니다.)
+>>>>>>> Stashed changes
 
 ### 테스트 명령어
 
@@ -19,6 +24,19 @@
 make test-job-summarize
 ```
 
+<<<<<<< Updated upstream
+=======
+2. **퀴즈 생성 기능 테스트** (generate_quiz):
+```bash
+make test-job-quiz
+```
+
+3. **시험 생성 기능 테스트** (generate_exam):
+```bash
+make test-job-exam
+```
+
+>>>>>>> Stashed changes
 ### OpenAI API 키 설정
 
 테스트에 실제 OpenAI API 키를 사용하려면:
@@ -79,3 +97,23 @@ make test-env-stop
 make test-env-start
 make test-env-setup
 ```
+<<<<<<< Updated upstream
+=======
+
+### S3 연결 오류
+
+S3 연결 오류가 발생하는 경우:
+```bash
+make test-env-stop
+make test-env-start
+```
+
+### 테스트 로그 확인
+
+```bash
+cd jobs/test_env
+docker-compose -f docker-compose.test.yml logs postgres
+docker-compose -f docker-compose.test.yml logs localstack
+docker-compose -f docker-compose.test.yml logs file-uploader
+```
+>>>>>>> Stashed changes
