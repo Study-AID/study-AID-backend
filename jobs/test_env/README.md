@@ -19,16 +19,6 @@
 make test-job-summarize
 ```
 
-2. **퀴즈 생성 기능 테스트** (generate_quiz):
-```bash
-make test-job-quiz
-```
-
-3. **시험 생성 기능 테스트** (generate_exam):
-```bash
-make test-job-exam
-```
-
 ### OpenAI API 키 설정
 
 테스트에 실제 OpenAI API 키를 사용하려면:
