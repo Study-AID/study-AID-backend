@@ -1,3 +1,3 @@
-ALTER TABLE users
+ALTER TABLE app.users
     ADD COLUMN school_id UUID,
     ADD FOREIGN KEY (school_id) REFERENCES app.schools(id);

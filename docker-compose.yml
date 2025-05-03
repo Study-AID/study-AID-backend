@@ -13,6 +13,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - rag-server
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -23,12 +24,27 @@ services:
       REDIS_PORT: 6379
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      RAG_SERVER_URL: http://rag-server:5000
     networks:
       - app-network
     restart: unless-stopped
     volumes:
       - ./:/app
       - gradle-cache:/root/.gradle
+
+  rag:
+    build:
+      context: ./rag
+      dockerfile: Dockerfile
+    container_name: rag-server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./rag:/app
+      - rag-data:/app/chroma_db
+    networks:
+      - app-network
+    restart: unless-stopped
 
   postgres:
     image: postgres:15-alpine
@@ -75,3 +91,4 @@ volumes:
   postgres-data:
   redis-data:
   gradle-cache:
+  rag-data:

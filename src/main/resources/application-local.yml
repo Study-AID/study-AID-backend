@@ -45,3 +45,8 @@ logging:
 # JWT Configuration
 jwt:
   secret_key: ${JWT_SECRET_KEY}
+
+# LangChain RAG Server
+rag:
+  server:
+    url: http://rag-server:5000

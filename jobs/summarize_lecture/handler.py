@@ -117,8 +117,10 @@ def extract_text_from_pdf(file_path):
 
         text = ""
         with fitz.open(file_path) as doc:
-            for page in doc:
+            for page_num, page in enumerate(doc, start=1):
+                page_text = page.get_text()
                 text += page.get_text()
+                text += f"\n[p.{page_num}]\n{page_text}"
 
         return text
     except Exception as e:
@@ -208,6 +210,29 @@ def update_lecture_summary(lecture_id, summary):
         if conn:
             conn.close()
 
+def update_lecture_parsed_text(lecture_id, parsed_text):
+    """Update the lecture's parsed text in the database"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Update the lecture record
+            query = """
+            UPDATE app.lectures 
+            SET parsed_text = %s, 
+                updated_at = NOW() 
+            WHERE id = %s
+            """
+            cursor.execute(query, (parsed_text, lecture_id))
+
+        conn.commit()
+        logger.info(f"Parsed text updated for lecture_id: {lecture_id}")
+    except Exception as e:
+        logger.error(f"Error updating lecture parsed text: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
 
 def log_activity(course_id, user_id, activity_type, contents_type, details):
     """Log activity for the course"""
@@ -272,6 +297,7 @@ def lambda_handler(event, context):
 
             # Extract text from PDF
             lecture_content = extract_text_from_pdf(local_file_path)
+            update_lecture_parsed_text(lecture_id, lecture_content)
 
             # Generate summary using OpenAI
             openai_client = OpenAIClient()
