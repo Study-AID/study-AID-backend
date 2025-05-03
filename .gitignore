@@ -48,6 +48,7 @@ replay_pid*
 
 ### Docker ###
 .env
+.envrc
 docker-compose.override.yml
 
 ### OS ###
@@ -80,3 +81,6 @@ tmp/
 *.bak
 *.swp
 *~.nib
+
+.venv/
+*.pyc

@@ -1,4 +1,4 @@
-.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win clean-test clean-test-coverage open-test-report open-coverage-report migrate migration-info
+.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win open-test-report open-coverage-report migrate migration-info test-env-start test-env-setup test-job-summarize test-job-quiz test-job-exam test-job-shell test-env-stop test-env-clean
 
 # Default target
 help:
@@ -20,6 +20,14 @@ help:
 	@echo "  make open-coverage-report - Open coverage report in browser"
 	@echo "  make migrate              - Run Flyway migration"
 	@echo "  make migration-info       - Check migrated schema versions and status"
+	@echo ""
+	@echo "Lambda Job Test Commands:"
+	@echo "  make test-env-start       - Start test environment (PostgreSQL, LocalStack)"
+	@echo "  make test-env-setup       - Setup test database with sample data"
+	@echo "  make test-job-summarize   - Test summarize_lecture job"
+	@echo "  make test-job-shell       - Start a shell in test container for debugging"
+	@echo "  make test-env-stop        - Stop test environment containers"
+	@echo "  make test-env-clean       - Remove test environment including volumes"
 
 
 # Build Docker images
@@ -92,3 +100,43 @@ migrate:
 # Check migrated schema versions and status
 migration-info:
 	docker compose --profile migration run --rm flyway -configFiles=/flyway/conf/flyway.conf info
+
+# -------------------------
+# Lambda 테스트 관련 명령어
+# -------------------------
+
+# 테스트 환경 시작 (PostgreSQL, LocalStack)
+test-env-start:
+	@echo "Starting test environment (PostgreSQL, LocalStack)..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml up -d postgres-test localstack-test setup-s3
+	@echo "Test environment started successfully!"
+	@echo "Database: PostgreSQL on localhost:5433"
+	@echo "S3: LocalStack on localhost:4566"
+
+# 테스트 환경 초기화 및 데이터 세팅
+test-env-setup:
+	@echo "Setting up test environment..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml up setup-db
+	@echo "Test environment setup completed!"
+
+# 요약 기능 테스트 (summarize_lecture)
+test-job-summarize:
+	@echo "Testing summarize_lecture job..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile summarize up --build
+
+# 테스트용 셸 실행 (디버깅용)
+test-job-shell:
+	@echo "Starting a shell in test container..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile shell run --rm shell
+
+# 테스트 환경 중지
+test-env-stop:
+	@echo "Stopping test environment..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml down
+	@echo "Test environment stopped successfully!"
+
+# 테스트 환경 정리 (볼륨 포함)
+test-env-clean:
+	@echo "Cleaning test environment (including volumes)..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml down -v
+	@echo "Test environment cleaned successfully!"
