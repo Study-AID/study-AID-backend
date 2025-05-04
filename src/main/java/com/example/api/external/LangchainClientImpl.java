@@ -1,6 +1,7 @@
 package com.example.api.external;
 
 import com.example.api.adapters.llm.ChatMessage;
+import com.example.api.exception.BadRequestException;
 import com.example.api.external.dto.langchain.MessageHistoryRequest;
 import com.example.api.external.dto.langchain.MessageHistoryResponse;
 import com.example.api.external.dto.langchain.ReferenceRequest;
@@ -11,7 +12,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +25,7 @@ public class LangchainClientImpl implements LangchainClient {
     private String langchainServerUrl;
 
     @Override
-    public List<String> findReferences(UUID lectureId, String question, int topK) {
+    public ReferenceResponse findReferences(UUID lectureId, String question, int topK) {
         ReferenceRequest requestDto = new ReferenceRequest(question, topK);
 
         HttpHeaders headers = new HttpHeaders();
@@ -41,12 +41,10 @@ public class LangchainClientImpl implements LangchainClient {
         );
 
         if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null || response.getBody().getReferences() == null) {
-            throw new RuntimeException("Langchain 서버에서 출처를 가져오지 못했습니다.");
+            throw new BadRequestException("Langchain 서버에서 출처를 가져오지 못했습니다.");
         }
 
-        List<String> chunks = new ArrayList<>();
-        response.getBody().getReferences().forEach(c -> chunks.add(c.getText()));
-        return chunks;
+        return response.getBody();
     }
 
     @Override
@@ -66,7 +64,7 @@ public class LangchainClientImpl implements LangchainClient {
         );
 
         if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null || response.getBody().getMessageHistory() == null) {
-            throw new RuntimeException("Langchain 서버에서 채팅 메세지 history를 가져오지 못했습니다.");
+            throw new BadRequestException("Langchain 서버에서 채팅 메세지 history를 가져오지 못했습니다.");
         }
 
         return response.getBody().getMessageHistory();
