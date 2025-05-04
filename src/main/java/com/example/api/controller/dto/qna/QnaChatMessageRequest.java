@@ -5,6 +5,6 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class QnaChatRequest {
+public class QnaChatMessageRequest {
     private String question;
 }

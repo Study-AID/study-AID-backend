@@ -13,7 +13,7 @@ services:
     depends_on:
       - postgres
       - redis
-      - rag-server
+      - langchain
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -24,7 +24,7 @@ services:
       REDIS_PORT: 6379
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      RAG_SERVER_URL: http://rag-server:5000
+      LANGCHAIN_SERVER_URL: http://langchain-server:5000
     networks:
       - app-network
     restart: unless-stopped
@@ -32,16 +32,16 @@ services:
       - ./:/app
       - gradle-cache:/root/.gradle
 
-  rag:
+  langchain:
     build:
-      context: ./rag
+      context: ./langchain
       dockerfile: Dockerfile
-    container_name: rag-server
+    container_name: langchain-server
     ports:
       - "5000:5000"
     volumes:
-      - ./rag:/app
-      - rag-data:/app/chroma_db
+      - ./langchain:/app
+      - langchain-data:/app/chroma_db
     networks:
       - app-network
     restart: unless-stopped
@@ -91,4 +91,4 @@ volumes:
   postgres-data:
   redis-data:
   gradle-cache:
-  rag-data:
+  langchain-data:

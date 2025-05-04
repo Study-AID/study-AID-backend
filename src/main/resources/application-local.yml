@@ -46,7 +46,7 @@ logging:
 jwt:
   secret_key: ${JWT_SECRET_KEY}
 
-# LangChain RAG Server
-rag:
+# LangChain Server
+langchain:
   server:
-    url: http://rag-server:5000
+    url: http://langchain-server:5000

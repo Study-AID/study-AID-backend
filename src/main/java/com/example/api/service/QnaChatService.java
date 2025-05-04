@@ -1,8 +1,9 @@
 package com.example.api.service;
 
-import com.example.api.service.dto.qna.QnaChatInput;
-import com.example.api.service.dto.qna.QnaChatOutput;
+import com.example.api.service.dto.qna.*;
 
 public interface QnaChatService {
-    QnaChatOutput ask(QnaChatInput input);
+    QnaChatMessageOutput ask(QnaChatMessageInput input);
+    CreateQnaChatOutput createQnaChat(CreateQnaChatInput input);
+    ReadQnaChatOutput readQnaChat(ReadQnaChatInput input);
 }

@@ -33,7 +33,10 @@ public class QnaChatMessage {
     private User user;
 
     @Column(nullable = false)
-    private String message;
+    private String question;
+
+    @Column(nullable = false)
+    private String answer;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -50,4 +53,5 @@ public class QnaChatMessage {
             createdAt = LocalDateTime.now();
         }
     }
+
 }

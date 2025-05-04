@@ -7,9 +7,9 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class QnaChatOutput {
+public class QnaChatMessageOutput {
     private String question;
     private String answer;
-    private String source;
+    private List<String> messageHistory;
     private List<String> recommendedQuestions;
 }

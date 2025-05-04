@@ -1,5 +1,8 @@
 package com.example.api.adapters.llm;
 
+import com.example.api.promptsupport.PromptLoader;
+import com.example.api.promptsupport.PromptTemplate;
+import com.example.api.promptsupport.PromptPaths;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -74,5 +77,21 @@ public class OpenAIAdapter implements LLMAdapter {
             }
         }
         return springMessages;
+    }
+
+    @Override
+    public String ask(String question, List<String> referenceChunks, List<ChatMessage> messageHistory) {
+        PromptTemplate promptTemplate = PromptLoader.load(PromptPaths.QNA_ANSWER_V1);
+
+        String chunkBlock = String.join("\n\n", referenceChunks);
+        String systemContent = promptTemplate.getSystem().replace("{{chunks}}", chunkBlock);
+        String userContent = promptTemplate.getUser().replace("{{question}}", question);
+
+        List<ChatMessage> allMessages = new ArrayList<>();
+        allMessages.add(new ChatMessage("system", systemContent));
+        allMessages.add(new ChatMessage("user", userContent));
+        allMessages.addAll(messageHistory);
+
+        return chat(allMessages.toArray(new ChatMessage[0]));
     }
 }

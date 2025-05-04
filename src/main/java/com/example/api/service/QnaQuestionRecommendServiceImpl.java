@@ -1,10 +1,15 @@
 package com.example.api.service;
 
 import com.example.api.adapters.llm.LLMAdapter;
+import com.example.api.promptsupport.PromptLoader;
+import com.example.api.promptsupport.PromptPaths;
+import com.example.api.promptsupport.PromptTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -15,18 +20,17 @@ public class QnaQuestionRecommendServiceImpl implements QnaQuestionRecommendServ
 
     @Override
     public List<String> recommendQuestions(String userQuestion) {
-        String prompt = String.format(
-            """
-            '%s'라는 질문을 한 사용자에게, 연관된 추가 질문 3가지를 추천해줘. 
-            각 질문은 한 줄씩, 리스트 형식으로 작성해줘.
-            """, userQuestion);
+        PromptTemplate template = PromptLoader.load(PromptPaths.QNA_RECOMMEND_QUESTIONS_V1);
+        String prompt = template.getUser().replace("{{question}}", userQuestion);
 
         String response = llmAdapter.complete(prompt);
 
-        return Arrays.stream(response.split("\n"))
-                .map(line -> line.replaceAll("^[\\-\\d\\.\\s]+", "").trim())
-                .filter(s -> !s.isEmpty())
-                .toList();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(response, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return Collections.singletonList("추천 질문을 생성하지 못했습니다.");
+        }
     }
 }
 
