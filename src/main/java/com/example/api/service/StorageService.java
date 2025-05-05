@@ -13,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
-import io.minio.Xml;
 import io.minio.errors.MinioException;
 import io.minio.errors.XmlParserException;
 import lombok.RequiredArgsConstructor;
