@@ -43,6 +43,7 @@ replay_pid*
 
 ### Spring Boot ###
 **/application-*.yml
+!**/application-test.yml
 !**/application-local.yml
 !**/application-prod.yml
 
