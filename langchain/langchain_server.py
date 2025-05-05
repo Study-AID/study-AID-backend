@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.memory import ConversationBufferWindowMemory
-from langchain.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 from langchain.schema import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.memory import ConversationBufferWindowMemory
+
 import os
 import re
 
@@ -11,14 +12,15 @@ app = Flask(__name__)
 
 in_memory_chat_message_history = {}
 in_memory_vector_reference_context = {}
-VECTOR_DIR = "/app/chroma_db"
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-'''
-(영어로 한 슬라이드에 텍스트 꽉 차는 "확률과통계" 강의자료 1300자, 반 이상 차는 "시스템프로그래밍" 강의자료 500~750자)
-(한국어로 텍스트 1/3 차는 "발달심리학" 강의자료 160자) 
-'''
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=100) # 하이퍼 파라미터 chunk_size, chunk_overlap. 단위는 공백 포함 글자 수.
+VECTOR_DIR = "/app/chroma_db"
+
+embeddings = HuggingFaceEmbeddings(
+    model_name="intfloat/e5-small-v2",
+    encode_kwargs={"normalize_embeddings": True}
+)
+
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=100)
 
 def parse_pages(parsed_text):
     page_blocks = re.split(r"\[p\.(\d+)]", parsed_text)
@@ -30,6 +32,13 @@ def parse_pages(parsed_text):
         for chunk in chunks:
             documents.append(Document(page_content=chunk, metadata={"page": page_num}))
     return documents
+
+def format_buffer_window_messages_list(memory):
+    msgs = memory.load_memory_variables({})["history"]  
+    return [  
+        {"role": "user" if m.type == "human" else "assistant", "message": m.content}
+        for m in msgs
+    ]  
 
 @app.route("/vectors", methods=["POST"])
 def vectorize_lectures():
@@ -50,8 +59,17 @@ def vectorize_lectures():
     )
     in_memory_vector_reference_context[lecture_id] = vectors
 
-    return jsonify({"message": "Lecture vectorized successfully", "lecture_id": lecture_id}), 200
+    sample_vectors = []
+    if documents:
+        raw_vector = embeddings.embed_documents([documents[0].page_content])[0]  #변경
+        sample_vectors = raw_vector[:3]
 
+    return jsonify({
+        "message": "Lecture vectorized successfully",
+        "lecture_id": lecture_id,
+        "total_chunks": len(documents),
+        "sample_vectors": sample_vectors
+    }), 200
 
 @app.route("/references", methods=["POST"])
 def find_references():
@@ -59,7 +77,8 @@ def find_references():
     lecture_id = data.get("lectureId")
     question = data.get("question")
 
-    top_k = int(data.get("k", 3)) # 하이퍼 파라미터 k. gpt에 넘겨줄 chunk 수. chunk 수 많을 수록 gpt 비용 증가. 3은 기본값이며 k는 서비스에서 넘겨줌.
+    # 하이퍼 파라미터 k. gpt에 넘겨줄 chunk 수. chunk 수 많을 수록 gpt 비용 증가. 3은 기본값이며 k는 서비스에서 넘겨줍니다.
+    top_k = int(data.get("k", 3))
 
     if not lecture_id or not question:
         return jsonify({"error": "lectureId and question are required"}), 400
@@ -74,55 +93,65 @@ def find_references():
         )
 
     vectorstore = in_memory_vector_reference_context[lecture_id]
-    docs = vectorstore.similarity_search(question, k=top_k)
+    # 중복 출처는 없애기 위해 k*5개를 가져와서 중복 제거 후 k개만 리턴합니다.
+    docs_and_scores = vectorstore.similarity_search_with_score(question, k=top_k*5)
+    docs_and_scores.sort(key=lambda x: x[1], reverse=True)
 
-    results = [
-        {
-            "text": doc.page_content,
-            "page": doc.metadata.get("page", -1)
-        }
-        for doc in docs
-    ]
+    seen = set()
+    results = []
+    for doc, score in docs_and_scores:
+        text = doc.page_content.strip()
+        page = doc.metadata.get("page", -1)
+        key = (text, page)
+        if key not in seen:
+            seen.add(key)
+            results.append({"text": text, "page": page})
+        if len(results) >= top_k:
+            break
 
-    return jsonify({"references": results}), 200
+    return jsonify({
+        "message": "References found successfully",
+        "references": results
+    }), 200
 
-@app.route("/history", methods=["POST"])
-def generate_message_history():
+@app.route("/messages", methods=["POST"])
+def append_message():
     data = request.json
-    lecture_id = data.get("lecture_id")
     chat_id = data.get("chat_id")
     question = data.get("question")
-    history = data.get("chat_history", [])
+    answer = data.get("answer")
 
-    if not all([lecture_id, chat_id, question]):
-        return jsonify({"error": "lecture_id, chat_id, and question are required"}), 400
+    if not chat_id or question is None or answer is None:
+        return jsonify({"error": "chat_id, question, and answer are required"}), 400
 
-    if chat_id not in in_memory_chat_message_history:
-        in_memory_chat_message_history[chat_id] = ConversationBufferWindowMemory(
-            memory_key="chat_history",
-            return_messages=True,
-            k=3 # 하이퍼 파라미터 k. 대화 맥락 유지 위해 저장할 qna item 수. 이외 여러 전략(토큰 수로 끊기, 누적 대화 summary 등) 변경 가능
-        )
-    memory = in_memory_chat_message_history[chat_id]
-
-    for h in history:
-        q, a = h.get("question"), h.get("answer")
-        if q and a:
-            memory.chat_memory.add_user_message(q)
-            memory.chat_memory.add_ai_message(a)
+    memory = in_memory_chat_message_history.get(chat_id)
+    if memory is None:
+        # 하이퍼 파라미터 k. 대화 맥락 유지 위해 저장할 최근 qna item (질문-답변 쌍) 수. 이외 여러 전략(토큰 수로 끊기, 누적 대화 summary 등) 변경 가능합니다.
+        memory = ConversationBufferWindowMemory(k=3, return_messages=True)
+        in_memory_chat_message_history[chat_id] = memory  
 
     memory.chat_memory.add_user_message(question)
+    memory.chat_memory.add_ai_message(answer)
 
-    context_messages = memory.chat_memory.messages
-    messages_list = [
-        {"role": "user" if m.type == "human" else "ai", "content": m.content}
-        for m in context_messages
-    ]
+    history = format_buffer_window_messages_list(memory)
+    return jsonify({"chat_id": chat_id, "buffer_window_history": history}), 200
 
-    return jsonify({"message_history": messages_list}), 200
+@app.route("/messages-history", methods=["GET"])
+def get_message_history():
+    chat_id = request.args.get("chat_id")
+
+    if not chat_id:
+        return jsonify({"error": "chat_id is required"}), 400
+
+    memory = in_memory_chat_message_history.get(chat_id)
+    if memory is None:
+        return jsonify({"error": "Chat not found"}), 404
+
+    history = format_buffer_window_messages_list(memory)
+    return jsonify({"chat_id": chat_id, "buffer_window_history": history}), 200
 
 @app.route("/health", methods=["GET"])
-def health():
+def health_check():
     return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":

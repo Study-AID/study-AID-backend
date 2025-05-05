@@ -13,7 +13,6 @@ services:
     depends_on:
       - postgres
       - redis
-      - langchain
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -42,9 +41,11 @@ services:
     volumes:
       - ./langchain:/app
       - langchain-data:/app/chroma_db
+      - ./hf_cache:/tmp/huggingface
     networks:
       - app-network
     restart: unless-stopped
+    profiles: ["langchain"]
 
   postgres:
     image: postgres:15-alpine

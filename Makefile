@@ -28,7 +28,16 @@ help:
 	@echo "  make test-job-shell       - Start a shell in test container for debugging"
 	@echo "  make test-env-stop        - Stop test environment containers"
 	@echo "  make test-env-clean       - Remove test environment including volumes"
-
+	@echo ""
+	@echo "QnA Chat Langchain Commands:"
+	@echo "  make langchain-build      - Build LangChain Docker image"
+	@echo "  make langchain-up         - Run LangChain QnA Chat Context Generating Server"
+	@echo "  make langchain-rebuild    - Rebuild LangChain Docker image"
+	@echo "  make langchain-restart    - Restart LangChain server to apply code changes"
+	@echo "  make langchain-stop       - Stop LangChain QnA Chat Context Generating Server"
+	@echo "  make langchain-remove     - Remove LangChain container"
+	@echo "  make langchain-clean      - Remove LangChain container and volumes"
+	@echo "  make langchain-test       - Test LangChain QnA Chat context generating process"
 
 # Build Docker images
 build:
@@ -140,3 +149,53 @@ test-env-clean:
 	@echo "Cleaning test environment (including volumes)..."
 	cd jobs/test_env && docker-compose -f docker-compose.test.yml down -v
 	@echo "Test environment cleaned successfully!"
+
+# -------------------------
+# QnA Chat Langchain server 연결 (문맥 관리) 관련 명령어
+# -------------------------
+
+# 이미지 빌드
+langchain-build:
+	docker compose --profile langchain build langchain
+
+# 실행
+langchain-up:
+	@echo "Running LangChain QnA Chat Context Generating Server..."
+	docker compose --profile langchain up -d langchain
+	@echo "Langchain Server is running at http://localhost:5000"
+
+# 코드 변경 후 재시작
+langchain-restart:
+	@echo "Restarting LangChain server to apply code changes..."
+	docker compose --profile langchain restart langchain
+	@echo "LangChain server restarted with updated code!"
+
+# 새로운 이미지로 빌드 및 재실행
+langchain-rebuild:
+	@echo "Rebuild LangChain server image and run that server..."
+	docker compose --profile langchain build --no-cache langchain
+	docker compose --profile langchain up -d langchain
+	@echo "LangChain server rebuilt and running at http://localhost:5000"
+
+# 실행 중지 (리소스 사용량 절약)
+langchain-stop:
+	@echo "Stopping LangChain QnA Chat Context Generating Server to reduce resource usage..."
+	docker compose --profile langchain stop langchain
+	@echo "LangChain server stopped successfully!"
+
+# 컨테이너 삭제
+langchain-remove:
+	@echo "Removing LangChain container..."
+	docker compose --profile langchain rm -f langchain
+	@echo "LangChain container removed successfully!"
+
+# 컨테이너와 볼륨을 모두 삭제
+langchain-clean:
+	@echo "Removing LangChain container and volumes..."
+	docker compose --profile langchain down
+	docker volume rm -f langchain-data || true
+	@echo "LangChain environment clean successfully!"
+
+langchain-test:
+	@echo "Testing LangChain QnA Chat context generating process..."
+	docker exec -it langchain-server python test_langchain_server.py
