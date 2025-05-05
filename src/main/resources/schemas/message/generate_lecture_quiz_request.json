@@ -4,71 +4,66 @@
     "title": "GenerateLectureQuizRequest",
     "type": "object",
     "required": [
-      "schema_version",
-      "request_id",
-      "occurred_at",
-      "lecture_id",
-      "title",
-      "s3_bucket",
-      "s3_key"
+        "schema_version",
+        "request_id",
+        "occurred_at",
+        "lecture_id",
+        "title",
+        "parsed_text"
     ],
     "properties": {
-      "schema_version": {
-        "type": "string",
-        "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
-      },
-      "request_id": {
-        "type": "string",
-        "format": "uuid"
-      },
-      "occurred_at": {
-        "type": "string",
-        "format": "date-time"
-      },
-      "lecture_id": {
-        "type": "string",
-        "format": "uuid"
-      },
-      "title": {
-        "type": "string",
-        "maxLength": 255
-      },
-      "s3_bucket": {
-        "type": "string",
-        "minLength": 3
-      },
-      "s3_key": {
-        "type": "string",
-        "minLength": 1
-      },
-      "material_type": {
-        "type": "string",
-        "maxLength": 20
-      },
-      "course_id": {
-        "type": "string",
-        "format": "uuid"
-      },
-      "user_id": {
-        "type": "string",
-        "format": "uuid"
-      },
-      "true_or_false_count": {
-        "type": "integer",
-        "minimum": 0
-      },
-      "multiple_choice_count": {
-        "type": "integer",
-        "minimum": 0
-      },
-      "short_answer_count": {
-        "type": "integer",
-        "minimum": 0
-      },
-      "essay_count": {
-        "type": "integer",
-        "minimum": 0
-      }
+        "schema_version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "request_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "lecture_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "title": {
+            "type": "string",
+            "maxLength": 255
+        },
+        "parsed_text": {
+            "type": "string",
+            "minLength": 1
+        },
+        "material_type": {
+            "type": "string",
+            "maxLength": 20
+        },
+        "course_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "user_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "true_or_false_count": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "multiple_choice_count": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "short_answer_count": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "essay_count": {
+            "type": "integer",
+            "minimum": 0
+        }
     },
     "additionalProperties": false
-  }
+}
