@@ -8,7 +8,7 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 public class ReadQnaChatOutput {
-    private List<MessageItem> messageItems;
+    private List<MessageItem> messages;
 
     @Getter
     @AllArgsConstructor

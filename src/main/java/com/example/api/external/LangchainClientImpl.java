@@ -48,8 +48,8 @@ public class LangchainClientImpl implements LangchainClient {
     }
 
     @Override
-    public List<ChatMessage> generateMessageHistory(UUID chatId, UUID lectureId, String question, List<MessageHistoryRequest.MessageHistoryItem> history) {
-        MessageHistoryRequest requestDto = new MessageHistoryRequest(chatId, lectureId, question, history);
+    public MessageHistoryResponse appendMessage(UUID chatId, String question, String answer) {
+        MessageHistoryRequest requestDto = new MessageHistoryRequest(chatId, question, answer);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -57,16 +57,26 @@ public class LangchainClientImpl implements LangchainClient {
         HttpEntity<MessageHistoryRequest> request = new HttpEntity<>(requestDto, headers);
 
         ResponseEntity<MessageHistoryResponse> response = restTemplate.exchange(
-                langchainServerUrl + "/history",
+                langchainServerUrl + "/messages",
                 HttpMethod.POST,
                 request,
                 MessageHistoryResponse.class
         );
+        return response.getBody();
+    }
 
-        if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null || response.getBody().getMessageHistory() == null) {
-            throw new BadRequestException("Langchain 서버에서 채팅 메세지 history를 가져오지 못했습니다.");
-        }
+    @Override
+    public MessageHistoryResponse getMessageHistory(UUID chatId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-        return response.getBody().getMessageHistory();
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        ResponseEntity<MessageHistoryResponse> response = restTemplate.exchange(
+                langchainServerUrl + "/messages-history?chat_id=" + chatId,
+                HttpMethod.GET,
+                request,
+                MessageHistoryResponse.class
+        );
+        return response.getBody();
     }
 }

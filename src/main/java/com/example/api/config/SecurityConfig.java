@@ -26,11 +26,13 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        //JWT 인증 필요 없이 접속 가능한 공개 API
                         .requestMatchers("/v1/auth/**",
                                         "/swagger-ui.html",
                                         "/swagger-ui/**",
                                         "/api-docs/**"
                         ).permitAll()
+                        //나머지 API들은 JWT 인증 필요 (추후 명시하거나 @PreAuthorize로 별도 설정도 가능)
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

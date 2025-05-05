@@ -12,7 +12,7 @@ import java.util.List;
 public class QnaChatMessageResponse {
     private String question;
     private String answer;
-    private List<ChatMessage> messageHistory;
     private List<ReferenceResponse.ReferenceChunkResponse> references;
+    private List<ChatMessage> messageHistory;
     private List<String> recommendedQuestions;
 }
