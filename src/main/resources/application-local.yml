@@ -20,6 +20,10 @@ spring:
       chat:
         options:
           model: gpt-4o
+  
+  config:
+    activate:
+      on-profile: local
 
 # Server Configuration
 server:
@@ -45,3 +49,11 @@ logging:
 # JWT Configuration
 jwt:
   secret_key: ${JWT_SECRET_KEY}
+
+minio:
+  endpoint: http://minio:9000
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+
+aws:  
+  region: ap-northeast-2
