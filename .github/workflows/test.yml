@@ -4,9 +4,15 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - '.envrc'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - '.envrc'
 
 jobs:
   test:
