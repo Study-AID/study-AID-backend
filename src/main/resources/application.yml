@@ -6,9 +6,9 @@ spring:
   
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:studyaid}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:studyaid:}
+    username: ${DB_USER:postgres:}
+    password: ${DB_PASSWORD:postgres:}
     driver-class-name: org.postgresql.Driver
   
   # JPA Configuration
@@ -29,8 +29,14 @@ spring:
   # Redis Configuration
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      host: ${REDIS_HOST:localhost:}
+      port: ${REDIS_PORT:6379:}
+
+  # servlet
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 # Server Configuration
 server:
@@ -51,3 +57,6 @@ jwt:
   issuer: studyaid
   access-token-ttl-ms: 900000  # 15분
   refresh-token-ttl-ms: 1209600000  # 2주
+
+file:
+  bucket: ${BUCKET_NAME:study-aid-lecture-materials}

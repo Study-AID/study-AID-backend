@@ -1,3 +1,2 @@
 ALTER TABLE lectures
-    ADD COLUMN parsed_text TEXT,
-    DEFAULT NULL;
+    ADD COLUMN parsed_text TEXT DEFAULT NULL;
