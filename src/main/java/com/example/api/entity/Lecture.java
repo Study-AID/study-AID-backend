@@ -53,6 +53,9 @@ public class Lecture {
     @Column(name = "display_order_lex", nullable = false, length = 255)
     private String displayOrderLex;
 
+    @Column(name = "parsed_text", columnDefinition = "text")
+    private String parsedText;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> note;
