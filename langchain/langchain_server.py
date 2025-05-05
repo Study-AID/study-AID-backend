@@ -20,6 +20,7 @@ embeddings = HuggingFaceEmbeddings(
     encode_kwargs={"normalize_embeddings": True}
 )
 
+# 하이퍼 파라미터 chunk_size, chunk_overlap. 단위는 공백 포함 글자 수.
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=100)
 
 def parse_pages(parsed_text):
