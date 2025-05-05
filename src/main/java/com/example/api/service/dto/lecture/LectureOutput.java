@@ -23,6 +23,7 @@ public class LectureOutput {
     private String materialPath;
     private String materialType;
     private String displayOrderLex;
+    private String parsedText;
     private Map<String, Object> note;
     private Map<String, Object> summary;
     private SummaryStatus summaryStatus;
@@ -38,6 +39,7 @@ public class LectureOutput {
                 lecture.getMaterialPath(),
                 lecture.getMaterialType(),
                 lecture.getDisplayOrderLex(),
+                lecture.getParsedText(),
                 lecture.getNote(),
                 lecture.getSummary(),
                 lecture.getSummaryStatus(),

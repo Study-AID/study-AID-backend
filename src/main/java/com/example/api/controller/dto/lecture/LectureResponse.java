@@ -37,6 +37,9 @@ public class LectureResponse {
     @Schema(description = "Display order lexicographically")
     private String displayOrderLex;
 
+    @Schema(description = "Parsed text of the lecture")
+    private String parsedText;
+
     @Schema(description = "Notes associated with the lecture")
     private Map<String, Object> note;
 
@@ -61,6 +64,7 @@ public class LectureResponse {
                 lecture.getMaterialPath(),
                 lecture.getMaterialType(),
                 lecture.getDisplayOrderLex(),
+                lecture.getParsedText(),
                 lecture.getNote(),
                 lecture.getSummary(),
                 lecture.getSummaryStatus(),
