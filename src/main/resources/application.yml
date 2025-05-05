@@ -59,4 +59,4 @@ jwt:
   refresh-token-ttl-ms: 1209600000  # 2주
 
 file:
-  bucket: ${BUCKET_NAME:study-aid-lecture-materials}
+  bucket: ${MINIO_BUCKET:study-aid-lecture-materials}

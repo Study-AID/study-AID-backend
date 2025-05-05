@@ -36,7 +36,7 @@ aws:
   region: ap-northeast-2
 
 file:
-  bucket: ${BUCKET_NAME:study-aid-lecture-materials}
+  bucket: ${MINIO_BUCKET:study-aid-lecture-materials}
 
 # Swagger UI Configuration
 springdoc:
