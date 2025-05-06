@@ -185,14 +185,7 @@ def update_lecture_summary(lecture_id, summary):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Convert Summary object to JSON
-            if isinstance(summary, Summary):
-                summary_json = json.dumps(summary.model_dump())
-            else:
-                # If it's already a string, make sure it's JSON format
-                summary_json = json.dumps({
-                    "content": summary,
-                    "generated_at": datetime.now().isoformat()
-                })
+            summary_json = json.dumps(summary.model_dump())
 
             # Update the lecture record
             query = """
