@@ -12,6 +12,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from openai_client import OpenAIClient
+from summary_models import Summary
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -183,11 +184,15 @@ def update_lecture_summary(lecture_id, summary):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # Create a JSON object with the summary content
-            summary_json = json.dumps({
-                "content": summary,
-                "generated_at": datetime.now().isoformat()
-            })
+            # Convert Summary object to JSON
+            if isinstance(summary, Summary):
+                summary_json = json.dumps(summary.model_dump())
+            else:
+                # If it's already a string, make sure it's JSON format
+                summary_json = json.dumps({
+                    "content": summary,
+                    "generated_at": datetime.now().isoformat()
+                })
 
             # Update the lecture record
             query = """
@@ -303,12 +308,12 @@ def lambda_handler(event, context):
         logger.error(f"Error in lambda_handler: {e}")
         logger.error(traceback.format_exc())
 
-        # TODO(mj): add 'failed' status to the lecture table.
-        # if 'lecture_id' in locals():
-        #     try:
-        #         update_lecture_status(lecture_id, 'failed')
-        #     except Exception as db_error:
-        #         logger.error(f"Error updating lecture status: {db_error}")
+        # Update lecture status to 'failed' if lecture_id is available
+        if 'lecture_id' in locals():
+            try:
+                update_lecture_status(lecture_id, 'failed')
+            except Exception as db_error:
+                logger.error(f"Error updating lecture status: {db_error}")
 
         return {
             'statusCode': 500,
