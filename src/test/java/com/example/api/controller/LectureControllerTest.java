@@ -50,7 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
         excludeAutoConfiguration = {
                 SecurityAutoConfiguration.class,
                 SecurityFilterAutoConfiguration.class
-        } 
+        }
 )
 @ActiveProfiles("test")
 class LectureControllerTest {
@@ -111,7 +111,7 @@ class LectureControllerTest {
         testCourseOutput.setCreatedAt(LocalDateTime.now());
         testCourseOutput.setUpdatedAt(LocalDateTime.now());
 
-        // create a test LectureOutput  
+        // create a test LectureOutput
         testLectureOutput = new LectureOutput();
         testLectureOutput.setId(lectureId);
         testLectureOutput.setUserId(userId);
@@ -207,7 +207,7 @@ class LectureControllerTest {
 
     }
 
-    
+
     @Test
     @DisplayName("ID로 강의 조회 실패 테스트 - 존재하지 않는 강의")
     void getLectureByIdNotFoundTest() throws Exception {
@@ -270,8 +270,9 @@ class LectureControllerTest {
         // LectureController에서 사용하는 sample prefix 변수들과 비교
         verify(lectureService).createLecture(argThat(input ->
                 input.getCourseId().equals(courseId) &&
-                input.getTitle().equals("Sample Title") &&
-                input.getMaterialPath().equals("sample/path") &&
+                input.getUserId().equals(userId) &&
+                input.getTitle().equals("Test Title") &&
+                input.getMaterialPath().equals("test/path") &&
                 input.getMaterialType().equals("pdf") &&
                 input.getDisplayOrderLex().equals("1")
         ));
