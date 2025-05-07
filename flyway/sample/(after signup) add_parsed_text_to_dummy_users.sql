@@ -35,7 +35,7 @@ SET parsed_text = '[p.1]
 
 [p.12]
 반복문은 스택 오버플로우를 유발하지 않는다.'
-WHERE course_id = 'b1111111-1111-1111-1111-111111111111'
+WHERE course_id = '1bbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
   AND user_id = (SELECT id FROM app.users WHERE name = 'string1');
 
 -- string2 유저의 강의 parsed_text 업데이트
@@ -57,5 +57,5 @@ Why is HBM more popular than DRAM nowadays?
 
 [p.6]
 Key term 2: HBM The harmony between memory semiconductor''s information storage and non-memory semiconductor''s computational capabilities is important. Unfortunately, DRAM (memory semiconductor) cannot keep pace with GPU (non-memory semiconductor)''s data processing speed. Therefore, in 2013, SK Hynix developed the first HBM, which stores data while matching GPU''s speed by stacking multiple DRAM layers and creating passages between them to accelerate processing.'
-WHERE course_id = 'b2222222-2222-2222-2222-222222222222'
+WHERE course_id = '2bbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
   AND user_id = (SELECT id FROM app.users WHERE name = 'string2');

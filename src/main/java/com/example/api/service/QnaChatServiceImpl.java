@@ -4,6 +4,7 @@ import com.example.api.adapters.llm.ChatMessage;
 import com.example.api.adapters.llm.LLMAdapter;
 import com.example.api.entity.Lecture;
 import com.example.api.entity.enums.MessageRole;
+import com.example.api.exception.BadRequestException;
 import com.example.api.exception.InternalServerErrorException;
 import com.example.api.exception.NotFoundException;
 import com.example.api.exception.UnauthorizedException;
@@ -32,7 +33,10 @@ import java.util.UUID;
 @Service
 public class QnaChatServiceImpl implements QnaChatService {
 
+    // TODO (jin): optimize this service logic for better UX and token efficiency
+
     private static final Logger log = LoggerFactory.getLogger(QnaChatServiceImpl.class);
+    private static final String VECTORIZE_HEALTH_CHECK_QUERY = "__VECTORIZE_HEALTH_CHECK__";
 
     private final UserRepository userRepository;
     private final LectureRepository lectureRepository;
@@ -49,6 +53,28 @@ public class QnaChatServiceImpl implements QnaChatService {
         Lecture lecture = lectureRepository.findById(input.getLectureId())
                 .orElseThrow(() -> new NotFoundException("강의 자료를 찾을 수 없습니다"));
 
+        // 강의자료 벡터화(Langchain): 채팅방 생성 시 수행
+        // NOTE (jin): 협의 후 다른 시점으로 변경 가능합니다.
+        try {
+            langchainClient.findReferences(lecture.getId(), VECTORIZE_HEALTH_CHECK_QUERY, 1);
+            lecture.setIsVectorized(true);
+            lectureRepository.save(lecture);
+            log.info("강의 자료 {} 이미 벡터화 완료됨", lecture.getId());
+        } catch (NotFoundException e) {
+            log.info("강의 자료 {} 벡터화 시작", lecture.getId());
+            if (lecture.getParsedText() == null || lecture.getParsedText().isBlank()) {
+                throw new BadRequestException("강의 자료에 텍스트가 없습니다: " + lecture.getId());
+            }
+            try {
+                langchainClient.vectorizeLecture(lecture.getId(), lecture.getParsedText());
+                lecture.setIsVectorized(true);
+                lectureRepository.save(lecture);
+                log.info("강의 자료 {} 벡터화 완료", lecture.getId());
+            } catch (Exception ex) {
+                log.warn("강의 자료 {} 벡터화 실패. 채팅방은 생성되나, 첫 질문 시 재시도됩니다.", lecture.getId(), ex);
+            }
+        }
+
         QnaChat chat = new QnaChat();
         chat.setUser(user);
         chat.setLecture(lecture);
@@ -57,7 +83,6 @@ public class QnaChatServiceImpl implements QnaChatService {
         return new CreateQnaChatOutput(chat.getId());
     }
 
-    // TODO (jin): optimize this logic for better UX and token efficiency
     @Override
     public QnaChatMessageOutput ask(QnaChatMessageInput input) {
         QnaChat chat = qnaChatRepository.findById(input.getChatId())
@@ -68,6 +93,25 @@ public class QnaChatServiceImpl implements QnaChatService {
 
         UUID lectureId = chat.getLecture().getId();
 
+        // 강의자료 벡터화 확인 및 재시도(Langchain)
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new NotFoundException("강의 자료를 찾을 수 없습니다."));
+        if (lecture.getIsVectorized() == null || !lecture.getIsVectorized()) { 
+            if (lecture.getParsedText() == null || lecture.getParsedText().isBlank()) {
+                log.error("parsedText가 null 또는 공백입니다. 벡터화 요청 중단");
+                throw new BadRequestException("강의 자료에 텍스트가 없습니다: " + lectureId); 
+            }
+            try {
+                langchainClient.vectorizeLecture(lectureId, lecture.getParsedText());
+                lecture.setIsVectorized(true); 
+                lectureRepository.save(lecture); 
+                log.info("강의자료 벡터화 재시도 성공: lectureId={}", lectureId); 
+            } catch (Exception e) {
+                log.error("강의자료 벡터화 재시도 실패", e); 
+                throw new InternalServerErrorException("강의자료 분석 중입니다. 잠시 후 다시 시도해주세요."); 
+            }
+        }
+
         // 사용자 질문 DB에 저장
         QnaChatMessage userMsg = new QnaChatMessage();
         userMsg.setQnaChat(chat);
@@ -76,23 +120,9 @@ public class QnaChatServiceImpl implements QnaChatService {
         userMsg.setContent(input.getQuestion());
         qnaChatMessageRepository.save(userMsg);
 
-        // 강의자료 벡터화 및 출처 검색(Langchain): 질문에 해당하는 강의자료 출처 검색
+        // 강의자료 출처 검색(Langchain): 질문에 해당하는 강의자료 출처 검색
         List<ReferenceResponse.ReferenceChunkResponse> referenceChunks;
-        try {
-            // 이미 강의자료가 벡터화 된 후 강의자료 출처 검색
-            referenceChunks = langchainClient.findReferences(lectureId, input.getQuestion(), 3).getReferences();
-        } catch (NotFoundException e) {
-            // 오류 exception
-            Lecture lecture = lectureRepository.findById(lectureId)
-                    .orElseThrow(() -> new NotFoundException("강의 자료를 찾을 수 없습니다."));
-            if (lecture.getParsedText() == null || lecture.getParsedText().isBlank()) {
-                log.error("parsedText가 null 또는 공백입니다. 벡터화 요청 중단");
-                throw new InternalServerErrorException("강의자료 텍스트가 비어 있어 벡터화할 수 없습니다.");
-            }
-            // 아직 강의자료가 벡터화 되지 않았다면 벡터화 + 재검색
-            langchainClient.vectorizeLecture(lectureId, lecture.getParsedText());
-            referenceChunks = langchainClient.findReferences(lectureId, input.getQuestion(), 3).getReferences();
-        }
+        referenceChunks = langchainClient.findReferences(lectureId, input.getQuestion(), 3).getReferences();
         if (referenceChunks == null) {
             referenceChunks = new ArrayList<>();
         }

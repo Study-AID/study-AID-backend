@@ -37,15 +37,23 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class QnaChatServiceTest {
 
-    @Mock private UserRepository userRepository;
-    @Mock private LectureRepository lectureRepository;
-    @Mock private QnaChatRepository qnaChatRepository;
-    @Mock private QnaChatMessageRepository qnaChatMessageRepository;
-    @Mock private LangchainClient langchainClient;
-    @Mock private QnaQuestionRecommendService qnaQuestionRecommendService;
-    @Mock private LLMAdapter llmAdapter;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private LectureRepository lectureRepository;
+    @Mock
+    private QnaChatRepository qnaChatRepository;
+    @Mock
+    private QnaChatMessageRepository qnaChatMessageRepository;
+    @Mock
+    private LangchainClient langchainClient;
+    @Mock
+    private QnaQuestionRecommendService qnaQuestionRecommendService;
+    @Mock
+    private LLMAdapter llmAdapter;
 
-    @InjectMocks private QnaChatServiceImpl qnaChatService;
+    @InjectMocks
+    private QnaChatServiceImpl qnaChatService;
 
     private static final UUID TEST_USER_ID = UUID.randomUUID();
     private static final UUID TEST_LECTURE_ID = UUID.randomUUID();
@@ -64,6 +72,7 @@ public class QnaChatServiceTest {
         testLecture = new Lecture();
         testLecture.setId(TEST_LECTURE_ID);
         testLecture.setTitle("테스트 강의");
+        testLecture.setParsedText("재귀 함수는 자기 자신을 호출하는 함수입니다.");
 
         testQnaChat = new QnaChat();
         testQnaChat.setId(TEST_CHAT_ID);
@@ -149,6 +158,7 @@ public class QnaChatServiceTest {
         String answer = "재귀 함수는 자기 자신을 호출하는 함수입니다.";
 
         when(qnaChatRepository.findById(TEST_CHAT_ID)).thenReturn(Optional.of(testQnaChat));
+        when(lectureRepository.findById(TEST_LECTURE_ID)).thenReturn(Optional.of(testLecture));
         when(qnaChatMessageRepository.save(any(QnaChatMessage.class))).thenAnswer(i -> i.getArgument(0));
 
         // 출처 모의

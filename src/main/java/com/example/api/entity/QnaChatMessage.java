@@ -35,10 +35,10 @@ public class QnaChatMessage {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "role", nullable = false)
     private MessageRole role;
 
-    @Column
+    @Column(name = "content")
     private String content;
 
     @Column(name = "created_at", nullable = false)

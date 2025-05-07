@@ -68,6 +68,9 @@ public class Lecture {
     @Column(name = "parsed_text")
     private String parsedText;
 
+    @Column(name = "is_vectorized", nullable = false)
+    private Boolean isVectorized = false;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
