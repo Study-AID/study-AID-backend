@@ -10,9 +10,9 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 public class QnaChatMessageOutput {
-    private String question;
-    private String answer;
-    private List<ChatMessage> messageHistory;
+    private String role;
+    private String content;
+    private List<ChatMessage> messageContext;
     private List<ReferenceResponse.ReferenceChunkResponse> references;
     private List<String> recommendedQuestions;
 }

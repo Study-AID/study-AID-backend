@@ -6,10 +6,11 @@ import com.example.api.entity.Lecture;
 import com.example.api.entity.QnaChat;
 import com.example.api.entity.QnaChatMessage;
 import com.example.api.entity.User;
+import com.example.api.entity.enums.MessageRole;
 import com.example.api.exception.NotFoundException;
 import com.example.api.exception.UnauthorizedException;
 import com.example.api.external.LangchainClient;
-import com.example.api.external.dto.langchain.MessageHistoryResponse;
+import com.example.api.external.dto.langchain.MessageContextResponse;
 import com.example.api.external.dto.langchain.ReferenceResponse;
 import com.example.api.repository.LectureRepository;
 import com.example.api.repository.QnaChatMessageRepository;
@@ -30,8 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,9 +104,15 @@ public class QnaChatServiceTest {
 
         List<QnaChatMessage> messages = new ArrayList<>();
         QnaChatMessage message1 = new QnaChatMessage();
-        message1.setQuestion("재귀 함수란 무엇인가요?");
-        message1.setAnswer("재귀 함수는 자기 자신을 호출하는 함수입니다.");
+
+        message1.setRole(MessageRole.USER);
+        message1.setContent("재귀 함수란 무엇인가요?");
         messages.add(message1);
+
+        QnaChatMessage message2 = new QnaChatMessage();
+        message2.setRole(MessageRole.ASSISTANT);
+        message2.setContent("재귀 함수는 자기 자신을 호출하는 함수입니다.");
+        messages.add(message2);
 
         when(qnaChatMessageRepository.findByQnaChatId(TEST_CHAT_ID)).thenReturn(messages);
 
@@ -114,9 +120,11 @@ public class QnaChatServiceTest {
         ReadQnaChatOutput output = qnaChatService.readQnaChat(input);
 
         assertNotNull(output);
-        assertEquals(1, output.getMessages().size());
-        assertEquals("재귀 함수란 무엇인가요?", output.getMessages().get(0).getQuestion());
-        assertEquals("재귀 함수는 자기 자신을 호출하는 함수입니다.", output.getMessages().get(0).getAnswer());
+        assertEquals(2, output.getMessages().size());
+        assertEquals("user", output.getMessages().get(0).getRole());
+        assertEquals("재귀 함수란 무엇인가요?", output.getMessages().get(0).getContent());
+        assertEquals("assistant", output.getMessages().get(1).getRole());
+        assertEquals("재귀 함수는 자기 자신을 호출하는 함수입니다.", output.getMessages().get(1).getContent());
     }
 
     @Test
@@ -153,10 +161,10 @@ public class QnaChatServiceTest {
 
         // 대화 히스토리 모의
         List<ChatMessage> messageHistory = new ArrayList<>();
-        messageHistory.add(new ChatMessage("human", "재귀 함수란?"));
-        messageHistory.add(new ChatMessage("ai", "자기 자신을 호출하는 함수입니다."));
-        when(langchainClient.getMessageHistory(TEST_CHAT_ID))
-                .thenReturn(new MessageHistoryResponse(messageHistory));
+        messageHistory.add(new ChatMessage("user", "재귀 함수란?"));
+        messageHistory.add(new ChatMessage("assistant", "자기 자신을 호출하는 함수입니다."));
+        when(langchainClient.getMessageContext(TEST_CHAT_ID))
+                .thenReturn(new MessageContextResponse(messageHistory));
 
         // LLM 응답
         List<String> referenceTexts = references.stream().map(ReferenceResponse.ReferenceChunkResponse::getText).toList();
@@ -164,8 +172,8 @@ public class QnaChatServiceTest {
                 .thenReturn(answer);
 
         // 대화 저장 응답
-        when(langchainClient.appendMessage(eq(TEST_CHAT_ID), eq(question), eq(answer)))
-                .thenReturn(new MessageHistoryResponse(messageHistory));
+        when(langchainClient.appendMessages(any(UUID.class), anyList()))
+                .thenReturn(new MessageContextResponse(messageHistory));
 
         // 추천 질문 모의
         List<String> recommendQuestions = List.of("재귀 함수의 장단점은 무엇인가요?");
@@ -176,8 +184,8 @@ public class QnaChatServiceTest {
         QnaChatMessageOutput output = qnaChatService.ask(input);
 
         assertNotNull(output);
-        assertEquals(question, output.getQuestion());
-        assertEquals(answer, output.getAnswer());
+        assertEquals("assistant", output.getRole());
+        assertEquals(answer, output.getContent());
         assertEquals(1, output.getReferences().size());
         assertEquals("재귀 함수는 자기 자신을 호출하는 함수입니다.", output.getReferences().get(0).getText());
         assertEquals(42, output.getReferences().get(0).getPage());

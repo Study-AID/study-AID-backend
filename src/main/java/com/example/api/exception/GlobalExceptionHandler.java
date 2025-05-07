@@ -32,6 +32,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(InternalServerErrorException.class)
+    public ResponseEntity<ErrorResponse> handleInternalServerErrorException(InternalServerErrorException e) {
+        ErrorResponse response = new ErrorResponse(e.getMessage(), "INTERNAL_SERVER_ERROR", LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
     // 다음은 스프링 기본 예외 처리 코드
     // @Valid 검증 실패
     @ExceptionHandler(MethodArgumentNotValidException.class)

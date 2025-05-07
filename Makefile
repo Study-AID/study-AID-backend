@@ -35,9 +35,7 @@ help:
 	@echo "  make langchain-rebuild    - Rebuild LangChain Docker image"
 	@echo "  make langchain-restart    - Restart LangChain server to apply code changes"
 	@echo "  make langchain-stop       - Stop LangChain QnA Chat Context Generating Server"
-	@echo "  make langchain-remove     - Remove LangChain container"
-	@echo "  make langchain-clean      - Remove LangChain container and volumes"
-	@echo "  make langchain-test       - Test LangChain QnA Chat context generating process"
+	@echo "  make langchain-down       - Stop and remove LangChain QnA Chat Context Generating Server"
 
 # Build Docker images
 build:
@@ -183,19 +181,8 @@ langchain-stop:
 	docker compose --profile langchain stop langchain
 	@echo "LangChain server stopped successfully!"
 
-# 컨테이너 삭제
-langchain-remove:
-	@echo "Removing LangChain container..."
-	docker compose --profile langchain rm -f langchain
-	@echo "LangChain container removed successfully!"
-
-# 컨테이너와 볼륨을 모두 삭제
-langchain-clean:
-	@echo "Removing LangChain container and volumes..."
-	docker compose --profile langchain down
-	docker volume rm -f langchain-data || true
-	@echo "LangChain environment clean successfully!"
-
-langchain-test:
-	@echo "Testing LangChain QnA Chat context generating process..."
-	docker exec -it langchain-server python test_langchain_server.py
+# 컨테이너 제거 (down)
+langchain-down:
+	@echo "Stopping and removing LangChain QnA Chat Context Generating Server..."
+	docker compose --profile langchain down langchain
+	@echo "LangChain server stopped and removed successfully!"

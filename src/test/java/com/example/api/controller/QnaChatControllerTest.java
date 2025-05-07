@@ -75,18 +75,26 @@ class QnaChatControllerTest {
     void readChatSuccess() throws Exception {
         // Given
         List<ReadQnaChatOutput.MessageItem> messages = List.of(
-                new ReadQnaChatOutput.MessageItem("재귀 함수란 무엇인가요?", "재귀 함수는 자기 자신을 호출하는 함수입니다.")
+                // role/content 패턴 사용
+                new ReadQnaChatOutput.MessageItem("user", "재귀 함수란 무엇인가요?"),
+                new ReadQnaChatOutput.MessageItem("assistant", "재귀 함수는 자기 자신을 호출하는 함수입니다.")
         );
 
+        // chatId 추가
         when(qnaChatService.readQnaChat(any(ReadQnaChatInput.class)))
-                .thenReturn(new ReadQnaChatOutput(messages));
+                .thenReturn(new ReadQnaChatOutput(CHAT_ID, messages));
 
         // When & Then
         mockMvc.perform(get("/v1/qna/chats/" + CHAT_ID)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.messages").exists());
+                .andExpect(jsonPath("$.chatId").exists())
+                .andExpect(jsonPath("$.messages").exists())
+                .andExpect(jsonPath("$.messages[0].role").value("user"))
+                .andExpect(jsonPath("$.messages[0].content").value("재귀 함수란 무엇인가요?"))
+                .andExpect(jsonPath("$.messages[1].role").value("assistant"))
+                .andExpect(jsonPath("$.messages[1].content").value("재귀 함수는 자기 자신을 호출하는 함수입니다."));
     }
 
     @Test
@@ -99,7 +107,7 @@ class QnaChatControllerTest {
                 List.of(new ReferenceResponse.ReferenceChunkResponse("text", 42));
 
         QnaChatMessageOutput output = new QnaChatMessageOutput(
-                "재귀 함수란 무엇인가요?",
+                "assistant",
                 "재귀 함수는 자기 자신을 호출하는 함수입니다.",
                 new ArrayList<>(),
                 references,
@@ -115,8 +123,9 @@ class QnaChatControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.question").value("재귀 함수란 무엇인가요?"))
-                .andExpect(jsonPath("$.answer").value("재귀 함수는 자기 자신을 호출하는 함수입니다."))
+                .andExpect(jsonPath("$.role").value("assistant"))
+                .andExpect(jsonPath("$.content").value("재귀 함수는 자기 자신을 호출하는 함수입니다."))
+                .andExpect(jsonPath("$.messageContext").doesNotExist())
                 .andExpect(jsonPath("$.references[0].text").value("text"))
                 .andExpect(jsonPath("$.references[0].page").value(42))
                 .andExpect(jsonPath("$.recommendedQuestions[0]").value("재귀 함수와 반복문의 차이점은?"));

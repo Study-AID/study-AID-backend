@@ -91,7 +91,7 @@ public class QnaChatMessageRepositoryTest {
         qnaChatMessage.setId(qnaChatMessageUuid);
         qnaChatMessage.setQnaChat(qnaChat);
         qnaChatMessage.setUser(user);
-        qnaChatMessage.setQuestion("이것은 메시지인가요, 메세지인가요.");
+        qnaChatMessage.setContent("이것은 메시지인가요, 메세지인가요.");
 
 
         qnaChatMessageRepository.save(qnaChatMessage);

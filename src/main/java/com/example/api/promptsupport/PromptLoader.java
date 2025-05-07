@@ -11,7 +11,6 @@ public class PromptLoader {
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 
     private PromptLoader() {
-        // static 유틸 클래스이므로 생성 방지
     }
 
     public static com.example.api.promptsupport.PromptTemplate load(String path) {
