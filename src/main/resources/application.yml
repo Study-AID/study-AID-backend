@@ -58,5 +58,5 @@ jwt:
   access-token-ttl-ms: 900000  # 15분
   refresh-token-ttl-ms: 1209600000  # 2주
 
-file:
+storage:
   bucket: ${MINIO_BUCKET:study-aid-lecture-materials}

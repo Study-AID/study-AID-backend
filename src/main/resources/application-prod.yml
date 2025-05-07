@@ -35,7 +35,7 @@ server:
 aws:
   region: ap-northeast-2
 
-file:
+storage:
   bucket: ${MINIO_BUCKET:study-aid-lecture-materials}
 
 # Swagger UI Configuration
