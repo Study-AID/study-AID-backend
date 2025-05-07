@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 public class StorageConfig {
     @Bean
     @Profile("prod")
-    public S3Client s3Client(@org.springframework.beans.factory.annotation.Value("$(aws.region)") String region) {
+    public S3Client s3Client(@Value("${aws.region}") String region) {
         return S3Client.builder()
                 .region(Region.of(region))
                 .build();

@@ -19,10 +19,10 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class MinioStorageService {
+public class MinioStorageService implements StorageService {
     private final Optional<MinioClient> minioClient;
 
-    @Value("${file.bucket}")
+    @Value("${storage.bucket}")
     private String bucket;
 
     public void upload(MultipartFile pdf) throws IOException, NoSuchAlgorithmException, XmlParserException, MinioException, InvalidKeyException, IllegalArgumentException {

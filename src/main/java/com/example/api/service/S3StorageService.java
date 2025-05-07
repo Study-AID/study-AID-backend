@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 public class S3StorageService implements StorageService {
     private final Optional<S3Client> s3Client;
 
-    @Value("${file.bucket}")
+    @Value("${storage.bucket}")
     private String bucket;
 
     public void upload(MultipartFile pdf) throws IOException, NoSuchAlgorithmException, XmlParserException, MinioException, InvalidKeyException, IllegalArgumentException {
