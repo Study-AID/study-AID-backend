@@ -1,5 +1,6 @@
+model: gpt-4o
 temperature: 0.7
-max_tokens: 16000
+max_tokens: 16384
 system: |
   사용자는 강의 내용을 바탕으로 학습자 수준에 적합한 퀴즈 문항을 생성하고자 합니다.  
   당신은 교육용 퀴즈 제작에 특화된 AI 어시스턴트입니다.
