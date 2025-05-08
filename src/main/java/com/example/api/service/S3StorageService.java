@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,14 +23,18 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 @RequiredArgsConstructor
 public class S3StorageService implements StorageService {
     private final Optional<S3Client> s3Client;
+    private final MultipartProperties multipartProperties;
 
     @Value("${storage.bucket}")
     private String bucket;
 
+    @Override
     public void upload(MultipartFile pdf) throws IOException, NoSuchAlgorithmException, XmlParserException, MinioException, InvalidKeyException, IllegalArgumentException {
         long size = pdf.getSize();
-        if (size > 50 * 1024 * 1024)
-            throw new IllegalArgumentException("50 MB 초과");
+        long maxFileSize = multipartProperties.getMaxFileSize().toBytes();
+
+        if (size > maxFileSize)
+            throw new IllegalArgumentException("50 MB 초과");
 
         String key = UUID.randomUUID() + ".pdf";
         try (InputStream in = pdf.getInputStream()) {
