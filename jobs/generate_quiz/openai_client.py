@@ -9,7 +9,7 @@ from quiz_models import QuizResponse
 
 logger = logging.getLogger(__name__)
 
-ryb
+
 class OpenAIClient:
     def __init__(self):
         self.api_key = os.environ.get("OPENAI_API_KEY")

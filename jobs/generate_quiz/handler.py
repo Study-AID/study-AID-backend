@@ -206,13 +206,14 @@ def save_quiz_to_db(lecture_id, user_id, quiz_data, title=None):
 
                     # Prepare question data
                     question_text = quiz_item.get('question')
-                    explanation = quiz_item.get('explanation', '')
                     question_type = quiz_item.get('type', 'multiple_choice')
+                    explanation = quiz_item.get('explanation', '')
 
                     # Initialize fields
                     choices = []
                     answer_indices = None
                     is_true_answer = None
+                    text_answer = None
 
                     # Process question based on type
                     if question_type == 'multiple_choice':
@@ -225,22 +226,13 @@ def save_quiz_to_db(lecture_id, user_id, quiz_data, title=None):
                                 answer_indices.append(opt_idx)
 
                     elif question_type == 'true_or_false':
-                        # For true/false, use is_true_answer field
-                        choices = []  # No choices for true/false
                         is_true_answer = quiz_item.get('answer', False)
 
                     elif question_type == 'short_answer' or question_type == 'essay':
-                        # For short answer and essay, store answer in explanation
-                        answer = quiz_item.get('answer', '')
-                        choices = []  # No choices for these types
-                        # Append answer to explanation if not empty
-                        if answer and not explanation.strip():
-                            explanation = f"Reference answer: {answer}"
-                        elif answer and explanation.strip():
-                            explanation += f"\\n\\nReference answer: {answer}"
+                        text_answer = quiz_item.get('answer', '')
 
                     # Add to bulk values
-                    bulk_values.append("(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())")
+                    bulk_values.append("(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())")
                     value_params.extend([
                         question_id,
                         quiz_id,
@@ -248,9 +240,10 @@ def save_quiz_to_db(lecture_id, user_id, quiz_data, title=None):
                         question_text,
                         question_type,
                         explanation,
+                        is_true_answer,
                         choices,
                         answer_indices,
-                        is_true_answer,
+                        text_answer,
                         idx
                     ])
 
@@ -259,7 +252,8 @@ def save_quiz_to_db(lecture_id, user_id, quiz_data, title=None):
                 query = f"""
                 INSERT INTO app.quiz_items 
                 (id, quiz_id, user_id, question, question_type, explanation, 
-                 choices, answer_indices, is_true_answer, display_order, created_at)
+                 is_true_answer, choices, answer_indices, text_answer, display_order,
+                 created_at)
                 VALUES {', '.join(bulk_values)}
                 """
                 logger.info(f"Executing bulk insert with {len(bulk_values)} questions")
