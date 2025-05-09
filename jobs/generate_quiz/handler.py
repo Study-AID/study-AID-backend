@@ -206,7 +206,7 @@ def save_quiz_to_db(lecture_id, user_id, quiz_data, title=None):
 
                     # Prepare question data
                     question_text = quiz_item.get('question')
-                    question_type = quiz_item.get('type', 'multiple_choice')
+                    question_type = quiz_item.get('question_type', 'multiple_choice')
                     explanation = quiz_item.get('explanation', '')
 
                     # Initialize fields
