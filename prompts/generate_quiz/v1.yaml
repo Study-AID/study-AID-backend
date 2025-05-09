@@ -45,7 +45,7 @@ user: |
 
   강의의 핵심 개념과 중요한 세부 사항을 다루는 질문을 생성해 주세요.
 
-  Please output your response in JSON format with the following structure:
+  다음 JSON 포맷으로 응답을 반환해주세요.
   
   {{
     "quiz_questions": [
