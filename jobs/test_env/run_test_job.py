@@ -203,6 +203,19 @@ def get_event_data(job_name, event_file=None):
                 })
             }]
         }
+    elif job_name == 'generate_quiz':
+        return {
+            'Records': [{
+                'body': json.dumps({
+                    'lecture_id': LECTURE_ID,
+                    'true_or_false_count': 3,
+                    'multiple_choice_count': 3,
+                    'short_answer_count': 3,
+                    'essay_count': 3,
+                    'title': 'Test Quiz'
+                })
+            }]
+        }
     else:
         # Generic event
         return {
