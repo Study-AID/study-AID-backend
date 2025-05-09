@@ -229,7 +229,7 @@ def save_exam_to_db(course_id, user_id, exam_data, title=None, referenced_lectur
 
                     # Prepare question data
                     question_text = exam_item.get('question')
-                    question_type = exam_item.get('type', 'multiple_choice')
+                    question_type = exam_item.get('question_type', 'multiple_choice')
                     explanation = exam_item.get('explanation', '')
                     points = exam_item.get('points', 10.0)
 
