@@ -19,12 +19,24 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
 # Server Configuration
 server:
   port: 8080
   tomcat:
     max-threads: 200
     min-spare-threads: 20
+
+# AWS Configuration
+aws:
+  region: ap-northeast-2
+
+file:
+  bucket: ${MINIO_BUCKET:study-aid-lecture-materials}
 
 # Swagger UI Configuration
 springdoc:
