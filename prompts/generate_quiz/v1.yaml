@@ -31,20 +31,7 @@ system: |
   - 개념 간의 비교, 분석, 적용 등 심화된 사고를 유도하는 질문으로 작성해 주세요.
   - `answer` 항목에는 모범 답안에 포함되어야 할 핵심 포인트를 정리해 주세요.
   - `explanation` 항목에는 해당 문항이 평가하고자 하는 학습 목표를 설명해 주세요.
-
-user: |
-  아래 강의 내용을 바탕으로 퀴즈 문항을 생성해 주세요. 문항 유형과 수량은 다음과 같습니다:
-
-  - OX 문제 (true_or_false): {true_or_false_count}문항
-  - 객관식 문제 (multiple_choice): {multiple_choice_count}문항
-  - 단어형 단답 문제 (short_answer): {short_answer_count}문항
-  - 서술형 문제 (essay): {essay_count}문항
-
-  참고할 강의 내용:
-  {lecture_content}
-
-  강의의 핵심 개념과 중요한 세부 사항을 다루는 질문을 생성해 주세요.
-
+  
   다음 JSON 포맷으로 응답을 반환해주세요.
   
   {{
@@ -80,3 +67,16 @@ user: |
       }}
     ]
   }}
+
+user: |
+  아래 강의 내용을 바탕으로 퀴즈 문항을 생성해 주세요. 문항 유형과 수량은 다음과 같습니다:
+
+  - OX 문제 (true_or_false): {true_or_false_count}문항
+  - 객관식 문제 (multiple_choice): {multiple_choice_count}문항
+  - 단어형 단답 문제 (short_answer): {short_answer_count}문항
+  - 서술형 문제 (essay): {essay_count}문항
+
+  참고할 강의 내용:
+  {lecture_content}
+
+  강의의 핵심 개념과 중요한 세부 사항을 다루는 질문을 생성해 주세요.
