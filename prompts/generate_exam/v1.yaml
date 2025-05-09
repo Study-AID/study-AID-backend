@@ -32,19 +32,19 @@ system: |
   - `answer` 항목에는 모범 답안에 포함되어야 할 핵심 포인트를 정리해 주세요.
   - `explanation` 항목에는 해당 문항이 평가하고자 하는 학습 목표를 설명해 주세요.
 
-  Please output your response in JSON format with the following structure:
+  다음 JSON 포맷으로 응답을 반환해주세요:
 
   {{
     "exam_questions": [
       {{
-        "type": "true_or_false",
+        "question_type": "true_or_false",
         "question": "Question text goes here?",
         "answer": true,
         "explanation": "Explanation of why this statement is true/false",
         "points": 5
       }},
       {{
-        "type": "multiple_choice",
+        "question_type": "multiple_choice",
         "question": "Question text goes here?",
         "options": [
           {{"text": "Option A", "is_correct": false}},
@@ -56,14 +56,14 @@ system: |
         "points": 10
       }},
       {{
-        "type": "short_answer",
+        "question_type": "short_answer",
         "question": "Short answer question goes here?",
         "answer": "Expected answer here",
         "explanation": "Explanation of what makes a good answer",
         "points": 10
       }},
       {{
-        "type": "essay",
+        "question_type": "essay",
         "question": "Essay question goes here?",
         "answer": "Expected essay structure and key points",
         "explanation": "Grading guidelines",
