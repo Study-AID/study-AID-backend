@@ -50,13 +50,13 @@ user: |
   {{
     "quiz_questions": [
       {{
-        "type": "true_or_false",
+        "question_type": "true_or_false",
         "question": "The question text here",
         "answer": true,
         "explanation": "Explanation of the correct answer"
       }},
       {{
-        "type": "multiple_choice",
+        "question_type": "multiple_choice",
         "question": "The question text here",
         "options": [
           {{"text": "Option A", "is_correct": false}},
@@ -67,13 +67,13 @@ user: |
         "explanation": "Explanation of the correct answer"
       }},
       {{
-        "type": "short_answer",
+        "question_type": "short_answer",
         "question": "The question text here",
         "answer": "The expected answer",
         "explanation": "Additional context or explanation"
       }},
       {{
-        "type": "essay",
+        "question_type": "essay",
         "question": "The question text here",
         "answer": "Guidelines or key points for a good answer",
         "explanation": "Learning objectives this question addresses"

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class TrueFalseQuestion(BaseModel):
     """Represents a true/false question"""
-    type: Literal["true_or_false"]
+    question_type: Literal["true_or_false"]
     question: str
     answer: bool
     explanation: str
@@ -19,7 +19,7 @@ class MultipleChoiceOption(BaseModel):
 
 class MultipleChoiceQuestion(BaseModel):
     """Represents a multiple choice question"""
-    type: Literal["multiple_choice"]
+    question_type: Literal["multiple_choice"]
     question: str
     options: List[MultipleChoiceOption]
     explanation: str
@@ -27,7 +27,7 @@ class MultipleChoiceQuestion(BaseModel):
 
 class ShortAnswerQuestion(BaseModel):
     """Represents a short answer question"""
-    type: Literal["short_answer"]
+    question_type: Literal["short_answer"]
     question: str
     answer: str
     explanation: str
@@ -35,7 +35,7 @@ class ShortAnswerQuestion(BaseModel):
 
 class EssayQuestion(BaseModel):
     """Represents an essay question"""
-    type: Literal["essay"]
+    question_type: Literal["essay"]
     question: str
     answer: str
     explanation: str
