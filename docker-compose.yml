@@ -23,12 +23,29 @@ services:
       REDIS_PORT: 6379
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      LANGCHAIN_SERVER_URL: http://langchain-server:5000
     networks:
       - app-network
     restart: unless-stopped
     volumes:
       - ./:/app
       - gradle-cache:/root/.gradle
+
+  langchain:
+    build:
+      context: ./langchain
+      dockerfile: Dockerfile
+    container_name: langchain-server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./langchain:/app
+      - langchain-data:/app/chroma_db
+      - ./hf_cache:/tmp/huggingface
+    networks:
+      - app-network
+    restart: unless-stopped
+    profiles: ["langchain"]
 
   postgres:
     image: postgres:15-alpine
@@ -75,3 +92,4 @@ volumes:
   postgres-data:
   redis-data:
   gradle-cache:
+  langchain-data:

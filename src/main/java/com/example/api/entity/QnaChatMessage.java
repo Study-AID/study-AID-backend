@@ -1,5 +1,7 @@
 package com.example.api.entity;
 
+import com.example.api.entity.enums.AuthType;
+import com.example.api.entity.enums.MessageRole;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,8 +34,12 @@ public class QnaChatMessage {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
-    private String message;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private MessageRole role;
+
+    @Column(name = "content")
+    private String content;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -50,4 +56,5 @@ public class QnaChatMessage {
             createdAt = LocalDateTime.now();
         }
     }
+
 }

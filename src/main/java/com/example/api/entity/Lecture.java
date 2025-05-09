@@ -65,6 +65,12 @@ public class Lecture {
     @Column(name = "summary_status", nullable = false, length = 20)
     private SummaryStatus summaryStatus;
 
+    @Column(name = "parsed_text")
+    private String parsedText;
+
+    @Column(name = "is_vectorized", nullable = false)
+    private Boolean isVectorized = false;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
