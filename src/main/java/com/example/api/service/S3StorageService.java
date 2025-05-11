@@ -34,7 +34,7 @@ public class S3StorageService implements StorageService {
         long maxFileSize = multipartProperties.getMaxFileSize().toBytes();
 
         if (size > maxFileSize)
-            throw new IllegalArgumentException("50 MB 초과");
+            throw new IllegalArgumentException(String.format("파일 크기는 %dMB를 초과할 수 없습니다.", maxFileSize / 1024 / 1024));
 
         String key = UUID.randomUUID() + ".pdf";
         try (InputStream in = pdf.getInputStream()) {

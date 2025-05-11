@@ -35,8 +35,11 @@ server:
 aws:
   region: ap-northeast-2
 
+
 storage:
-  bucket: ${MINIO_BUCKET:study-aid-lecture-materials}
+  bucket: ${AWS_S3_BUCKET}
+
+  
 
 # Swagger UI Configuration
 springdoc:

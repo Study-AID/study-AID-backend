@@ -86,7 +86,7 @@ class S3StorageServiceTest {
     }
     
     @Test
-    @DisplayName("50MB 초과 파일 업로드 실패")
+    @DisplayName("용량 초과 파일 업로드 실패")
     void uploadLargeFileFail() {
         // Given
         MockMultipartFile largePdfFile = mock(MockMultipartFile.class);
@@ -100,6 +100,7 @@ class S3StorageServiceTest {
             () -> s3storageService.upload(largePdfFile)
         );
         
-        assertEquals("50 MB 초과", exception.getMessage());
+        String expectedMessage = String.format("파일 크기는 %dMB를 초과할 수 없습니다.", multipartProperties.getMaxFileSize().toBytes() / 1024 / 1024);
+        assertEquals(expectedMessage, exception.getMessage());
     }
 }
