@@ -83,33 +83,6 @@ def get_course_lectures(course_id):
             conn.close()
 
 
-def get_lecture_info(lecture_id):
-    """Get lecture information from the database"""
-    conn = None
-    try:
-        conn = get_db_connection()
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            query = """
-            SELECT l.id, l.course_id, l.user_id, l.material_path, l.title, l.summary, c.id as course_id
-            FROM app.lectures l
-            JOIN app.courses c ON l.course_id = c.id
-            WHERE l.id = %s AND l.deleted_at IS NULL
-            """
-            cursor.execute(query, (lecture_id,))
-            lecture = cursor.fetchone()
-
-            if not lecture:
-                raise ValueError(f"No lecture found with id: {lecture_id}")
-
-            return dict(lecture)
-    except Exception as e:
-        logger.error(f"Error getting lecture info: {e}")
-        raise
-    finally:
-        if conn:
-            conn.close()
-
-
 def get_prompt_path():
     """Get the prompt file path based on environment variable settings"""
     # Get prompt version from environment variable
@@ -409,6 +382,7 @@ def lambda_handler(event, context):
 
             # Extract information from the message
             user_id = message.get('user_id')
+            course_id = message.get('course_id')
             exam_title = message.get('title')
             referenced_lecture_ids = message.get('referenced_lecture_ids', [])
 
@@ -424,10 +398,6 @@ def lambda_handler(event, context):
             if not referenced_lecture_ids:
                 logger.error("Missing required referenced_lectures in message")
                 continue
-
-            # Get the first lecture to determine course_id
-            first_lecture_info = get_lecture_info(referenced_lecture_ids[0])
-            course_id = first_lecture_info['course_id']
 
             # Default title if not provided
             if not exam_title:

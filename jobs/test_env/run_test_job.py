@@ -208,6 +208,7 @@ def get_event_data(job_name, event_file=None):
             'Records': [{
                 'body': json.dumps({
                     'user_id': USER_ID,
+                    'course_id': COURSE_ID,
                     'referenced_lecture_ids': [LECTURE_ID],
                     'true_or_false_count': 3,
                     'multiple_choice_count': 3,
