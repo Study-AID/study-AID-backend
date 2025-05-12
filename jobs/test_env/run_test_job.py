@@ -197,6 +197,8 @@ def get_event_data(job_name, event_file=None):
         return {
             'Records': [{
                 'body': json.dumps({
+                    'user_id': USER_ID,
+                    'course_id': COURSE_ID,
                     'lecture_id': LECTURE_ID,
                     's3_bucket': S3_BUCKET_NAME,
                     's3_key': S3_KEY
@@ -222,6 +224,8 @@ def get_event_data(job_name, event_file=None):
         return {
             'Records': [{
                 'body': json.dumps({
+                    'user_id': USER_ID,
+                    'course_id': COURSE_ID,
                     'lecture_id': LECTURE_ID,
                     'true_or_false_count': 3,
                     'multiple_choice_count': 3,
