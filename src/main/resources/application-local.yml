@@ -51,3 +51,13 @@ jwt:
 langchain:
   server:
     url: http://langchain-server:5000
+
+# WebClient, RestTemplate Configuration
+web-client:
+  connect-timeout-ms: 3000 # 3s
+  response-timeout-ms: 60000 # 60s
+  max-in-memory-size: 10485760 # 10MB
+
+rest-template:
+  connect-timeout-ms: 3000 # 3s
+  read-timeout-ms: 60000 # 60s
