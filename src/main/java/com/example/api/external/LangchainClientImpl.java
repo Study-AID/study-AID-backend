@@ -28,19 +28,19 @@ public class LangchainClientImpl implements LangchainClient {
     private String langchainServerUrl;
 
     @Override
-    public VectorizeLectureResponse vectorizeLecture(UUID lectureId, String parsedText) {
-        log.info("[LangchainClient] 호출: vectorizeLecture(lectureId={})", lectureId);
+    public LectureEmbeddingResponse generateLectureEmbeddings(UUID lectureId, String parsedText) {
+        log.info("[LangchainClient] 호출: generateLectureEmbeddings(lectureId={})", lectureId);
 
-        VectorizeLectureRequest body = new VectorizeLectureRequest(lectureId, parsedText);
+        LectureEmbeddingRequest body = new LectureEmbeddingRequest(parsedText);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<VectorizeLectureRequest> request = new HttpEntity<>(body, headers);
+        HttpEntity<LectureEmbeddingRequest> request = new HttpEntity<>(body, headers);
 
-        try {ResponseEntity<VectorizeLectureResponse> response = restTemplate.exchange(
-                    langchainServerUrl + "/vectors",
+        try {ResponseEntity<LectureEmbeddingResponse> response = restTemplate.exchange(
+                langchainServerUrl + "/lectures/" + lectureId + "/embeddings",
                     HttpMethod.POST,
                     request,
-                    VectorizeLectureResponse.class
+                    LectureEmbeddingResponse.class
             );
 
             if (response.getBody() == null) {
@@ -51,7 +51,7 @@ public class LangchainClientImpl implements LangchainClient {
             return response.getBody();
 
         } catch (HttpClientErrorException e) {
-            log.error("Langchain /vectors 요청 실패: {}", e.getMessage(), e);
+            log.error("Langchain 벡터화 요청 실패: {}", e.getMessage(), e);
             throw new InternalServerErrorException("Langchain 벡터화 요청 실패: " + e.getStatusCode());
         } catch (Exception e) {
             log.error("Langchain 벡터화 중 알 수 없는 예외 발생: {}", e.getMessage(), e);
@@ -60,17 +60,17 @@ public class LangchainClientImpl implements LangchainClient {
     }
 
     @Override
-    public ReferenceResponse findReferences(UUID lectureId, String question, int topK) {
-        try {log.info("[LangchainClient] 호출: findReferences(lectureId={}, question={}, topK={})", lectureId, question, topK);
+    public ReferenceResponse findReferencesInLecture(UUID lectureId, String question, int maxNumReferences, double minSimilarity) {
+        try {log.info("[LangchainClient] 호출: findReferencesInLecture(lectureId={}, question={}, maxNumReferences={}, minSimilarity={})", lectureId, question, maxNumReferences, minSimilarity);
 
-            ReferenceRequest requestDto = new ReferenceRequest(lectureId, question, topK);
+            ReferenceRequest requestDto = new ReferenceRequest(question, maxNumReferences, minSimilarity);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<ReferenceRequest> request = new HttpEntity<>(requestDto, headers);
 
             ResponseEntity<ReferenceResponse> response = restTemplate.exchange(
-                    langchainServerUrl + "/references",
+                    langchainServerUrl + "/lectures/" + lectureId + "/references",
                     HttpMethod.POST,
                     request,
                     ReferenceResponse.class

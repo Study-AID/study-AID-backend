@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class VectorizeLectureResponse {
+public class LectureEmbeddingResponse {
     private String message;
 
     @JsonProperty("lecture_id")

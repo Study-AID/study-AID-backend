@@ -36,7 +36,9 @@ public class QnaChatServiceImpl implements QnaChatService {
     // TODO (jin): optimize this service logic for better UX and token efficiency
 
     private static final Logger log = LoggerFactory.getLogger(QnaChatServiceImpl.class);
-    private static final String VECTORIZE_HEALTH_CHECK_QUERY = "__VECTORIZE_HEALTH_CHECK__";
+
+    private static final String USER = "user";
+    private static final String ASSISTANT = "assistant";
 
     private final UserRepository userRepository;
     private final LectureRepository lectureRepository;
@@ -53,10 +55,10 @@ public class QnaChatServiceImpl implements QnaChatService {
         Lecture lecture = lectureRepository.findById(input.getLectureId())
                 .orElseThrow(() -> new NotFoundException("강의 자료를 찾을 수 없습니다"));
 
+        // TODO (jin): move vectorization timing from chat creation to after the lecture file uploaded
         // 강의자료 벡터화(Langchain): 채팅방 생성 시 수행
-        // NOTE (jin): 협의 후 다른 시점으로 변경 가능합니다.
         try {
-            langchainClient.findReferences(lecture.getId(), VECTORIZE_HEALTH_CHECK_QUERY, 1);
+            langchainClient.findReferencesInLecture(lecture.getId(), "dummy question for check vectorization", 1, 0.3);
             lecture.setIsVectorized(true);
             lectureRepository.save(lecture);
             log.info("강의 자료 {} 이미 벡터화 완료됨", lecture.getId());
@@ -66,7 +68,7 @@ public class QnaChatServiceImpl implements QnaChatService {
                 throw new BadRequestException("강의 자료에 텍스트가 없습니다: " + lecture.getId());
             }
             try {
-                langchainClient.vectorizeLecture(lecture.getId(), lecture.getParsedText());
+                langchainClient.generateLectureEmbeddings(lecture.getId(), lecture.getParsedText());
                 lecture.setIsVectorized(true);
                 lectureRepository.save(lecture);
                 log.info("강의 자료 {} 벡터화 완료", lecture.getId());
@@ -102,7 +104,7 @@ public class QnaChatServiceImpl implements QnaChatService {
                 throw new BadRequestException("강의 자료에 텍스트가 없습니다: " + lectureId); 
             }
             try {
-                langchainClient.vectorizeLecture(lectureId, lecture.getParsedText());
+                langchainClient.generateLectureEmbeddings(lectureId, lecture.getParsedText());
                 lecture.setIsVectorized(true); 
                 lectureRepository.save(lecture); 
                 log.info("강의자료 벡터화 재시도 성공: lectureId={}", lectureId); 
@@ -122,7 +124,7 @@ public class QnaChatServiceImpl implements QnaChatService {
 
         // 강의자료 출처 검색(Langchain): 질문에 해당하는 강의자료 출처 검색
         List<ReferenceResponse.ReferenceChunkResponse> referenceChunks;
-        referenceChunks = langchainClient.findReferences(lectureId, input.getQuestion(), 3).getReferences();
+        referenceChunks = langchainClient.findReferencesInLecture(lectureId, input.getQuestion(), 3, 0.3).getReferences();
         if (referenceChunks == null) {
             referenceChunks = new ArrayList<>();
         }
@@ -145,7 +147,7 @@ public class QnaChatServiceImpl implements QnaChatService {
         } catch (Exception e) {
             log.error("GPT 호출 오류: {}", e.getMessage(), e);
             return new QnaChatMessageOutput(
-                    "assistant",
+                    ASSISTANT,
                     "죄송합니다, GPT 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
                     messageContextBefore,
                     referenceChunks,
@@ -165,8 +167,8 @@ public class QnaChatServiceImpl implements QnaChatService {
 
         // 대화 맥락 관리(Langchain): 사용자 질문, AI 답변 한꺼번에 전달하여 새로운 대화로 맥락에 저장
         List<ChatMessage> newMessages = new ArrayList<>();
-        newMessages.add(new ChatMessage("user", input.getQuestion()));
-        newMessages.add(new ChatMessage("assistant", answer));
+        newMessages.add(new ChatMessage(USER, input.getQuestion()));
+        newMessages.add(new ChatMessage(ASSISTANT, answer));
 
         MessageContextResponse responseAfter = langchainClient.appendMessages(
                 input.getChatId(),
@@ -184,7 +186,7 @@ public class QnaChatServiceImpl implements QnaChatService {
 
         // 추천 질문까지 포함된 AI 최종 답변 반환
         return new QnaChatMessageOutput(
-                "assistant",
+                ASSISTANT,
                 answer,
                 messageContextAfter,
                 referenceChunks,
@@ -200,6 +202,7 @@ public class QnaChatServiceImpl implements QnaChatService {
             throw new UnauthorizedException("해당 채팅방에 대한 접근 권한이 없습니다");
         }
 
+        // TODO (jin): add pagination
         List<ReadQnaChatOutput.MessageItem> messages = qnaChatMessageRepository.findByQnaChatId(chat.getId()).stream()
                 .map(m -> new ReadQnaChatOutput.MessageItem(
                         m.getRole().getValue(),

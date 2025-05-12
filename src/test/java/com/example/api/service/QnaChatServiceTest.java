@@ -166,7 +166,7 @@ public class QnaChatServiceTest {
         List<ReferenceResponse.ReferenceChunkResponse> references = new ArrayList<>();
         references.add(new ReferenceResponse.ReferenceChunkResponse("재귀 함수는 자기 자신을 호출하는 함수입니다.", 42));
         referenceResponse.setReferences(references);
-        when(langchainClient.findReferences(eq(TEST_LECTURE_ID), eq(question), eq(3)))
+        when(langchainClient.findReferencesInLecture(eq(TEST_LECTURE_ID), eq(question), eq(3), eq(0.3)))
                 .thenReturn(referenceResponse);
 
         // 대화 히스토리 모의

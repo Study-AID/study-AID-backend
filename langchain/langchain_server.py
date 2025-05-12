@@ -49,10 +49,9 @@ def format_buffer_window_messages_list(memory):
         for m in msgs
     ]  
 
-@app.route("/vectors", methods=["POST"])
-def vectorize_lectures():
+@app.route("/lectures/<lecture_id>/embeddings", methods=["POST"])
+def generate_lecture_embeddings(lecture_id):
     data = request.json
-    lecture_id = data.get("lecture_id")
     parsed_text = data.get("parsed_text")
 
     print("\n===== [DEBUG] parsed_text from Spring =====", flush=True)
@@ -60,55 +59,59 @@ def vectorize_lectures():
     print("raw:\n", parsed_text[:100] if parsed_text else "None", flush=True)
     print("==========================================\n", flush=True)
 
-    if not lecture_id or not parsed_text:
-        return jsonify({"error": "lecture_id and parsed_text are required"}), 400
+    if not parsed_text:
+        return jsonify({"error": "parsed_text is required"}), 400
 
     documents = parse_pages(parsed_text)
     volume_path = os.path.join(VECTOR_DIR, lecture_id)
 
-    vectors = Chroma.from_documents(
+    vector_store = Chroma.from_documents(
         documents,
         embedding=embeddings,
         persist_directory=volume_path
     )
-    in_memory_vector_reference_context[lecture_id] = vectors
+    in_memory_vector_reference_context[lecture_id] = vector_store
 
     sample_vectors = []
     if documents:
-        raw_vector = embeddings.embed_documents([documents[0].page_content])[0]  #변경
-        sample_vectors = raw_vector[:3]
+        vector = embeddings.embed_documents([documents[0].page_content])[0]
+        sample_vectors = vector[:3]
 
     return jsonify({
-        "message": "Lecture vectorized successfully",
+        "message": "Lecture embeddings generated successfully",
         "lecture_id": lecture_id,
         "total_chunks": len(documents),
         "sample_vectors": sample_vectors
     }), 200
 
-@app.route("/references", methods=["POST"])
-def find_references():
+@app.route("/lectures/<lecture_id>/references", methods=["POST"])
+def find_references_in_lecture(lecture_id):
     data = request.json
-    lecture_id = data.get("lecture_id")
     question = data.get("question")
+
     # 하이퍼 파라미터 k. gpt에 넘겨줄 chunk 수. chunk 수 많을 수록 gpt 비용 증가. 3은 기본값이며 k는 서비스에서 넘겨줍니다.
-    top_k = int(data.get("k", 3))
+    top_k = int(data.get("max_num_references", 3))
     min_similarity = float(data.get("min_similarity", 0.3))
 
-    if not lecture_id or not question:
-        return jsonify({"error": "lectureId and question are required"}), 400
+    if not question:
+        return jsonify({"error": "question is required"}), 400
 
-    if lecture_id not in in_memory_vector_reference_context:
-        path = os.path.join(VECTOR_DIR, lecture_id)
-        if not os.path.exists(path):
-            return jsonify({"error": "Lecture index not found"}), 404
-        in_memory_vector_reference_context[lecture_id] = Chroma(
-            embedding_function=embeddings,
-            persist_directory=path
-        )
+    try:
+        vector_store = in_memory_vector_reference_context.get(lecture_id)
+        if vector_store is None:
+            path = os.path.join(VECTOR_DIR, lecture_id)
+            if not os.path.exists(path):
+                return jsonify({"error": "Lecture index not found"}), 404
+            vector_store = Chroma(
+                embedding_function=embeddings,
+                persist_directory=path
+            )
+            in_memory_vector_reference_context[lecture_id] = vector_store
+    except Exception as e:
+        return jsonify({"error": f"Failed to load Chroma index: {str(e)}"}), 500
 
-    vectorstore = in_memory_vector_reference_context[lecture_id]
     # 중복 출처는 없애기 위해 k*5개를 가져와서 중복 제거 후 k개만 리턴합니다.
-    docs_and_scores = vectorstore.similarity_search_with_score(question, k=top_k*5)
+    docs_and_scores = vector_store.similarity_search_with_score(question, k=top_k*5)
     # 유사도로 변환 후 높은 순으로 정렬
     similarity_results = [(doc, 1.0 - score) for doc, score in docs_and_scores]
     similarity_results.sort(key=lambda x: x[1], reverse=True)
