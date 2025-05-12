@@ -1,9 +1,6 @@
 package com.example.api.service;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,8 +11,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
-import io.minio.errors.MinioException;
-import io.minio.errors.XmlParserException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -28,7 +23,7 @@ public class MinioStorageService implements StorageService {
     private String bucket;
 
     @Override
-    public void upload(MultipartFile pdf) throws IOException, NoSuchAlgorithmException, XmlParserException, MinioException, InvalidKeyException, IllegalArgumentException {
+    public void upload(MultipartFile pdf) throws Exception {
         long size = pdf.getSize();
         long maxFileSize = multipartProperties.getMaxFileSize().toBytes();
 

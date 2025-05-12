@@ -3,10 +3,6 @@ package com.example.api.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,8 +17,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
-import io.minio.errors.MinioException;
-import io.minio.errors.XmlParserException;
 
 @ExtendWith(SpringExtension.class)
 @Import(MinioStorageService.class) 
@@ -47,7 +41,7 @@ class MinioStorageServiceTest {
     
     @Test
     @DisplayName("PDF 파일 업로드 성공")
-    void uploadPdfSuccess() throws IOException, NoSuchAlgorithmException, MinioException, XmlParserException, InvalidKeyException {
+    void uploadPdfSuccess() throws Exception {
         // Given
         byte[] content = "PDF content".getBytes();
         MockMultipartFile pdfFile = new MockMultipartFile(

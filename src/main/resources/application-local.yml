@@ -48,8 +48,8 @@ jwt:
 
 minio:
   endpoint: http://minio:9000
-  access-key: ${MINIO_ACCESS_KEY}
-  secret-key: ${MINIO_SECRET_KEY}
+  access-key: minioadmin
+  secret-key: minioadmin
 
 aws:  
   region: ap-northeast-2

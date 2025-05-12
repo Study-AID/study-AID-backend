@@ -10,10 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,8 +25,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.multipart.MultipartFile;
 
-import io.minio.errors.MinioException;
-import io.minio.errors.XmlParserException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -56,7 +51,7 @@ class S3StorageServiceTest {
     
     @Test
     @DisplayName("PDF 파일 업로드 성공")
-    void uploadPdfSuccess() throws IOException, NoSuchAlgorithmException, MinioException, XmlParserException, InvalidKeyException {
+    void uploadPdfSuccess() throws Exception {
         // Given
         byte[] content = "PDF content".getBytes();
         

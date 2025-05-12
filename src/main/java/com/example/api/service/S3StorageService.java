@@ -1,9 +1,6 @@
 package com.example.api.service;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,8 +9,6 @@ import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import io.minio.errors.MinioException;
-import io.minio.errors.XmlParserException;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -29,7 +24,7 @@ public class S3StorageService implements StorageService {
     private String bucket;
 
     @Override
-    public void upload(MultipartFile pdf) throws IOException, NoSuchAlgorithmException, XmlParserException, MinioException, InvalidKeyException, IllegalArgumentException {
+    public void upload(MultipartFile pdf) throws Exception {
         long size = pdf.getSize();
         long maxFileSize = multipartProperties.getMaxFileSize().toBytes();
 
