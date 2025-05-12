@@ -45,3 +45,11 @@ logging:
 # JWT Configuration
 jwt:
   secret_key: ${JWT_SECRET_KEY}
+
+minio:
+  endpoint: http://minio:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+
+aws:  
+  region: ap-northeast-2
