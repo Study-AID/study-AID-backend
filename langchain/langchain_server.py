@@ -15,7 +15,7 @@ in_memory_vector_reference_context = {}
 
 VECTOR_DIR = "/app/chroma_db"
 
-# TODO (jin): optimize (hyperparameter, model, translation, memory) this logic for better UX, refactor names, add test code, swagger
+# TODO(jin): optimize (hyperparameter, model, translation, memory) this logic for better UX, refactor names, add test code, swagger
 embeddings = HuggingFaceEmbeddings(
     model_name="BAAI/bge-m3",
     encode_kwargs={"normalize_embeddings": True}
@@ -79,7 +79,6 @@ def generate_lecture_embeddings(lecture_id):
 
     return jsonify({
         "message": "Lecture embeddings generated successfully",
-        "lecture_id": lecture_id,
         "total_chunks": len(documents),
         "sample_vectors": sample_vectors
     }), 200
