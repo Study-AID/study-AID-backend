@@ -1,0 +1,85 @@
+name: [Dev] Database Migration
+
+on:
+  push:
+    tags:
+      - 'migrate-db-[0-9]*-dev'
+
+env:
+  FLYWAY_VERSION: '10.4.1'  # Update as needed
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key for bastion
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.BASTION_PEM }}" > ~/.ssh/bastion.pem
+          chmod 600 ~/.ssh/bastion.pem
+          
+          # Add bastion host to known hosts
+          ssh-keyscan -H ${{ secrets.BASTION_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Start SSH tunnel
+        run: |
+          # Start SSH tunnel in background
+          ssh -i ~/.ssh/bastion.pem \
+              -o StrictHostKeyChecking=accept-new \
+              -N -L 5432:${{ secrets.DB_HOST_DEV }}:${{ secrets.DB_PORT_DEV }} \
+              ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} &
+          
+          # Save the SSH process ID
+          echo $! > ssh_tunnel.pid
+          
+          # Wait for tunnel to be established
+          sleep 5
+
+      - name: Setup Flyway config
+        run: |
+          # Create Flyway config file with localhost since we're using SSH tunnel
+          cat > flyway/flyway-dev.conf << EOF
+          flyway.url=jdbc:postgresql://localhost:5432/${{ secrets.DB_NAME_DEV }}
+          flyway.user=${{ secrets.DB_USER_DEV }}
+          flyway.password=${{ secrets.DB_PASSWORD_DEV }}
+          flyway.schemas=app,public
+          flyway.table=schema_version
+          flyway.locations=filesystem:./migrations
+          flyway.cleanDisabled=true
+          flyway.outOfOrder=false
+          flyway.validateOnMigrate=true
+          flyway.baselineOnMigrate=true
+          flyway.placeholders.appSchema=app
+          EOF
+
+      - name: Download Flyway
+        run: |
+          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/${FLYWAY_VERSION}/flyway-commandline-${FLYWAY_VERSION}-linux-x64.tar.gz | tar xvz
+          mv flyway-${FLYWAY_VERSION} flyway-cli
+
+      - name: Run migration
+        working-directory: ./flyway
+        run: |
+          ../flyway-cli/flyway -configFiles=flyway-dev.conf migrate
+
+      - name: Check migration info
+        working-directory: ./flyway
+        run: |
+          ../flyway-cli/flyway -configFiles=flyway-dev.conf info
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Kill SSH tunnel
+          if [ -f ssh_tunnel.pid ]; then
+            kill $(cat ssh_tunnel.pid) || true
+          fi
+          
+          # Remove sensitive files
+          rm -f flyway/flyway-dev.conf
+          rm -f ~/.ssh/bastion.pem
+          rm -f ssh_tunnel.pid
