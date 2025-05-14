@@ -3,10 +3,10 @@ from typing import List
 
 
 class ParsedPage(BaseModel):
-    pageNumber: int
+    page_number: int
     text: str
 
 
 class ParsedText(BaseModel):
-    totalPages: int
+    total_pages: int
     pages: List[ParsedPage]

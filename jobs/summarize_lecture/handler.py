@@ -121,9 +121,9 @@ def extract_parsed_text_from_pdf(file_path):
         with fitz.open(file_path) as doc:
             for page_num, page in enumerate(doc, start=1):
                 page_text = page.get_text()
-                pages.append(ParsedPage(pageNumber=page_num, text=page_text))
+                pages.append(ParsedPage(page_number=page_num, text=page_text))
 
-        parsed_text = ParsedText(totalPages=len(pages), pages=pages)
+        parsed_text = ParsedText(total_pages=len(pages), pages=pages)
         return parsed_text
     except Exception as e:
         logger.error(f"Error extracting text from PDF: {e}")
