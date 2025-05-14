@@ -1,6 +1,7 @@
 package com.example.api.controller.dto.lecture;
 
 import com.example.api.entity.enums.SummaryStatus;
+import com.example.api.entity.ParsedText;
 import com.example.api.service.dto.lecture.LectureOutput;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -42,6 +43,9 @@ public class LectureResponse {
     @Schema(description = "Display order lexicographically")
     private String displayOrderLex;
 
+    @Schema(description = "Parsed text from PDF")
+    private ParsedText parsedText;
+
     @Schema(description = "Notes associated with the lecture")
     private Map<String, Object> note;
 
@@ -68,6 +72,7 @@ public class LectureResponse {
                 lecture.getMaterialPath(),
                 lecture.getMaterialType(),
                 lecture.getDisplayOrderLex(),
+                lecture.getParsedText(),
                 lecture.getNote(),
                 lecture.getSummary(),
                 lecture.getSummaryStatus(),

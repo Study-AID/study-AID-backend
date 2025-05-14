@@ -3,6 +3,8 @@ package com.example.api.controller;
 import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.lecture.UpdateLectureRequest;
+import com.example.api.entity.ParsedPage;
+import com.example.api.entity.ParsedText;
 import com.example.api.repository.UserRepository;
 import com.example.api.security.jwt.JwtAuthenticationFilter;
 import com.example.api.security.jwt.JwtProvider;
@@ -83,6 +85,7 @@ class LectureControllerTest {
     private UUID semesterId;
     private UUID courseId;
     private UUID lectureId;
+    private ParsedText testParsedText;
 
     private SemesterOutput testSemesterOutput;
     private CourseOutput testCourseOutput;
@@ -119,6 +122,15 @@ class LectureControllerTest {
         testLectureOutput.setUserId(userId);
         testLectureOutput.setCourseId(courseId);
         testLectureOutput.setTitle("Introduction to Operating Systems");
+
+        // Create test parsed text
+        testParsedText = new ParsedText();
+        testParsedText.setTotalPages(2);
+        testParsedText.setPages(List.of(
+                new ParsedPage(1, "Page 1 content"),
+                new ParsedPage(2, "Page 2 content")
+        ));
+        testLectureOutput.setParsedText(testParsedText);
     }
 
     // Add test methods here
@@ -206,10 +218,15 @@ class LectureControllerTest {
                 .andExpect(jsonPath("$.id").value(testLectureOutput.getId().toString()))
                 .andExpect(jsonPath("$.title").value("Introduction to Operating Systems"))
                 .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.courseId").value(courseId.toString()));
+                .andExpect(jsonPath("$.courseId").value(courseId.toString()))
+                .andExpect(jsonPath("$.parsedText.totalPages").value(2))
+                .andExpect(jsonPath("$.parsedText.pages", hasSize(2)))
+                .andExpect(jsonPath("$.parsedText.pages[0].pageNumber").value(1))
+                .andExpect(jsonPath("$.parsedText.pages[0].text").value("Page 1 content"))
+                .andExpect(jsonPath("$.parsedText.pages[1].pageNumber").value(2))
+                .andExpect(jsonPath("$.parsedText.pages[1].text").value("Page 2 content"));
 
         verify(lectureService).findLectureById(lectureId);
-
     }
 
     @Test

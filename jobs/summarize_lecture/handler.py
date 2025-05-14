@@ -13,6 +13,7 @@ from botocore.exceptions import ClientError
 
 from openai_client import OpenAIClient
 from summary_models import Summary
+from parsed_text_models import ParsedText, ParsedPage
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -111,17 +112,19 @@ def download_file_from_s3(bucket, key, local_path):
         raise
 
 
-def extract_text_from_pdf(file_path):
-    """Extract text content from PDF file"""
+def extract_parsed_text_from_pdf(file_path):
+    """Extract text content from PDF file and return ParsedText schema"""
     try:
         import fitz  # PyMuPDF
 
-        text = ""
+        pages = []
         with fitz.open(file_path) as doc:
-            for page in doc:
-                text += page.get_text()
+            for page_num, page in enumerate(doc, start=1):
+                page_text = page.get_text()
+                pages.append(ParsedPage(pageNumber=page_num, text=page_text))
 
-        return text
+        parsed_text = ParsedText(totalPages=len(pages), pages=pages)
+        return parsed_text
     except Exception as e:
         logger.error(f"Error extracting text from PDF: {e}")
         raise
@@ -134,9 +137,9 @@ def update_lecture_status(lecture_id, status):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             query = """
-            UPDATE app.lectures 
-            SET summary_status = %s, 
-                updated_at = NOW() 
+            UPDATE app.lectures
+            SET summary_status = %s,
+                updated_at = NOW()
             WHERE id = %s
             """
             cursor.execute(query, (status, lecture_id))
@@ -174,6 +177,34 @@ def update_lecture_summary(lecture_id, summary):
         logger.info(f"Summary updated for lecture_id: {lecture_id}")
     except Exception as e:
         logger.error(f"Error updating lecture summary: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
+def update_lecture_parsed_text(lecture_id, parsed_text):
+    """Update the lecture's parsed text in the database"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Convert ParsedText object to JSON
+            parsed_text_json = json.dumps(parsed_text.model_dump())
+
+            # Update the lecture record
+            query = """
+            UPDATE app.lectures
+            SET parsed_text = %s,
+                updated_at = NOW()
+            WHERE id = %s
+            """
+            cursor.execute(query, (parsed_text_json, lecture_id))
+
+        conn.commit()
+        logger.info(f"Parsed text updated for lecture_id: {lecture_id}")
+    except Exception as e:
+        logger.error(f"Error updating lecture parsed text: {e}")
         raise
     finally:
         if conn:
@@ -238,8 +269,14 @@ def lambda_handler(event, context):
             local_file_path = f"/tmp/{os.path.basename(s3_key)}"
             download_file_from_s3(s3_bucket, s3_key, local_file_path)
 
-            # Extract text from PDF
-            lecture_content = extract_text_from_pdf(local_file_path)
+            # Extract parsed text from PDF
+            parsed_text = extract_parsed_text_from_pdf(local_file_path)
+
+            # Update lecture with parsed text
+            update_lecture_parsed_text(lecture_id, parsed_text)
+
+            # Concatenate all page text for summary generation
+            lecture_content = '\n'.join([page.text for page in parsed_text.pages])
 
             # Generate summary using OpenAI
             openai_client = OpenAIClient()
