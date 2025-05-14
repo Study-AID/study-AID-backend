@@ -219,11 +219,11 @@ class LectureControllerTest {
                 .andExpect(jsonPath("$.title").value("Introduction to Operating Systems"))
                 .andExpect(jsonPath("$.userId").value(userId.toString()))
                 .andExpect(jsonPath("$.courseId").value(courseId.toString()))
-                .andExpect(jsonPath("$.parsedText.totalPages").value(2))
+                .andExpect(jsonPath("$.parsedText.total_pages").value(2))
                 .andExpect(jsonPath("$.parsedText.pages", hasSize(2)))
-                .andExpect(jsonPath("$.parsedText.pages[0].pageNumber").value(1))
+                .andExpect(jsonPath("$.parsedText.pages[0].page_number").value(1))
                 .andExpect(jsonPath("$.parsedText.pages[0].text").value("Page 1 content"))
-                .andExpect(jsonPath("$.parsedText.pages[1].pageNumber").value(2))
+                .andExpect(jsonPath("$.parsedText.pages[1].page_number").value(2))
                 .andExpect(jsonPath("$.parsedText.pages[1].text").value("Page 2 content"));
 
         verify(lectureService).findLectureById(lectureId);
