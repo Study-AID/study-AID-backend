@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.example.api.entity.Lecture;
 import com.example.api.entity.enums.SummaryStatus;
+import com.example.api.entity.ParsedText;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,6 +24,7 @@ public class LectureOutput {
     private String materialPath;
     private String materialType;
     private String displayOrderLex;
+    private ParsedText parsedText;
     private Map<String, Object> note;
     private Map<String, Object> summary;
     private SummaryStatus summaryStatus;
@@ -38,6 +40,7 @@ public class LectureOutput {
                 lecture.getMaterialPath(),
                 lecture.getMaterialType(),
                 lecture.getDisplayOrderLex(),
+                lecture.getParsedText(),
                 lecture.getNote(),
                 lecture.getSummary(),
                 lecture.getSummaryStatus(),
