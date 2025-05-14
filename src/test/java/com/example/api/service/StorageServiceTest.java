@@ -9,6 +9,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -23,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class StorageServiceTest {
 
     @Mock
@@ -42,9 +45,6 @@ class StorageServiceTest {
 
     @BeforeEach
     void setUp() {
-        // StorageProperties 설정
-        when(storageProperties.getBucket()).thenReturn("test-bucket");
-
         // S3 전용 서비스
         s3StorageService = new S3StorageService(
             mockS3Client,
@@ -64,6 +64,8 @@ class StorageServiceTest {
     @DisplayName("S3Client.putObject 호출 검증")
     void upload_callsS3ClientPutObject() throws Exception {
         // given
+        when(storageProperties.getBucket()).thenReturn("test-bucket");
+
         byte[] data = "hello".getBytes();
         MockMultipartFile file = new MockMultipartFile(
             "file", "test.pdf",
@@ -95,6 +97,8 @@ class StorageServiceTest {
     @DisplayName("MinioClient.putObject 호출 검증")
     void upload_callsMinioClientPutObject() throws Exception {
         // given
+        when(storageProperties.getBucket()).thenReturn("test-bucket");
+
         byte[] data = "hello".getBytes();
         MockMultipartFile file = new MockMultipartFile(
             "file", "test.pdf",
