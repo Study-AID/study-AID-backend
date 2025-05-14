@@ -22,10 +22,9 @@ public class StorageConfig {
 
     @Bean
     @Profile("local")
-    public MinioClient minioClient(
-            @Value("${minio.endpoint}") String endpoint,
-            @Value("${minio.access-key}") String accessKey,
-            @Value("${minio.secret-key}") String secretKey) {
+    public MinioClient minioClient(@Value("${minio.endpoint}") String endpoint,
+                                  @Value("${minio.access-key}") String accessKey,
+                                  @Value("${minio.secret-key}") String secretKey) {
         return MinioClient.builder()
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)

@@ -1,9 +1,10 @@
 package com.example.api.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping; 
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,7 +15,8 @@ import com.example.api.service.StorageService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/storage")
+@RequestMapping("/v1/storage")
+@Tag(name = "Storage", description = "Storage API")
 @RequiredArgsConstructor
 public class StorageController {
     private final StorageService storageService;
