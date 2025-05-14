@@ -3,6 +3,7 @@ package com.example.api.controller.dto.lecture;
 import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.service.dto.lecture.LectureOutput;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,15 +17,19 @@ import java.util.UUID;
 @AllArgsConstructor
 @Schema(description = "Lecture response DTO")
 public class LectureResponse {
+    @NotNull
     @Schema(description = "Unique ID of the lecture")
     private UUID id;
 
+    @NotNull
     @Schema(description = "Unique ID of the course")
     private UUID courseId;
 
+    @NotNull
     @Schema(description = "Unique ID of the user")
     private UUID userId;
 
+    @NotNull
     @Schema(description = "Title of the lecture")
     private String title;
 
@@ -33,7 +38,7 @@ public class LectureResponse {
 
     @Schema(description = "Type of the lecture material")
     private String materialType;
-    
+
     @Schema(description = "Display order lexicographically")
     private String displayOrderLex;
 
@@ -46,9 +51,11 @@ public class LectureResponse {
     @Schema(description = "Summary status of the lecture")
     private SummaryStatus summaryStatus;
 
+    @NotNull
     @Schema(description = "Creation timestamp of the lecture")
     private LocalDateTime createdAt;
 
+    @NotNull
     @Schema(description = "Last update timestamp of the lecture")
     private LocalDateTime updatedAt;
 
