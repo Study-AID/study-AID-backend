@@ -11,13 +11,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.util.ReflectionTestUtils;
+
+import com.example.api.config.StorageProperties;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,6 +31,9 @@ class StorageServiceTest {
     @Mock
     private MinioClient mockMinioClient;
 
+    @Mock
+    private StorageProperties storageProperties;
+
     private S3StorageService s3StorageService;
     private MinioStorageService minioStorageService;
 
@@ -40,19 +42,22 @@ class StorageServiceTest {
 
     @BeforeEach
     void setUp() {
+        // StorageProperties 설정
+        when(storageProperties.getBucket()).thenReturn("test-bucket");
+
         // S3 전용 서비스
         s3StorageService = new S3StorageService(
-            Optional.of(mockS3Client),
-            multipartProperties
+            mockS3Client,
+            multipartProperties,
+            storageProperties
         );
-        ReflectionTestUtils.setField(s3StorageService, "bucket", "test-bucket");
 
         // MinIO 전용 서비스
         minioStorageService = new MinioStorageService(
-            Optional.of(mockMinioClient),
-            multipartProperties
+            mockMinioClient,
+            multipartProperties,
+            storageProperties
         );
-        ReflectionTestUtils.setField(minioStorageService, "bucket", "test-bucket");
     }
 
     @Test
@@ -67,7 +72,7 @@ class StorageServiceTest {
 
         // when
         when(multipartProperties.getMaxFileSize())
-        .thenReturn(org.springframework.util.unit.DataSize.ofMegabytes(50));
+            .thenReturn(org.springframework.util.unit.DataSize.ofMegabytes(50));
 
         s3StorageService.upload(file);
 
@@ -98,7 +103,7 @@ class StorageServiceTest {
 
         // when
         when(multipartProperties.getMaxFileSize())
-        .thenReturn(org.springframework.util.unit.DataSize.ofMegabytes(50));
+            .thenReturn(org.springframework.util.unit.DataSize.ofMegabytes(50));
 
         minioStorageService.upload(file);
 
@@ -130,7 +135,7 @@ class StorageServiceTest {
         };
         // when
         when(multipartProperties.getMaxFileSize())
-        .thenReturn(org.springframework.util.unit.DataSize.ofMegabytes(50));
+            .thenReturn(org.springframework.util.unit.DataSize.ofMegabytes(50));
 
         // then: S3 모드
         assertThrows(IllegalArgumentException.class, () -> {

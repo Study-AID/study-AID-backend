@@ -21,9 +21,13 @@ import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.example.api.config.StorageProperties;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -31,14 +35,30 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 
 @ExtendWith(SpringExtension.class)
-@Import(S3StorageService.class) 
+@Import({S3StorageServiceTest.TestConfig.class})
 @TestPropertySource(properties = {
-    "aws.region=ap-northeast-2",
     "storage.bucket=test-bucket",
     "spring.servlet.multipart.max-file-size=50MB"
 })
 @DisplayName("S3StorageService 테스트")
 class S3StorageServiceTest {
+    
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public StorageProperties storageProperties() {
+            StorageProperties properties = new StorageProperties();
+            properties.setBucket("test-bucket");
+            return properties;
+        }
+        
+        @Bean
+        public S3StorageService s3StorageService(S3Client s3Client,
+                                                MultipartProperties multipartProperties,
+                                                StorageProperties storageProperties) {
+            return new S3StorageService(s3Client, multipartProperties, storageProperties);
+        }
+    }
     
     @MockBean
     private S3Client s3Client;

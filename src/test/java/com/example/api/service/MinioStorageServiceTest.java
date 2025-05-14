@@ -12,23 +12,41 @@ import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import com.example.api.config.StorageProperties;
 
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 
 @ExtendWith(SpringExtension.class)
-@Import(MinioStorageService.class) 
+@Import({MinioStorageServiceTest.TestConfig.class})
 @TestPropertySource(properties = {
-    "minio.endpoint=http://minio:9000",
-    "minio.access-key=test-access-key",
-    "minio.secret-key=test-secret-key",
     "storage.bucket=test-bucket",
     "spring.servlet.multipart.max-file-size=50MB"
 })
 @DisplayName("MinioStorageService 테스트")
 class MinioStorageServiceTest {
+    
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public StorageProperties storageProperties() {
+            StorageProperties properties = new StorageProperties();
+            properties.setBucket("test-bucket");
+            return properties;
+        }
+        
+        @Bean
+        public MinioStorageService minioStorageService(MinioClient minioClient,
+                                                      MultipartProperties multipartProperties,
+                                                      StorageProperties storageProperties) {
+            return new MinioStorageService(minioClient, multipartProperties, storageProperties);
+        }
+    }
     
     @MockBean
     private MinioClient minioClient;
