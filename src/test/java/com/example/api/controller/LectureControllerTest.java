@@ -1,37 +1,9 @@
 package com.example.api.controller;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-
 import com.example.api.controller.dto.lecture.CreateLectureRequest;
 import com.example.api.controller.dto.lecture.UpdateLectureRequest;
+import com.example.api.entity.ParsedPage;
+import com.example.api.entity.ParsedText;
 import com.example.api.repository.UserRepository;
 import com.example.api.security.jwt.JwtProvider;
 import com.example.api.service.CourseService;
@@ -44,6 +16,30 @@ import com.example.api.service.dto.lecture.LectureOutput;
 import com.example.api.service.dto.lecture.UpdateLectureInput;
 import com.example.api.service.dto.semester.SemesterOutput;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
         controllers = LectureController.class,
@@ -80,6 +76,7 @@ class LectureControllerTest {
     private UUID semesterId;
     private UUID courseId;
     private UUID lectureId;
+    private ParsedText testParsedText;
 
     private SemesterOutput testSemesterOutput;
     private CourseOutput testCourseOutput;
@@ -117,6 +114,15 @@ class LectureControllerTest {
         testLectureOutput.setUserId(userId);
         testLectureOutput.setCourseId(courseId);
         testLectureOutput.setTitle("Introduction to Operating Systems");
+
+        // Create test parsed text
+        testParsedText = new ParsedText();
+        testParsedText.setTotalPages(2);
+        testParsedText.setPages(List.of(
+                new ParsedPage(1, "Page 1 content"),
+                new ParsedPage(2, "Page 2 content")
+        ));
+        testLectureOutput.setParsedText(testParsedText);
     }
 
     // Add test methods here
@@ -201,10 +207,15 @@ class LectureControllerTest {
                 .andExpect(jsonPath("$.id").value(testLectureOutput.getId().toString()))
                 .andExpect(jsonPath("$.title").value("Introduction to Operating Systems"))
                 .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.courseId").value(courseId.toString()));
+                .andExpect(jsonPath("$.courseId").value(courseId.toString()))
+                .andExpect(jsonPath("$.parsedText.total_pages").value(2))
+                .andExpect(jsonPath("$.parsedText.pages", hasSize(2)))
+                .andExpect(jsonPath("$.parsedText.pages[0].page_number").value(1))
+                .andExpect(jsonPath("$.parsedText.pages[0].text").value("Page 1 content"))
+                .andExpect(jsonPath("$.parsedText.pages[1].page_number").value(2))
+                .andExpect(jsonPath("$.parsedText.pages[1].text").value("Page 2 content"));
 
         verify(lectureService).findLectureById(lectureId);
-
     }
 
 
@@ -270,11 +281,11 @@ class LectureControllerTest {
         // LectureController에서 사용하는 sample prefix 변수들과 비교
         verify(lectureService).createLecture(argThat(input ->
                 input.getCourseId().equals(courseId) &&
-                input.getUserId().equals(userId) &&
-                input.getTitle().equals("Test Title") &&
-                input.getMaterialPath().equals("test/path") &&
-                input.getMaterialType().equals("pdf") &&
-                input.getDisplayOrderLex().equals("1")
+                        input.getUserId().equals(userId) &&
+                        input.getTitle().equals("Test Title") &&
+                        input.getMaterialPath().equals("test/path") &&
+                        input.getMaterialType().equals("pdf") &&
+                        input.getDisplayOrderLex().equals("1")
         ));
     }
 
@@ -313,8 +324,8 @@ class LectureControllerTest {
         verify(lectureService).findLectureById(lectureId);
         verify(lectureService).updateLecture(argThat(input ->
                 input.getTitle().equals("Updated Lecture Title") &&
-                input.getMaterialPath().equals("updated_material_path") &&
-                input.getMaterialType().equals("updated_material_type")
+                        input.getMaterialPath().equals("updated_material_path") &&
+                        input.getMaterialType().equals("updated_material_type")
         ));
     }
 
