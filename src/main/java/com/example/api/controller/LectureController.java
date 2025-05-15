@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -191,9 +192,10 @@ public class LectureController {
     @Operation(
             description = "Creates a new lecture",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Lecture details (courseId, title)",
-                    required = true,
-                    content = @Content(schema = @Schema(implementation = CreateLectureRequest.class))
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(implementation = CreateLectureRequest.class)
+                    )
             ),
             responses = {
                     @ApiResponse(
