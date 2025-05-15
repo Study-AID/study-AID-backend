@@ -1,20 +1,24 @@
 package com.example.api.dto.response;
 
-import java.util.UUID;
-
-import com.example.api.entity.enums.AuthType;
-import lombok.NoArgsConstructor;
+import com.example.api.entity.User;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-import com.example.api.entity.User;
+import java.util.UUID;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserSummaryResponse {
+    @NotNull
     private UUID id;
+
+    @NotNull
     private String email;
+
+    @NotNull
     private String name;
 
     public static UserSummaryResponse from(User user) {
