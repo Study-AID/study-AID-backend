@@ -14,6 +14,7 @@ services:
       - postgres
       - redis
       - minio
+      - createbuckets
       - localstack
     environment:
       DB_HOST: postgres
@@ -120,7 +121,7 @@ services:
       - DATA_DIR=/tmp/localstack/data
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
-      - AWS_DEFAULT_REGION=ap-northeast-2
+      - AWS_REGION=ap-northeast-2
     networks:
       - app-network
     restart: unless-stopped
