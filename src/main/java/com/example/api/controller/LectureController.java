@@ -187,7 +187,7 @@ public class LectureController {
         }
     }
 
-    @PostMapping
+    @PostMapping(consumes = "multipart/form-data")
     @Operation(
             description = "Creates a new lecture",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
