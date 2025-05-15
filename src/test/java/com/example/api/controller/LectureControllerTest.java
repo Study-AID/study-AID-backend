@@ -1,26 +1,40 @@
 package com.example.api.controller;
 
+<<<<<<< HEAD
 import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.lecture.CreateLectureRequest;
 import com.example.api.controller.dto.lecture.UpdateLectureRequest;
 import com.example.api.repository.UserRepository;
 import com.example.api.security.jwt.JwtAuthenticationFilter;
+=======
+import com.example.api.adapters.sqs.SQSClient;
+import com.example.api.controller.dto.lecture.UpdateLectureRequest;
+import com.example.api.repository.UserRepository;
+>>>>>>> 4a6309e (feat: upload the pdf file and pub SQS message)
 import com.example.api.security.jwt.JwtProvider;
 import com.example.api.service.CourseService;
 import com.example.api.service.LectureService;
 import com.example.api.service.SemesterService;
+<<<<<<< HEAD
+=======
+import com.example.api.service.StorageService;
+>>>>>>> 4a6309e (feat: upload the pdf file and pub SQS message)
 import com.example.api.service.dto.course.CourseOutput;
 import com.example.api.service.dto.lecture.CreateLectureInput;
 import com.example.api.service.dto.lecture.LectureListOutput;
 import com.example.api.service.dto.lecture.LectureOutput;
 import com.example.api.service.dto.lecture.UpdateLectureInput;
 import com.example.api.service.dto.semester.SemesterOutput;
+<<<<<<< HEAD
 import com.example.api.util.WithMockUser;
+=======
+>>>>>>> 4a6309e (feat: upload the pdf file and pub SQS message)
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+<<<<<<< HEAD
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -28,6 +42,29 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+=======
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+>>>>>>> 4a6309e (feat: upload the pdf file and pub SQS message)
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -69,7 +106,14 @@ class LectureControllerTest {
     private SemesterService semesterService;
 
     @MockBean
+<<<<<<< HEAD
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+=======
+    private StorageService storageService;
+
+    @MockBean
+    private SQSClient sqsClient;
+>>>>>>> 4a6309e (feat: upload the pdf file and pub SQS message)
 
     private UUID userId;
     private UUID semesterId;
@@ -246,18 +290,25 @@ class LectureControllerTest {
     @WithMockUser
     void createLectureTest() throws Exception {
         // Given
-        CreateLectureRequest createLectureRequest = new CreateLectureRequest();
-        createLectureRequest.setCourseId(courseId);
+        MockMultipartFile pdfFile = new MockMultipartFile(
+                "file",
+                "test-lecture.pdf",
+                "application/pdf",
+                "PDF content".getBytes()
+        );
 
         when(courseService.findCourseById(courseId))
                 .thenReturn(Optional.of(testCourseOutput));
+        when(storageService.upload(any()))
+                .thenReturn("test-key.pdf");
         when(lectureService.createLecture(any(CreateLectureInput.class)))
                 .thenReturn(testLectureOutput);
 
         // When & Then
-        mockMvc.perform(post("/v1/lectures")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createLectureRequest)))
+        mockMvc.perform(multipart("/v1/lectures")
+                        .file(pdfFile)
+                        .param("courseId", courseId.toString())
+                        .param("title", "Test Lecture"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(testLectureOutput.getId().toString()))
                 .andExpect(jsonPath("$.title").value("Introduction to Operating Systems"))
@@ -265,15 +316,49 @@ class LectureControllerTest {
                 .andExpect(jsonPath("$.courseId").value(courseId.toString()));
 
         verify(courseService).findCourseById(courseId);
-        // LectureController에서 사용하는 sample prefix 변수들과 비교
+        verify(storageService).upload(any());
+        verify(sqsClient).sendGenerateSummaryMessage(any());
         verify(lectureService).createLecture(argThat(input ->
                 input.getCourseId().equals(courseId) &&
                         input.getUserId().equals(userId) &&
+<<<<<<< HEAD
                         input.getTitle().equals("Test Title") &&
                         input.getMaterialPath().equals("test/path") &&
                         input.getMaterialType().equals("pdf") &&
                         input.getDisplayOrderLex().equals("1")
+=======
+                        input.getTitle().equals("Test Lecture") &&
+                        input.getMaterialPath().equals("test-key.pdf") &&
+                        input.getMaterialType().equals("pdf")
+>>>>>>> 4a6309e (feat: upload the pdf file and pub SQS message)
         ));
+    }
+
+    @Test
+    @DisplayName("강의 생성 실패 테스트 - PDF가 아닌 파일")
+    void createLectureNonPdfFileTest() throws Exception {
+        // Given
+        MockMultipartFile textFile = new MockMultipartFile(
+                "file",
+                "test-lecture.txt",
+                "text/plain",
+                "Text content".getBytes()
+        );
+
+        when(courseService.findCourseById(courseId))
+                .thenReturn(Optional.of(testCourseOutput));
+
+        // When & Then
+        mockMvc.perform(multipart("/v1/lectures")
+                        .file(textFile)
+                        .param("courseId", courseId.toString())
+                        .param("title", "Test Lecture"))
+                .andExpect(status().isBadRequest());
+
+        verify(courseService).findCourseById(courseId);
+        verify(storageService, never()).upload(any());
+        verify(sqsClient, never()).sendGenerateSummaryMessage(any());
+        verify(lectureService, never()).createLecture(any());
     }
 
     @Test

@@ -14,6 +14,7 @@ services:
       - postgres
       - redis
       - minio
+      - localstack
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -93,6 +94,25 @@ services:
       retries: 5
     restart: unless-stopped
 
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sqs
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=ap-northeast-2
+    volumes:
+      - localstack-data:/tmp/localstack
+      - ./scripts/localstack-init.sh:/docker-entrypoint-initaws.d/init.sh
+    networks:
+      - app-network
+    restart: unless-stopped
+
 networks:
   app-network:
     driver: bridge
@@ -101,3 +121,4 @@ volumes:
   postgres-data:
   redis-data:
   gradle-cache:
+  localstack-data:

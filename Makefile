@@ -1,4 +1,4 @@
-.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win open-test-report open-coverage-report migrate migration-info test-env-start test-env-setup test-job-summarize test-job-quiz test-job-exam test-job-shell test-env-stop test-env-clean
+.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win open-test-report open-coverage-report migrate migration-info test-env-start test-env-setup test-job-summarize test-job-quiz test-job-exam test-job-shell test-env-stop test-env-clean init-localstack
 
 # Default target
 help:
@@ -38,6 +38,10 @@ build:
 # Start all services
 run:
 	docker compose up -d
+	@echo "Waiting for services to be ready..."
+	@sleep 5
+	@echo "Initializing LocalStack..."
+	@bash scripts/init-localstack.sh
 	@echo "API Server is running at http://localhost:8080/api"
 	@echo "Swagger UI is available at http://localhost:8080/api/swagger-ui.html"
 

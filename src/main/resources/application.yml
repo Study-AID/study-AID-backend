@@ -57,3 +57,11 @@ jwt:
   issuer: studyaid
   access-token-ttl-ms: 900000  # 15분
   refresh-token-ttl-ms: 1209600000  # 2주
+
+storage:
+  bucket: study-aid-lecture-materials
+
+# SQS Configuration
+sqs:
+  generate-summary:
+    queue-url: ${SQS_GENERATE_SUMMARY_QUEUE_URL}
