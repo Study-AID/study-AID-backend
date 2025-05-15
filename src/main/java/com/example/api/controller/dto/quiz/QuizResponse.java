@@ -2,7 +2,9 @@ package com.example.api.controller.dto.quiz;
 
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import com.example.api.entity.QuizItem;
 import com.example.api.entity.enums.Status;
 import com.example.api.service.dto.quiz.QuizOutput;
 
@@ -40,6 +42,10 @@ public class QuizResponse {
     @Schema(description = "Last update time")
     private LocalDateTime updatedAt;
 
+    @Schema(description = "Quiz item list")
+    private List<QuizItem> quizItems;
+    
+
     public static QuizResponse fromServiceDto(QuizOutput quiz) {
         return new QuizResponse(
                 quiz.getId().toString(),
@@ -49,7 +55,8 @@ public class QuizResponse {
                 quiz.getStatus(),
                 quiz.getContentsGenerateAt(),
                 quiz.getCreatedAt(),
-                quiz.getUpdatedAt()
+                quiz.getUpdatedAt(),
+                quiz.getQuizItems() // Assuming quizItems is a field in QuizOutput
         );
     }
 }

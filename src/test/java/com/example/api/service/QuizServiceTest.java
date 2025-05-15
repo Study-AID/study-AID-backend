@@ -3,6 +3,7 @@ package com.example.api.service;
 import com.example.api.entity.Course;
 import com.example.api.entity.Lecture;
 import com.example.api.entity.Quiz;
+import com.example.api.entity.QuizItem;
 import com.example.api.entity.Semester;
 import com.example.api.entity.User;
 import com.example.api.entity.enums.Status;
@@ -26,6 +27,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,6 +62,7 @@ public class QuizServiceTest {
     private Semester testSemester;
     private Lecture testLecture;
     private Quiz testQuiz;
+    private List<QuizItem> testQuizItems;
     private QuizOutput testQuizOutput;
 
     @BeforeEach
@@ -112,7 +115,16 @@ public class QuizServiceTest {
         testQuiz.setCreatedAt(LocalDateTime.now());
         testQuiz.setUpdatedAt(LocalDateTime.now());
 
-        testQuizOutput = QuizOutput.fromEntity(testQuiz);
+        testQuizItems = Arrays.asList(
+                new QuizItem(),
+                new QuizItem()
+        );
+        testQuizItems.get(0).setId(UUID.randomUUID());
+        testQuizItems.get(0).setQuiz(testQuiz);
+        testQuizItems.get(1).setId(UUID.randomUUID());
+        testQuizItems.get(1).setQuiz(testQuiz);
+
+        testQuizOutput = QuizOutput.fromEntity(testQuiz, testQuizItems);
     }
 
     @Test
@@ -124,6 +136,7 @@ public class QuizServiceTest {
 
         assertTrue(result.isPresent());
         assertEquals(testQuizOutput, result.get());
+        assertEquals(result.get().getQuizItems().get(0).getQuiz(), testQuiz);
         verify(quizRepository, times(1)).findById(quizId);
     }
 

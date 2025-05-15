@@ -1,5 +1,6 @@
 package com.example.api.service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -8,9 +9,11 @@ import org.springframework.stereotype.Service;
 
 import com.example.api.entity.Lecture;
 import com.example.api.entity.Quiz;
+import com.example.api.entity.QuizItem;
 import com.example.api.entity.User;
 import com.example.api.entity.enums.Status;
 import com.example.api.repository.LectureRepository;
+import com.example.api.repository.QuizItemRepository;
 import com.example.api.repository.QuizRepository;
 import com.example.api.repository.UserRepository;
 import com.example.api.service.dto.quiz.CreateQuizInput;
@@ -24,6 +27,7 @@ import jakarta.transaction.Transactional;
 public class QuizServiceImpl implements QuizService {
     private UserRepository userRepo;
     private QuizRepository quizRepo;
+    private QuizItemRepository quizItemRepo;
     private LectureRepository lectureRepo;
 
     @Autowired
@@ -39,8 +43,10 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public Optional<QuizOutput> findQuizById(UUID quizId) {
-        return quizRepo.findById(quizId)
-                .map(QuizOutput::fromEntity);
+        Optional<Quiz> quiz = quizRepo.findById(quizId);
+        List<QuizItem> quizItems = quizItemRepo.findByQuizId(quizId);
+        
+        return quiz.map(q -> QuizOutput.fromEntity(q, quizItems));
     }
 
     @Override
@@ -61,7 +67,8 @@ public class QuizServiceImpl implements QuizService {
         quiz.setStatus(Status.not_started);
 
         Quiz createdQuiz = quizRepo.createQuiz(quiz);
-        return QuizOutput.fromEntity(createdQuiz);
+        List<QuizItem> quizItems = quizItemRepo.findByQuizId(createdQuiz.getId());
+        return QuizOutput.fromEntity(createdQuiz, quizItems);
     }
 
     @Override
@@ -73,7 +80,8 @@ public class QuizServiceImpl implements QuizService {
         quiz.setStatus(input.getStatus());
 
         Quiz updateQuiz = quizRepo.updateQuiz(quiz);
-        return QuizOutput.fromEntity(updateQuiz);
+        List<QuizItem> quizItems = quizItemRepo.findByQuizId(updateQuiz.getId());
+        return QuizOutput.fromEntity(updateQuiz, quizItems);
     }
 
     @Override

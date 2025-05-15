@@ -2,6 +2,7 @@ package com.example.api.controller;
 
 import com.example.api.controller.dto.quiz.CreateQuizRequest;
 import com.example.api.controller.dto.quiz.UpdateQuizRequest;
+import com.example.api.entity.QuizItem;
 import com.example.api.entity.enums.Status;
 import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.UserRepository;
@@ -86,6 +87,9 @@ public class QuizControllerTest {
     private LectureOutput testLectureOutput;
     private QuizOutput testQuizOutput;
 
+    // private QuizItem testQuizItem;
+    private List<QuizItem> testQuizItems;
+
     @BeforeEach
     public void setUp() {
         // TODO(yoon): use @WithMockUser or @WithSecurityContext instead of hard-coding userId
@@ -122,6 +126,13 @@ public class QuizControllerTest {
         testQuizOutput.setUserId(userId);
         testQuizOutput.setTitle("Quiz 1");
         testQuizOutput.setStatus(Status.not_started);
+
+        testQuizItems = List.of(
+                new QuizItem(),
+                new QuizItem()
+        );
+        testQuizItems.get(0).setId(UUID.randomUUID());
+        testQuizOutput.setQuizItems(testQuizItems);
     }
     
     @Test
@@ -143,6 +154,25 @@ public class QuizControllerTest {
 
         verify(lectureService, times(1)).findLectureById(lectureId);
         verify(quizService, times(1)).findQuizzesByLectureId(lectureId);
+    }
+
+    @Test
+    @DisplayName("퀴즈 ID로 퀴즈 조회")
+    void getQuizById() throws Exception {
+        // given
+        when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
+
+        // when, then
+        mockMvc.perform(get("/v1/quizzes/{id}", quizId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(quizId.toString())))
+                .andExpect(jsonPath("$.lectureId", is(lectureId.toString())))
+                .andExpect(jsonPath("$.userId", is(userId.toString())))
+                .andExpect(jsonPath("$.title", is("Quiz 1")))
+                .andExpect(jsonPath("$.status", is("not_started")))
+                .andExpect(jsonPath("$.quizItems[0].id", is(testQuizItems.get(0).getId().toString())));
+
+        verify(quizService, times(1)).findQuizById(quizId);
     }
 
     @Test

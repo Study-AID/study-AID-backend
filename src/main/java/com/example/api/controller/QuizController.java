@@ -146,6 +146,8 @@ public class QuizController {
     public ResponseEntity<QuizResponse> getQuizById(
             @PathVariable UUID id
     ) {
+        // Quiz ID에 해당하는 Quiz와 QuizItem을 조회합니다.
+
         // TODO(yoon): Get authenticated user ID from security context
         UUID userId = PLACEHOLDER_USER_ID;
 
@@ -155,16 +157,20 @@ public class QuizController {
             if (quizOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
+
+            // Check if the user is same as the quiz owner
             if (!quizOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-
             }
-            return ResponseEntity.ok(QuizResponse.fromServiceDto(quizOutput.get()));
+
+            // Convert to response DTO
+            QuizResponse quizResponse = QuizResponse.fromServiceDto(quizOutput.get());
+            return ResponseEntity.ok(quizResponse);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        }        
     }
     
     @PostMapping

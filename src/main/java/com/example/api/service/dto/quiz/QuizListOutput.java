@@ -16,7 +16,17 @@ public class QuizListOutput {
 
     public static QuizListOutput fromEntities(List<Quiz> quizzes) {
         List<QuizOutput> quizOutputs = quizzes.stream()
-                .map(QuizOutput::fromEntity)
+                .map(quiz -> new QuizOutput(
+                        quiz.getId(),
+                        quiz.getLecture().getId(),
+                        quiz.getUser().getId(),
+                        quiz.getTitle(),
+                        quiz.getStatus(),
+                        quiz.getContentsGenerateAt(),
+                        quiz.getCreatedAt(),
+                        quiz.getUpdatedAt(),
+                        null
+                ))
                 .collect(Collectors.toList());
         return new QuizListOutput(quizOutputs);
     }
