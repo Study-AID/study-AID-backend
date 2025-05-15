@@ -44,6 +44,9 @@ run:
 	@bash scripts/init-localstack.sh
 	@echo "API Server is running at http://localhost:8080/api"
 	@echo "Swagger UI is available at http://localhost:8080/api/swagger-ui.html"
+	@echo "MinIO Console is available at http://localhost:9001"
+	@echo "  - Username: minioadmin"
+	@echo "  - Password: minioadmin"
 
 # Follow logs
 logs:

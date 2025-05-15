@@ -82,7 +82,7 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data
+    command: server /data --console-address ":9001"
     volumes:
       - ./minio/data:/data
     networks:
@@ -93,6 +93,21 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  createbuckets:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb myminio/study-aid-lecture-materials --ignore-existing;
+      /usr/bin/mc policy set public myminio/study-aid-lecture-materials;
+      exit 0;
+      "
+    networks:
+      - app-network
 
   localstack:
     image: localstack/localstack:latest
