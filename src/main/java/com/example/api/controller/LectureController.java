@@ -52,7 +52,7 @@ public class LectureController {
             parameters = {
                     @Parameter(
                             name = "courseId",
-                            description = "ID of the lecture",
+                            description = "ID of the course",
                             required = true
                     )
             },
