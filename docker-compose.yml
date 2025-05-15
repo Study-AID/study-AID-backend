@@ -106,8 +106,6 @@ services:
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=ap-northeast-2
-    volumes:
-      - localstack-data:/tmp/localstack
     networks:
       - app-network
     restart: unless-stopped

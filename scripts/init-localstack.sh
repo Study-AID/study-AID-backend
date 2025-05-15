@@ -6,7 +6,8 @@ max_retries=30
 retry_count=0
 
 while [ $retry_count -lt $max_retries ]; do
-  if aws --endpoint-url=http://localhost:4566 sqs list-queues 2>/dev/null; then
+  # Simply check if LocalStack is responding
+  if curl -sf http://localhost:4566/_localstack/health > /dev/null; then
     echo "LocalStack is ready"
     break
   fi
@@ -20,19 +21,20 @@ if [ $retry_count -eq $max_retries ]; then
   exit 1
 fi
 
-echo "LocalStack is up - executing command"
+echo "LocalStack is up - creating SQS queue"
 
-# Create SQS queue
-echo "Creating SQS queue..."
-aws --endpoint-url=http://localhost:4566 \
-    sqs create-queue \
-    --queue-name local-study-aid-summarize-lecture \
-    --region ap-northeast-2
+# Create SQS queue using AWS CLI command via curl
+QUEUE_NAME="local-study-aid-summarize-lecture"
 
-echo "SQS queue created successfully!"
+# Create queue
+echo "Creating queue: $QUEUE_NAME"
+curl -X POST "http://localhost:4566/" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "Action=CreateQueue&QueueName=$QUEUE_NAME&Version=2012-11-05"
 
-# List queues to verify
-echo "Listing queues..."
-aws --endpoint-url=http://localhost:4566 \
-    sqs list-queues \
-    --region ap-northeast-2
+echo -e "\n\nListing queues..."
+curl -X POST "http://localhost:4566/" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "Action=ListQueues&Version=2012-11-05"
+
+echo -e "\n\nSetup completed!"
