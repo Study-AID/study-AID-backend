@@ -9,7 +9,7 @@ spring:
       minimum-idle: 5
       idle-timeout: 120000
       connection-timeout: 30000
-  
+
   # JPA Configuration
   jpa:
     hibernate:
@@ -24,6 +24,13 @@ spring:
       max-file-size: 50MB
       max-request-size: 50MB
 
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o
+
 # Server Configuration
 server:
   port: 8080
@@ -35,11 +42,8 @@ server:
 aws:
   region: ap-northeast-2
 
-
 storage:
   bucket: ${AWS_S3_BUCKET}
-
-  
 
 # Swagger UI Configuration
 springdoc:
@@ -65,3 +69,7 @@ spring.cache:
   redis:
     time-to-live: 3600000
     cache-null-values: false
+
+# JWT Configuration
+jwt:
+  secret_key: ${JWT_SECRET_KEY}
