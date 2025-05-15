@@ -94,7 +94,7 @@ public class LectureController {
         List<LectureResponse> lectureListResponse = lectureListOutput.getLectures().stream().map(LectureResponse::fromServiceDto).toList();
         return ResponseEntity.ok(new LectureListResponse(lectureListResponse));
     }
-    
+
     @GetMapping("/{id}")
     @Operation(
         summary = "Get a specific lecture by ID",
@@ -151,7 +151,7 @@ public class LectureController {
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Lecture details (courseId, title)",
             required = true,
-            content = @Content(schema = @Schema(implementation = CreateLectureInput.class))
+            content = @Content(schema = @Schema(implementation = CreateLectureRequest.class))
         ),
         responses = {
             @ApiResponse(
@@ -194,7 +194,7 @@ public class LectureController {
             // Validate title
             // Validate materialPath
             // ...
-            
+
             CreateLectureInput createLectureInput = new CreateLectureInput();
             createLectureInput.setCourseId(request.getCourseId());
             createLectureInput.setUserId(userId);
