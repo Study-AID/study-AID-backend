@@ -22,11 +22,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/v1/semesters")
 @Tag(name = "Semester", description = "Semester API")
-public class SemesterController {
+public class SemesterController extends BaseController {
     private final SemesterService semesterService;
-
-    // TODO(mj): remove this placeholder user ID and use actual authenticated user ID.
-    private final UUID PLACEHOLDER_USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
     public SemesterController(SemesterService semesterService) {
         this.semesterService = semesterService;
@@ -49,8 +46,7 @@ public class SemesterController {
             }
     )
     public ResponseEntity<SemesterListResponse> getSemesters() {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         SemesterListOutput semesterListOutput = semesterService.findSemestersByUserId(userId);
         if (semesterListOutput.getSemesters().isEmpty()) {
@@ -116,8 +112,7 @@ public class SemesterController {
     public ResponseEntity<SemesterResponse> getSemesterByYearAndSeason(
             @RequestParam int year,
             @RequestParam String season) {
-        // TODO(mj): Obtain authenticated user ID instead of placeholder
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Validate year
@@ -180,8 +175,7 @@ public class SemesterController {
             }
     )
     public ResponseEntity<SemesterResponse> getSemesterById(@PathVariable UUID id) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Check semester exists and user owns it.
@@ -227,8 +221,7 @@ public class SemesterController {
     )
     public ResponseEntity<SemesterResponse> createSemester(
             @RequestBody CreateSemesterRequest request) {
-        // TODO(mj): Obtain authenticated user ID instead of placeholder
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Validate year
@@ -300,8 +293,7 @@ public class SemesterController {
     public ResponseEntity<SemesterResponse> updateSemester(
             @PathVariable UUID id,
             @RequestBody UpdateSemesterRequest request) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Validate year
@@ -384,8 +376,7 @@ public class SemesterController {
     public ResponseEntity<SemesterResponse> updateSemesterDates(
             @PathVariable UUID id,
             @RequestBody UpdateSemesterDatesRequest request) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Check if start and end dates are provided
@@ -466,8 +457,7 @@ public class SemesterController {
     public ResponseEntity<SemesterResponse> updateSemesterGrades(
             @PathVariable UUID id,
             @RequestBody UpdateSemesterGradesRequest request) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Validate grade values
@@ -538,8 +528,7 @@ public class SemesterController {
             }
     )
     public ResponseEntity<Void> deleteSemester(@PathVariable UUID id) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Check semester exists and user owns it.
