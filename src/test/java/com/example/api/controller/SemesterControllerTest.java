@@ -1,23 +1,26 @@
 package com.example.api.controller;
 
+import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.semester.CreateSemesterRequest;
 import com.example.api.controller.dto.semester.UpdateSemesterDatesRequest;
 import com.example.api.controller.dto.semester.UpdateSemesterGradesRequest;
 import com.example.api.controller.dto.semester.UpdateSemesterRequest;
 import com.example.api.entity.enums.Season;
 import com.example.api.repository.UserRepository;
+import com.example.api.security.jwt.JwtAuthenticationFilter;
 import com.example.api.security.jwt.JwtProvider;
 import com.example.api.service.SemesterService;
 import com.example.api.service.dto.semester.*;
+import com.example.api.util.WithMockUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -37,14 +40,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// TODO(mj): remove excludeAutoConfiguration and use test auth token.
-@WebMvcTest(
-        controllers = SemesterController.class,
-        excludeAutoConfiguration = {
-                SecurityAutoConfiguration.class,
-                SecurityFilterAutoConfiguration.class
-        }
-)
+@WebMvcTest(SemesterController.class)
+@Import({TestSecurityConfig.class})
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class SemesterControllerTest {
     @Autowired
@@ -62,6 +60,9 @@ class SemesterControllerTest {
     @MockBean
     private SemesterService semesterService;
 
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
     private UUID userId;
     private UUID semesterId;
     private SemesterOutput testSemesterOutput;
@@ -69,7 +70,6 @@ class SemesterControllerTest {
 
     @BeforeEach
     void setUp() {
-        // TODO(mj): use @WithMockUser or @WithSecurityContext instead of hard-coding userId
         userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
         semesterId = UUID.randomUUID();
 
@@ -95,6 +95,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("모든 학기 목록 조회")
+    @WithMockUser
     void getSemesters() throws Exception {
         // Given
         when(semesterService.findSemestersByUserId(userId))
@@ -115,6 +116,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("학기가 없을 때 빈 목록 반환")
+    @WithMockUser
     void getSemesters_WhenNoSemesters_ReturnsEmptyList() throws Exception {
         // Given
         when(semesterService.findSemestersByUserId(userId))
@@ -130,6 +132,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("연도와 학기로 학기 조회")
+    @WithMockUser
     void getSemesterByYearAndSeason() throws Exception {
         // Given
         when(semesterService.findSemesterByUserAndYearAndSeason(eq(userId), eq(2025), eq(Season.spring)))
@@ -151,6 +154,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("연도와 학기로 학기 조회 시 찾을 수 없음")
+    @WithMockUser
     void getSemesterByYearAndSeason_NotFound() throws Exception {
         // Given
         when(semesterService.findSemesterByUserAndYearAndSeason(eq(userId), eq(2025), eq(Season.spring)))
@@ -167,6 +171,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("유효하지 않은 연도로 학기 조회")
+    @WithMockUser
     void getSemesterByYearAndSeason_InvalidYear() throws Exception {
         // When/Then
         mockMvc.perform(get("/v1/semesters/search")
@@ -179,6 +184,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("유효하지 않은 학기로 학기 조회")
+    @WithMockUser
     void getSemesterByYearAndSeason_InvalidSeason() throws Exception {
         // When/Then
         mockMvc.perform(get("/v1/semesters/search")
@@ -191,6 +197,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("ID로 학기 조회")
+    @WithMockUser
     void getSemesterById() throws Exception {
         // Given
         when(semesterService.findSemesterById(semesterId))
@@ -210,6 +217,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("ID로 학기 조회 시 찾을 수 없음")
+    @WithMockUser
     void getSemesterById_NotFound() throws Exception {
         // Given
         when(semesterService.findSemesterById(semesterId))
@@ -224,6 +232,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("ID로 학기 조회 시 권한 없음")
+    @WithMockUser
     void getSemesterById_Forbidden() throws Exception {
         // Given
         UUID otherUserId = UUID.randomUUID();
@@ -254,6 +263,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("새 학기 생성")
+    @WithMockUser
     void createSemester() throws Exception {
         // Given
         CreateSemesterRequest createRequest = new CreateSemesterRequest(
@@ -281,6 +291,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("중복된 학기 생성 시 실패")
+    @WithMockUser
     void createSemester_DuplicateSemester() throws Exception {
         // Given
         CreateSemesterRequest createRequest = new CreateSemesterRequest(
@@ -303,6 +314,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("유효하지 않은 연도로 학기 생성")
+    @WithMockUser
     void createSemester_InvalidYear() throws Exception {
         // Given
         CreateSemesterRequest createRequest = new CreateSemesterRequest(
@@ -322,6 +334,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("학기 정보 업데이트")
+    @WithMockUser
     void updateSemester() throws Exception {
         // Given
         UpdateSemesterRequest updateRequest = new UpdateSemesterRequest(
@@ -364,6 +377,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("존재하지 않는 학기 업데이트")
+    @WithMockUser
     void updateSemester_NotFound() throws Exception {
         // Given
         UpdateSemesterRequest updateRequest = new UpdateSemesterRequest(
@@ -387,6 +401,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("다른 사용자의 학기 업데이트")
+    @WithMockUser
     void updateSemester_Forbidden() throws Exception {
         // Given
         UpdateSemesterRequest updateRequest = new UpdateSemesterRequest(
@@ -426,6 +441,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("학기 날짜 업데이트")
+    @WithMockUser
     void updateSemesterDates() throws Exception {
         // Given
         UpdateSemesterDatesRequest datesRequest = new UpdateSemesterDatesRequest(
@@ -465,6 +481,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("유효하지 않은 날짜로 학기 날짜 업데이트")
+    @WithMockUser
     void updateSemesterDates_InvalidDates() throws Exception {
         // Given
         UpdateSemesterDatesRequest datesRequest = new UpdateSemesterDatesRequest(
@@ -483,6 +500,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("학기 성적 정보 업데이트")
+    @WithMockUser
     void updateSemesterGrades() throws Exception {
         // Given
         UpdateSemesterGradesRequest gradesRequest = new UpdateSemesterGradesRequest(
@@ -523,6 +541,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("유효하지 않은 성적 정보로 업데이트")
+    @WithMockUser
     void updateSemesterGrades_InvalidGrades() throws Exception {
         // Given
         UpdateSemesterGradesRequest gradesRequest = new UpdateSemesterGradesRequest(
@@ -542,6 +561,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("학기 삭제")
+    @WithMockUser
     void deleteSemester() throws Exception {
         // Given
         when(semesterService.findSemesterById(semesterId))
@@ -558,6 +578,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("존재하지 않는 학기 삭제")
+    @WithMockUser
     void deleteSemester_NotFound() throws Exception {
         // Given
         when(semesterService.findSemesterById(semesterId))
@@ -573,6 +594,7 @@ class SemesterControllerTest {
 
     @Test
     @DisplayName("다른 사용자의 학기 삭제")
+    @WithMockUser
     void deleteSemester_Forbidden() throws Exception {
         // Given
         UUID otherUserId = UUID.randomUUID();
