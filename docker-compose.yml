@@ -108,7 +108,6 @@ services:
       - AWS_DEFAULT_REGION=ap-northeast-2
     volumes:
       - localstack-data:/tmp/localstack
-      - ./scripts/localstack-init.sh:/docker-entrypoint-initaws.d/init.sh
     networks:
       - app-network
     restart: unless-stopped
