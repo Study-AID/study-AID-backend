@@ -142,7 +142,7 @@ public class CourseController {
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Course details (name, semesterId)",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = CreateCourseInput.class))
+                    content = @Content(schema = @Schema(implementation = CreateCourseRequest.class))
             ),
             responses = {
                     @ApiResponse(

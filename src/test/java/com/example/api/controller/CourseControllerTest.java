@@ -1,8 +1,6 @@
 package com.example.api.controller;
 
-import com.example.api.controller.dto.course.CreateCourseRequest;
-import com.example.api.controller.dto.course.UpdateCourseGradesRequest;
-import com.example.api.controller.dto.course.UpdateCourseRequest;
+import com.example.api.controller.dto.course.*;
 import com.example.api.repository.UserRepository;
 import com.example.api.security.jwt.JwtProvider;
 import com.example.api.service.CourseService;
