@@ -257,6 +257,7 @@ def lambda_handler(event, context):
                 continue
 
             # Get lecture info to access course_id and user_id
+            # TODO(mj): check if summary already exists for this lecture.
             lecture_info = get_lecture_info(lecture_id)
             course_id = lecture_info['course_id']
             user_id = lecture_info['user_id']

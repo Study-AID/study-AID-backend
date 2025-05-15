@@ -130,6 +130,11 @@ test-job-quiz:
 	@echo "Testing generate_quiz job..."
 	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile quiz up --build
 
+# 시험 생성 기능 테스트 (generate_exam)
+test-job-exam:
+	@echo "Testing generate_exam job..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile exam up --build
+
 # 테스트용 셸 실행 (디버깅용)
 test-job-shell:
 	@echo "Starting a shell in test container..."
