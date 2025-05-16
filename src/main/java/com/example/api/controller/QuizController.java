@@ -8,14 +8,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.api.controller.dto.quiz.CreateQuizRequest;
+import com.example.api.controller.dto.quiz.CreateQuizResponseRequest;
 import com.example.api.controller.dto.quiz.QuizListResponse;
 import com.example.api.controller.dto.quiz.QuizResponse;
+import com.example.api.controller.dto.quiz.QuizResponseResponse;
 import com.example.api.controller.dto.quiz.UpdateQuizRequest;
 import com.example.api.service.LectureService;
 import com.example.api.service.QuizService;
 import com.example.api.service.dto.quiz.CreateQuizInput;
+import com.example.api.service.dto.quiz.CreateQuizResponseInput;
 import com.example.api.service.dto.quiz.QuizListOutput;
 import com.example.api.service.dto.quiz.QuizOutput;
+import com.example.api.service.dto.quiz.QuizResponseOutput;
 import com.example.api.service.dto.quiz.UpdateQuizInput;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,6 +48,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 public class QuizController {
     private QuizService quizService;
     private LectureService lectureService;
+    
 
     // TODO(yoon): remove this placeholder user ID and use actual authenticated user ID.
     private final UUID PLACEHOLDER_USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
@@ -52,7 +57,7 @@ public class QuizController {
         this.quizService = quizService;
         this.lectureService = lectureService;
     }
-
+    
     @GetMapping("/lecture/{lectureId}")
     @Operation(
             summary = "Get all quizzes by lecture ID",
@@ -180,7 +185,7 @@ public class QuizController {
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Quiz details (lectureId, title, status)",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = CreateQuizInput.class))
+                    content = @Content(schema = @Schema(implementation = CreateQuizRequest.class))
             ),
             responses = {
                     @ApiResponse(
@@ -210,7 +215,6 @@ public class QuizController {
 
         try {
             // Check if the lecture exists
-            System.out.println("Lecture ID: " + request);
             var lectureOutput = lectureService.findLectureById(request.getLectureId());
             if (lectureOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
@@ -365,6 +369,82 @@ public class QuizController {
             return ResponseEntity.badRequest().build();
         } catch (EntityNotFoundException e){
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 풀이 제출 API
+    @PostMapping("/{id}/submit")
+    @Operation(
+            summary = "Submit a quiz solution",
+            description = "Submit a solution for a specific quiz by its ID.",
+            parameters = {
+                    @Parameter(
+                        name = "id", 
+                        description = "Quiz ID", 
+                        required = true
+                    )
+            },
+            requestBody = @RequestBody(
+                    description = "Quiz submission details",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = CreateQuizResponseRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                        responseCode = "201", 
+                        description = "Quiz solution submitted successfully",
+                        content = @Content(schema = @Schema(implementation = QuizResponseResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this quiz"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404", 
+                        description = "Quiz not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<QuizResponseResponse> submitQuiz(
+            @PathVariable UUID id,
+            @org.springframework.web.bind.annotation.RequestBody CreateQuizResponseRequest request
+    ) {
+        // TODO(yoon): Get authenticated user ID from security context
+        UUID userId = PLACEHOLDER_USER_ID;
+
+        try {
+            // Check if the quiz exists
+            Optional<QuizOutput> quizOutput = quizService.findQuizById(id);
+            if (quizOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Check if the user is same as the quiz owner
+            if (!quizOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            // Submit the quiz solution
+            CreateQuizResponseInput createQuizResponseInput = new CreateQuizResponseInput();
+            createQuizResponseInput.setQuizId(id);
+            createQuizResponseInput.setUserId(userId);
+            createQuizResponseInput.setQuizItemId(request.getQuizItemId());
+            createQuizResponseInput.setSelectedBool(request.getSelectedBool());
+            createQuizResponseInput.setSelectedIndices(request.getSelectedIndices());
+            createQuizResponseInput.setTextAnswer(request.getTextAnswer());
+
+            QuizResponseOutput quizResponseOutput = quizService.createQuizResponse(createQuizResponseInput);
+            QuizResponseResponse quizResponseResponse = QuizResponseResponse.fromServiceDto(quizResponseOutput);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(quizResponseResponse);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

@@ -3,6 +3,7 @@ package com.example.api.controller.dto.quiz;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import com.example.api.entity.QuizItem;
 import com.example.api.entity.enums.Status;
@@ -16,16 +17,16 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema
+@Schema(description = "Quiz response DTO")
 public class QuizResponse {
     @Schema(description = "Quiz ID")
-    private String id;
+    private UUID id;
 
     @Schema(description = "Lecture ID")
-    private String lectureId;
+    private UUID lectureId;
 
     @Schema(description = "User ID")
-    private String userId;
+    private UUID userId;
 
     @Schema(description = "Quiz title")
     private String title;
@@ -48,9 +49,9 @@ public class QuizResponse {
 
     public static QuizResponse fromServiceDto(QuizOutput quiz) {
         return new QuizResponse(
-                quiz.getId().toString(),
-                quiz.getLectureId().toString(),
-                quiz.getUserId().toString(),
+                quiz.getId(),
+                quiz.getLectureId(),
+                quiz.getUserId(),
                 quiz.getTitle(),
                 quiz.getStatus(),
                 quiz.getContentsGenerateAt(),

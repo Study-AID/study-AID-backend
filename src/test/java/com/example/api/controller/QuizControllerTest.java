@@ -1,6 +1,7 @@
 package com.example.api.controller;
 
 import com.example.api.controller.dto.quiz.CreateQuizRequest;
+import com.example.api.controller.dto.quiz.CreateQuizResponseRequest;
 import com.example.api.controller.dto.quiz.UpdateQuizRequest;
 import com.example.api.entity.QuizItem;
 import com.example.api.entity.enums.Status;
@@ -89,6 +90,7 @@ public class QuizControllerTest {
 
     // private QuizItem testQuizItem;
     private List<QuizItem> testQuizItems;
+    private QuizResponseOutput testQuizResponseOutput;
 
     @BeforeEach
     public void setUp() {
@@ -133,6 +135,12 @@ public class QuizControllerTest {
         );
         testQuizItems.get(0).setId(UUID.randomUUID());
         testQuizOutput.setQuizItems(testQuizItems);
+
+        testQuizResponseOutput = new QuizResponseOutput();
+        testQuizResponseOutput.setId(UUID.randomUUID());
+        testQuizResponseOutput.setQuizId(quizId);
+        testQuizResponseOutput.setUserId(userId);
+        testQuizResponseOutput.setQuizItemId(testQuizItems.get(0).getId());
     }
     
     @Test
@@ -181,8 +189,6 @@ public class QuizControllerTest {
         // given
         CreateQuizRequest createQuizRequest = new CreateQuizRequest();
         createQuizRequest.setLectureId(lectureId);
-        System.out.println("createQuizRequest = " + createQuizRequest);
-        System.out.println("lectureId = " + lectureId);
 
         when(lectureService.findLectureById(lectureId)).thenReturn(Optional.of(testLectureOutput));
         when(quizService.createQuiz(any(CreateQuizInput.class))).thenReturn(testQuizOutput);
@@ -246,5 +252,26 @@ public class QuizControllerTest {
 
         verify(quizService, times(1)).findQuizById(quizId);
         verify(quizService, times(1)).deleteQuiz(quizId);
+    }
+
+    @Test
+    @DisplayName("퀴즈 응답 생성")
+    void createQuizResponse() throws Exception {
+        // given
+        CreateQuizResponseRequest createQuizResponseRequest = new CreateQuizResponseRequest();
+        createQuizResponseRequest.setQuizItemId(testQuizItems.get(0).getId());
+
+        when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
+        when(quizService.createQuizResponse(any(CreateQuizResponseInput.class))).thenReturn(testQuizResponseOutput);
+
+        // when, then
+        mockMvc.perform(post("/v1/quizzes/{id}/submit", quizId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createQuizResponseRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id", is(testQuizResponseOutput.getId().toString())))
+                .andExpect(jsonPath("$.quizId", is(quizId.toString())))
+                .andExpect(jsonPath("$.userId", is(userId.toString())))
+                .andExpect(jsonPath("$.quizItemId", is(testQuizItems.get(0).getId().toString()))); 
     }
 }

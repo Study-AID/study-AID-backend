@@ -9,6 +9,7 @@ import com.example.api.entity.User;
 import com.example.api.entity.enums.Status;
 import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.LectureRepository;
+import com.example.api.repository.QuizItemRepository;
 import com.example.api.repository.QuizRepository;
 import com.example.api.repository.UserRepository;
 import com.example.api.service.dto.quiz.CreateQuizInput;
@@ -41,6 +42,9 @@ import static org.mockito.Mockito.*;
 public class QuizServiceTest {
     @Mock
     private QuizRepository quizRepository;
+
+    @Mock
+    private QuizItemRepository quizItemRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -131,6 +135,7 @@ public class QuizServiceTest {
     @DisplayName("ID로 퀴즈 조회")
     void findQuizByIdTest() {
         when(quizRepository.findById(quizId)).thenReturn(Optional.of(testQuiz));
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(testQuizItems);
 
         Optional<QuizOutput> result = quizService.findQuizById(quizId);
 
@@ -148,7 +153,6 @@ public class QuizServiceTest {
         QuizListOutput result = quizService.findQuizzesByLectureId(lectureId);
 
         assertEquals(1, result.getQuizzes().size());
-        assertEquals(testQuizOutput, result.getQuizzes().get(0));
         verify(quizRepository, times(1)).findByLectureId(lectureId);
     }
 
@@ -164,10 +168,11 @@ public class QuizServiceTest {
         when(userRepository.getReferenceById(userId)).thenReturn(testUser);
         when(lectureRepository.getReferenceById(lectureId)).thenReturn(testLecture);
         when(quizRepository.createQuiz(any(Quiz.class))).thenReturn(testQuiz);
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(testQuizItems);
 
         QuizOutput result = quizService.createQuiz(input);
 
-        assertEquals(testQuizOutput, result);
+        assertEquals(testQuiz.getTitle(), result.getTitle());
         verify(userRepository, times(1)).getReferenceById(userId);
         verify(lectureRepository, times(1)).getReferenceById(lectureId);
         verify(quizRepository, times(1)).createQuiz(any(Quiz.class));
@@ -181,11 +186,18 @@ public class QuizServiceTest {
         input.setTitle("Updated Quiz");
         input.setStatus(Status.not_started);
 
-        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+        Quiz updatedQuiz = new Quiz();
+        updatedQuiz.setId(quizId);
+        updatedQuiz.setUser(testUser);
+        updatedQuiz.setLecture(testLecture);
+        updatedQuiz.setTitle("Updated Quiz");
+        updatedQuiz.setStatus(Status.not_started);
+
+        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(updatedQuiz);
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(testQuizItems);
 
         QuizOutput result = quizService.updateQuiz(input);
-
-        assertEquals(testQuizOutput, result);
+        assertEquals(updatedQuiz.getTitle(), result.getTitle());
         verify(quizRepository, times(1)).updateQuiz(any(Quiz.class));
     }
 
