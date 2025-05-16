@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Configuration
 public class StorageConfig {
     @Bean
-    @Profile("prod")
+    @Profile({"dev", "prod"})
     public S3Client s3Client(
         @Value("${aws.region}") String region) {
         return S3Client.builder()
