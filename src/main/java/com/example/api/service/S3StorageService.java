@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
-@Profile("prod")
+@Profile({"dev", "prod"})
 public class S3StorageService implements StorageService {
     private final S3Client s3Client;
     private final MultipartProperties multipartProperties;
