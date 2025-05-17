@@ -2,6 +2,8 @@ name: Dev - Deploy API Server to ECS
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'src/**'
       - 'Dockerfile.prod'
