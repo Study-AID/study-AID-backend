@@ -21,8 +21,26 @@ COPY prompts/ /var/task/prompts/
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /var/task/jobs/summarize_lecture/requirements.txt
 
-# Create the lambda_handler wrapper
-RUN echo 'import sys\nsys.path.insert(0, ".")\nfrom jobs.summarize_lecture.handler import handler\n\ndef lambda_handler(event, context):\n    return handler(event, context)' > /var/task/lambda_handler.py
+# Copy necessary modules directly to root to avoid import issues
+RUN cp /var/task/jobs/summarize_lecture/openai_client.py /var/task/
+RUN cp /var/task/jobs/summarize_lecture/summary_models.py /var/task/
+RUN cp /var/task/jobs/summarize_lecture/handler.py /var/task/summarize_handler.py
+
+# Create the lambda_handler wrapper with direct imports
+RUN cat > /var/task/lambda_handler.py << 'EOF'
+import sys
+import os
+
+# Add current directory to path
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+# Import the handler directly
+from summarize_handler import handler
+
+# Lambda handler function
+def lambda_handler(event, context):
+    return handler(event, context)
+EOF
 
 # Install Lambda runtime interface client
 RUN pip install --no-cache-dir awslambdaric
