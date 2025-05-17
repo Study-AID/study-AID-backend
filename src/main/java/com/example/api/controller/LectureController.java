@@ -28,7 +28,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1/lectures")
-@Tag(name = "lecture", description = "Lecture API")
+@Tag(name = "Lecture", description = "Lecture API")
 @Slf4j
 public class LectureController extends BaseController {
     private final LectureService lectureService;
