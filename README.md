@@ -11,6 +11,12 @@ Study AID API server and LLM processing jobs for Study AID service.
 - **Containerization**: Docker
 - **Build Tool**: Gradle
 - **Migration**: Flyway
+- **Background Jobs**: AWS Lambda (Python)
+
+## 프로젝트 구조
+
+- **API Server**: Spring Boot 기반 REST API
+- **Background Jobs**: LLM 처리 작업 ([자세히 보기](jobs/README.md))
 
 ## 로컬 환경 셋업
 
