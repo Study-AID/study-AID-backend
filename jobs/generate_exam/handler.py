@@ -1,14 +1,13 @@
+import boto3
 import json
 import logging
 import os
-import traceback
-import uuid
-from datetime import datetime
-
-import boto3
 import psycopg2
 import psycopg2.extras
+import traceback
+import uuid
 from botocore.config import Config
+from datetime import datetime
 
 from openai_client import OpenAIClient
 
@@ -66,11 +65,12 @@ def get_course_lectures(course_id):
         conn = get_db_connection()
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             query = """
-            SELECT id, title, material_path, summary
-            FROM app.lectures
-            WHERE course_id = %s AND deleted_at IS NULL
-            ORDER BY display_order_lex
-            """
+                    SELECT id, title, material_path, summary
+                    FROM app.lectures
+                    WHERE course_id = %s
+                      AND deleted_at IS NULL
+                    ORDER BY display_order_lex \
+                    """
             cursor.execute(query, (course_id,))
             lectures = cursor.fetchall()
 
@@ -184,10 +184,10 @@ def save_exam_to_db(course_id, user_id, exam_data, title=None, referenced_lectur
 
         with conn.cursor() as cursor:
             query = """
-            INSERT INTO app.exams 
-            (id, course_id, user_id, title, status, referenced_lectures, contents_generated_at, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s::uuid[], NOW(), NOW())
-            """
+                    INSERT INTO app.exams
+                    (id, course_id, user_id, title, status, referenced_lectures, contents_generated_at, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s::uuid[], NOW(), NOW()) \
+                    """
             cursor.execute(query, (exam_id, course_id, user_id, title, 'not_started', referenced_lectures))
 
             # Prepare bulk data for exam items
@@ -284,10 +284,10 @@ def log_activity(course_id, user_id, activity_type, contents_type, details):
             activity_details = json.dumps(details)
 
             query = """
-            INSERT INTO app.course_activity_logs 
-            (id, course_id, user_id, activity_type, contents_type, activity_details)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """
+                    INSERT INTO app.course_activity_logs
+                    (id, course_id, user_id, activity_type, contents_type, activity_details)
+                    VALUES (%s, %s, %s, %s, %s, %s) \
+                    """
             cursor.execute(query, (
                 activity_id,
                 course_id,
@@ -341,11 +341,12 @@ def get_reference_lectures(reference_lecture_ids):
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             # Using parameterized query with any operator
             query = """
-            SELECT l.id, l.course_id, l.user_id, l.material_path, l.title, l.summary
-            FROM app.lectures l
-            WHERE l.id = ANY(%s::uuid[]) AND l.deleted_at IS NULL
-            ORDER BY l.id
-            """
+                    SELECT l.id, l.course_id, l.user_id, l.material_path, l.title, l.summary
+                    FROM app.lectures l
+                    WHERE l.id = ANY (%s::uuid[])
+                      AND l.deleted_at IS NULL
+                    ORDER BY l.id \
+                    """
             cursor.execute(query, (reference_lecture_ids,))
             lectures = cursor.fetchall()
             lectures = [dict(lecture) for lecture in lectures]

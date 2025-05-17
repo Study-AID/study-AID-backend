@@ -43,7 +43,7 @@ Python Lambda 함수로, OpenAI의 LLM을 사용하여 참조 강의 자료를 �
    ```bash
    # OpenAI API 키 설정
    export OPENAI_API_KEY="your-api-key"
-d
+
    # 프롬프트 버전 설정 (기본값: latest)
    export PROMPT_VERSION="latest"  # 또는 특정 버전 번호 (예: "1", "2")
    ```
