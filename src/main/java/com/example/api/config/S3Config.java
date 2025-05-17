@@ -8,7 +8,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
-@Profile("prod")
+@Profile({"dev", "prod"})
 public class S3Config {
     @Bean
     public S3Client s3Client(@Value("${aws.region:ap-northeast-2}") String region) {
