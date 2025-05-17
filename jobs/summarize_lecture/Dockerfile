@@ -27,20 +27,7 @@ RUN cp /var/task/jobs/summarize_lecture/summary_models.py /var/task/
 RUN cp /var/task/jobs/summarize_lecture/handler.py /var/task/summarize_handler.py
 
 # Create the lambda_handler wrapper with direct imports
-RUN cat > /var/task/lambda_handler.py << 'EOF'
-import sys
-import os
-
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-
-# Import the handler directly
-from summarize_handler import handler
-
-# Lambda handler function
-def lambda_handler(event, context):
-    return handler(event, context)
-EOF
+RUN echo 'import sys\nimport os\n\n# Add current directory to path\nsys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))\n\n# Import the handler directly\nfrom summarize_handler import handler\n\n# Lambda handler function\ndef lambda_handler(event, context):\n    return handler(event, context)' > /var/task/lambda_handler.py
 
 # Install Lambda runtime interface client
 RUN pip install --no-cache-dir awslambdaric
