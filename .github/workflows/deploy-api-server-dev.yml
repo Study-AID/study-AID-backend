@@ -1,11 +1,11 @@
-name: Dev - Deploy Backend to ECS
+name: Dev - Deploy API Server to ECS
 
 on:
   push:
     paths:
       - 'src/**'
       - 'Dockerfile.prod'
-      - '.github/workflows/deploy-backend-dev.yml'
+      - '.github/workflows/deploy-api-server-dev.yml'
   workflow_dispatch:
 
 env:
@@ -18,7 +18,7 @@ env:
 
 jobs:
   deploy:
-    name: Deploy Backend to ECS
+    name: Deploy API Server to ECS
     runs-on: ubuntu-latest
 
     steps:
@@ -93,7 +93,7 @@ jobs:
               "attachments": [
                 {
                   "color": "good",
-                  "title": "✅ Deployment Success: Backend -> ECS",
+                  "title": "✅ Deployment Success: API Server -> ECS",
                   "fields": [
                     {
                       "title": "Repository",
@@ -141,7 +141,7 @@ jobs:
               "attachments": [
                 {
                   "color": "danger",
-                  "title": "❌ Deployment Failed: Backend -> ECS",
+                  "title": "❌ Deployment Failed: API Server -> ECS",
                   "fields": [
                     {
                       "title": "Repository",
