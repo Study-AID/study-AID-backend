@@ -30,7 +30,7 @@ import java.util.UUID;
 @RequestMapping("/v1/lectures")
 @Tag(name = "lecture", description = "Lecture API")
 @Slf4j
-public class LectureController {
+public class LectureController extends BaseController {
     private final LectureService lectureService;
     private final CourseService courseService;
     private final StorageService storageService;
@@ -213,7 +213,7 @@ public class LectureController {
                     ),
             }
     )
-    public ResponseEntity<LectureResponse> createLecture(@RequestBody CreateLectureRequest request) {
+    public ResponseEntity<LectureResponse> createLecture(@ModelAttribute CreateLectureRequest request) {
         UUID userId = getAuthenticatedUserId();
 
         try {
