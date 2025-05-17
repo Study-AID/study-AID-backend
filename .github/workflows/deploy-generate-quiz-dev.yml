@@ -8,91 +8,16 @@ on:
 env:
   LAMBDA_FUNCTION_NAME: dev-generate-quiz
   AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: study-aid-lambda
+  ECR_IMAGE_TAG: dev-generate-quiz
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    container:
-      image: amazonlinux:2023
-      # Amazon Linux 2023 matches the Lambda runtime environment
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        run: |
-          dnf update -y
-          dnf install -y python3.13 python3.13-devel gcc gcc-c++ curl git
-          curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13
-
-      - name: Install system dependencies
-        run: |
-          # Install required system packages for PyMuPDF and other dependencies
-          dnf install -y mupdf-devel freetype-devel zlib-devel jbig2dec-devel harfbuzz-devel openjpeg2-devel libXext-devel mesa-libGLU-devel libXt-devel libcurl-devel
-
-      - name: Install dependencies
-        working-directory: ./jobs/generate_quiz
-        run: |
-          # Create a backup of the requirements file
-          cp requirements.txt requirements.txt.bak
-          
-          # Try with a specific version of PyMuPDF that works better on Amazon Linux 2023
-          sed -i 's/pymupdf==1.23.8/pymupdf==1.22.5/g' requirements.txt
-          
-          # Install dependencies using pre-compiled binaries where possible
-          python3.13 -m pip install --upgrade pip
-          python3.13 -m pip install -r requirements.txt --target ./package --no-cache-dir
-          
-          # If it fails, try alternative approaches
-          if [ $? -ne 0 ]; then
-            echo "Falling back to alternative installation method"
-            # Restore original requirements
-            cp requirements.txt.bak requirements.txt
-            # Remove PyMuPDF from requirements
-            grep -v pymupdf requirements.txt > temp_requirements.txt
-            # Install everything else
-            python3.13 -m pip install -r temp_requirements.txt --target ./package
-            # Try to install PyMuPDF with specific build flags
-            CFLAGS="-fPIC" python3.13 -m pip install pymupdf==1.22.5 --target ./package --no-binary :all:
-            
-            # If that fails too, just continue without PyMuPDF
-            if [ $? -ne 0 ]; then
-              echo "Warning: PyMuPDF installation failed. Package will be deployed without PyMuPDF support."
-            fi
-          fi
-
-      - name: Prepare deployment package
-        run: |
-          # Create deployment directory
-          mkdir -p deployment
-          
-          # Copy all dependencies to deployment directory
-          cp -r ./jobs/generate_quiz/package/* deployment/
-          
-          # Create directory structure in deployment
-          mkdir -p deployment/jobs/generate_quiz
-          mkdir -p deployment/prompts
-          
-          # Copy Python files to maintain relative path structure
-          cp ./jobs/generate_quiz/*.py deployment/jobs/generate_quiz/
-          
-          # Copy prompts directory
-          cp -r ./prompts/* deployment/prompts/
-          
-          # Create the lambda_handler wrapper at root level
-          cat > deployment/lambda_handler.py << 'EOF'
-          import sys
-          sys.path.insert(0, '.')
-          from jobs.generate_quiz.handler import handler
-          
-          def lambda_handler(event, context):
-              return handler(event, context)
-          EOF
-          
-          # Create deployment zip
-          cd deployment
-          zip -r ../deployment.zip .
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -101,25 +26,36 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Update Lambda function code
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
+          # Create ECR repository if it doesn't exist
+          aws ecr describe-repositories --repository-names $ECR_REPOSITORY || \
+            aws ecr create-repository --repository-name $ECR_REPOSITORY
+          
+          # Build the docker image using the Dockerfile in the function directory
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG -f jobs/generate_quiz/Dockerfile .
+          
+          # Push the docker image
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+          
+          # Save the image URI
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Update Lambda function
+        run: |
+          # Update the Lambda function to use the new container image
           aws lambda update-function-code \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --zip-file fileb://deployment.zip
-
-      - name: Wait for Lambda update completion
-        run: |
-          aws lambda wait function-updated \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
-
-      - name: Update Lambda configuration
-        run: |
-          aws lambda update-function-configuration \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --handler lambda_handler.lambda_handler \
-            --environment Variables={ENV="dev"}
+            --image-uri ${{ steps.build-image.outputs.image }}
           
-          # Wait for the configuration update to complete
+          # Wait for the update to complete
           aws lambda wait function-updated \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
 
