@@ -2,12 +2,11 @@ name: Dev - Deploy Backend to ECS
 
 on:
   push:
-    branches:
-      - main
     paths:
       - 'src/**'
       - 'Dockerfile.prod'
       - '.github/workflows/deploy-backend-dev.yml'
+  workflow_dispatch:
 
 env:
   AWS_REGION: ap-northeast-2
@@ -25,6 +24,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -65,22 +66,11 @@ jobs:
           aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_FAMILY }} \
           --query taskDefinition > task-definition.json
 
-      - name: Add log configuration to task definition 
-        run: | 
-          jq '.containerDefinitions[0].logConfiguration = { 
-            logDriver: "awslogs", 
-            options: { 
-              "awslogs-group": "/ecs/backend", 
-              "awslogs-region": "ap-northeast-2", 
-              "awslogs-stream-prefix": "api-server" 
-            } 
-          }' task-definition.json > task-definition-with-logs.json 
-
       - name: Update container image in task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition-with-logs.json # 
+          task-definition: task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
 
@@ -103,30 +93,30 @@ jobs:
               "attachments": [
                 {
                   "color": "good",
-                  "title": "✅ 배포 성공: Backend -> ECS",
+                  "title": "✅ Deployment Success: Backend -> ECS",
                   "fields": [
                     {
-                      "title": "레포지토리",
+                      "title": "Repository",
                       "value": "${{ github.repository }}",
                       "short": true
                     },
                     {
-                      "title": "브랜치",
+                      "title": "Branch",
                       "value": "main",
                       "short": true
                     },
                     {
-                      "title": "커밋 메시지",
+                      "title": "Commit Message",
                       "value": "${{ github.event.head_commit.message }}",
                       "short": false
                     },
                     {
-                      "title": "이미지 태그",
+                      "title": "Image Tag",
                       "value": "dev-${{ github.sha }}",
                       "short": true
                     },
                     {
-                      "title": "작업자",
+                      "title": "Actor",
                       "value": "${{ github.actor }}",
                       "short": true
                     }
@@ -151,30 +141,30 @@ jobs:
               "attachments": [
                 {
                   "color": "danger",
-                  "title": "❌ 배포 실패: Backend -> ECS",
+                  "title": "❌ Deployment Failed: Backend -> ECS",
                   "fields": [
                     {
-                      "title": "레포지토리",
+                      "title": "Repository",
                       "value": "${{ github.repository }}",
                       "short": true
                     },
                     {
-                      "title": "브랜치",
+                      "title": "Branch",
                       "value": "main",
                       "short": true
                     },
                     {
-                      "title": "커밋 메시지",
+                      "title": "Commit Message",
                       "value": "${{ github.event.head_commit.message }}",
                       "short": false
                     },
                     {
-                      "title": "작업자",
+                      "title": "Actor",
                       "value": "${{ github.actor }}",
                       "short": true
                     },
                     {
-                      "title": "Actions 링크",
+                      "title": "Action URL",
                       "value": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
                       "short": false
                     }
