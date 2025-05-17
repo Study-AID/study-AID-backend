@@ -30,49 +30,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Create lambda Dockerfile
-        run: |
-          # Create a Dockerfile for the Lambda function based on existing test Dockerfile
-          cat > Dockerfile << 'EOF'
-          FROM python:3.11-slim
-          
-          # Install system dependencies
-          RUN apt-get update && apt-get install -y \
-              curl \
-              gcc \
-              g++ \
-              make \
-              && rm -rf /var/lib/apt/lists/*
-
-          # Create app directory
-          WORKDIR /var/task
-          
-          # Copy requirements file
-          COPY jobs/summarize_lecture/requirements.txt /var/task/
-          
-          # Install Python dependencies
-          RUN pip install --no-cache-dir -r /var/task/requirements.txt
-          
-          # Copy function code and prompts
-          COPY jobs/summarize_lecture/ /var/task/jobs/summarize_lecture/
-          COPY prompts/ /var/task/prompts/
-          
-          # Create the lambda_handler wrapper
-          RUN echo 'import sys\nsys.path.insert(0, ".")\nfrom jobs.summarize_lecture.handler import handler\n\ndef lambda_handler(event, context):\n    return handler(event, context)' > /var/task/lambda_handler.py
-          
-          # Install Lambda runtime interface client
-          RUN pip install --no-cache-dir awslambdaric
-          
-          # Set environment variables
-          ENV PYTHONPATH=/var/task
-          
-          # Set the entrypoint
-          ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
-          
-          # Set the Lambda handler as CMD
-          CMD [ "lambda_handler.lambda_handler" ]
-          EOF
-
       - name: Build and push Docker image
         id: build-image
         env:
@@ -82,8 +39,8 @@ jobs:
           aws ecr describe-repositories --repository-names $ECR_REPOSITORY || \
             aws ecr create-repository --repository-name $ECR_REPOSITORY
           
-          # Build the docker image
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG .
+          # Build the docker image using the Dockerfile in the function directory
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG -f jobs/summarize_lecture/Dockerfile .
           
           # Push the docker image
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
