@@ -1,12 +1,13 @@
-name: [Dev] Deploy Summarize Lecture
+name: Prod - Deploy Summarize Lecture
 
 on:
   push:
     tags:
-      - 'deploy-summarize-[0-9]*.[0-9]*.[0-9]*-dev'
+      - 'deploy-summarize-[0-9]*.[0-9]*.[0-9]*'
+      - '!deploy-summarize-*-dev'  # Exclude dev tags
 
 env:
-  LAMBDA_FUNCTION_NAME: dev-summarize-lecture
+  LAMBDA_FUNCTION_NAME: prod-summarize-lecture
   AWS_REGION: ap-northeast-2
 
 jobs:
@@ -36,30 +37,30 @@ jobs:
         run: |
           # Create deployment directory
           mkdir -p deployment
-
+          
           # Copy all dependencies to deployment directory
           cp -r ./jobs/summarize_lecture/package/* deployment/
-
+          
           # Create directory structure in deployment
           mkdir -p deployment/jobs/summarize_lecture
           mkdir -p deployment/prompts
-
+          
           # Copy Python files to maintain relative path structure
           cp ./jobs/summarize_lecture/*.py deployment/jobs/summarize_lecture/
-
+          
           # Copy prompts directory
           cp -r ./prompts/* deployment/prompts/
-
+          
           # Create the lambda_handler wrapper at root level
           cat > deployment/lambda_handler.py << 'EOF'
           import sys
           sys.path.insert(0, '.')
           from jobs.summarize_lecture.handler import handler
-
+          
           def lambda_handler(event, context):
               return handler(event, context)
           EOF
-
+          
           # Create deployment zip
           cd deployment
           zip -r ../deployment.zip .
@@ -87,8 +88,8 @@ jobs:
           aws lambda update-function-configuration \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --handler lambda_handler.lambda_handler \
-            --environment Variables={ENV="dev"}
-
+            --environment Variables={ENV="prod"}
+          
           # Wait for the configuration update to complete
           aws lambda wait function-updated \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
@@ -98,3 +99,16 @@ jobs:
           aws lambda get-function \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --query 'Configuration.[FunctionArn, LastModified, Version]'
+
+      - name: Tag deployment
+        run: |
+          # Get the git tag that triggered this deployment
+          DEPLOY_TAG=${GITHUB_REF#refs/tags/}
+          
+          # Create a git tag for the deployment
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          
+          DEPLOYMENT_TAG="deployed-prod-${DEPLOY_TAG}-$(date +%Y%m%d-%H%M%S)"
+          git tag -a $DEPLOYMENT_TAG -m "Production deployment of $DEPLOY_TAG"
+          git push origin $DEPLOYMENT_TAG

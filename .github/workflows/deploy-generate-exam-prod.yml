@@ -1,12 +1,13 @@
-name: [Dev] Deploy Generate Quiz
+name: Prod - Deploy Generate Exam
 
 on:
   push:
     tags:
-      - 'deploy-quiz-[0-9]*.[0-9]*.[0-9]*-dev'
+      - 'deploy-exam-[0-9]*.[0-9]*.[0-9]*'
+      - '!deploy-exam-*-dev'  # Exclude dev tags
 
 env:
-  LAMBDA_FUNCTION_NAME: dev-generate-quiz
+  LAMBDA_FUNCTION_NAME: prod-generate-exam
   AWS_REGION: ap-northeast-2
 
 jobs:
@@ -28,7 +29,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        working-directory: ./jobs/generate_quiz
+        working-directory: ./jobs/generate_exam
         run: |
           uv pip install -r requirements.txt --target ./package
 
@@ -38,14 +39,14 @@ jobs:
           mkdir -p deployment
           
           # Copy all dependencies to deployment directory
-          cp -r ./jobs/generate_quiz/package/* deployment/
+          cp -r ./jobs/generate_exam/package/* deployment/
           
           # Create directory structure in deployment
-          mkdir -p deployment/jobs/generate_quiz
+          mkdir -p deployment/jobs/generate_exam
           mkdir -p deployment/prompts
           
           # Copy Python files to maintain relative path structure
-          cp ./jobs/generate_quiz/*.py deployment/jobs/generate_quiz/
+          cp ./jobs/generate_exam/*.py deployment/jobs/generate_exam/
           
           # Copy prompts directory
           cp -r ./prompts/* deployment/prompts/
@@ -54,7 +55,7 @@ jobs:
           cat > deployment/lambda_handler.py << 'EOF'
           import sys
           sys.path.insert(0, '.')
-          from jobs.generate_quiz.handler import handler
+          from jobs.generate_exam.handler import handler
           
           def lambda_handler(event, context):
               return handler(event, context)
@@ -87,7 +88,7 @@ jobs:
           aws lambda update-function-configuration \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --handler lambda_handler.lambda_handler \
-            --environment Variables={ENV="dev"}
+            --environment Variables={ENV="prod"}
           
           # Wait for the configuration update to complete
           aws lambda wait function-updated \
@@ -98,3 +99,16 @@ jobs:
           aws lambda get-function \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --query 'Configuration.[FunctionArn, LastModified, Version]'
+
+      - name: Tag deployment
+        run: |
+          # Get the git tag that triggered this deployment
+          DEPLOY_TAG=${GITHUB_REF#refs/tags/}
+          
+          # Create a git tag for the deployment
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          
+          DEPLOYMENT_TAG="deployed-prod-${DEPLOY_TAG}-$(date +%Y%m%d-%H%M%S)"
+          git tag -a $DEPLOYMENT_TAG -m "Production deployment of $DEPLOY_TAG"
+          git push origin $DEPLOYMENT_TAG

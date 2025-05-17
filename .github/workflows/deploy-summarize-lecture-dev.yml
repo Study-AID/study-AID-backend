@@ -1,12 +1,12 @@
-name: [Dev] Deploy Generate Exam
+name: Dev - Deploy Summarize Lecture
 
 on:
   push:
     tags:
-      - 'deploy-exam-[0-9]*.[0-9]*.[0-9]*-dev'
+      - 'deploy-summarize-[0-9]*.[0-9]*.[0-9]*-dev'
 
 env:
-  LAMBDA_FUNCTION_NAME: dev-generate-exam
+  LAMBDA_FUNCTION_NAME: dev-summarize-lecture
   AWS_REGION: ap-northeast-2
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        working-directory: ./jobs/generate_exam
+        working-directory: ./jobs/summarize_lecture
         run: |
           uv pip install -r requirements.txt --target ./package
 
@@ -36,30 +36,30 @@ jobs:
         run: |
           # Create deployment directory
           mkdir -p deployment
-          
+
           # Copy all dependencies to deployment directory
-          cp -r ./jobs/generate_exam/package/* deployment/
-          
+          cp -r ./jobs/summarize_lecture/package/* deployment/
+
           # Create directory structure in deployment
-          mkdir -p deployment/jobs/generate_exam
+          mkdir -p deployment/jobs/summarize_lecture
           mkdir -p deployment/prompts
-          
+
           # Copy Python files to maintain relative path structure
-          cp ./jobs/generate_exam/*.py deployment/jobs/generate_exam/
-          
+          cp ./jobs/summarize_lecture/*.py deployment/jobs/summarize_lecture/
+
           # Copy prompts directory
           cp -r ./prompts/* deployment/prompts/
-          
+
           # Create the lambda_handler wrapper at root level
           cat > deployment/lambda_handler.py << 'EOF'
           import sys
           sys.path.insert(0, '.')
-          from jobs.generate_exam.handler import handler
-          
+          from jobs.summarize_lecture.handler import handler
+
           def lambda_handler(event, context):
               return handler(event, context)
           EOF
-          
+
           # Create deployment zip
           cd deployment
           zip -r ../deployment.zip .
@@ -88,7 +88,7 @@ jobs:
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --handler lambda_handler.lambda_handler \
             --environment Variables={ENV="dev"}
-          
+
           # Wait for the configuration update to complete
           aws lambda wait function-updated \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
