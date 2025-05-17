@@ -8,6 +8,8 @@ on:
 env:
   LAMBDA_FUNCTION_NAME: dev-summarize-lecture
   AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: study-aid-lambda
+  ECR_IMAGE_TAG: dev-summarize-lecture
 
 jobs:
   deploy:
@@ -17,118 +19,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
-          
-      - name: Setup custom build environment
-        run: |
-          # Create a build directory for Lambda dependencies
-          mkdir -p lambda-build
-          
-          # Create a Dockerfile for Lambda Python 3.13 runtime
-          cat > lambda-build/Dockerfile << 'EOF'
-          FROM public.ecr.aws/lambda/python:3.13
-          
-          # Install additional build dependencies
-          RUN yum update -y && \
-              yum install -y gcc gcc-c++ make zip unzip tar gzip findutils
-          
-          # Install PyMuPDF dependencies
-          RUN yum install -y freetype-devel zlib-devel libjpeg-devel \
-                            libffi-devel openssl-devel
-              
-          # Set working directory
-          WORKDIR /var/task
-          EOF
-          
-          # Build the Docker image
-          docker build -t lambda-python3-13-build lambda-build/
-
-      - name: Build Lambda package with Docker
-        run: |
-          # Create a temporary directory for building
-          mkdir -p build_output
-          
-          # Copy requirements and source files to a directory that will be mounted
-          cp -r ./jobs/summarize_lecture build_output/
-          cp -r ./prompts build_output/
-          
-          # Run Docker container to build the Lambda package
-          docker run --rm -v $(pwd)/build_output:/var/task lambda-python3-13-build /bin/bash -c '
-            cd /var/task/summarize_lecture
-            
-            # Create a backup of the requirements file
-            cp requirements.txt requirements.txt.bak
-            
-            # Create package directory
-            mkdir -p package
-            
-            # Use pip directly to install dependencies
-            python3 -m pip install --upgrade pip
-            
-            # Try to install a compatible version of PyMuPDF
-            sed -i "s/pymupdf==1.23.8/pymupdf==1.21.1/g" requirements.txt
-            
-            # Install dependencies
-            python3 -m pip install -r requirements.txt --target ./package --no-cache-dir
-            
-            # If it fails, try alternative approaches
-            if [ $? -ne 0 ]; then
-              echo "Falling back to alternative installation method"
-              # Restore original requirements but exclude PyMuPDF
-              grep -v pymupdf requirements.txt.bak > temp_requirements.txt
-              # Install everything else
-              python3 -m pip install -r temp_requirements.txt --target ./package
-              
-              # Try to install a compatible version of PyMuPDF separately
-              echo "Trying to install PyMuPDF 1.19.6 - known to work on Lambda"
-              python3 -m pip install pymupdf==1.19.6 --target ./package --no-deps
-              
-              # If that also fails, try with different compile flags
-              if [ $? -ne 0 ]; then
-                echo "Trying to compile PyMuPDF from source"
-                CFLAGS="-fPIC" python3 -m pip install pymupdf==1.19.6 --target ./package --no-binary :all:
-                
-                # If all attempts fail, continue without PyMuPDF
-                if [ $? -ne 0 ]; then
-                  echo "Warning: PyMuPDF installation failed. Package will be deployed without PyMuPDF support."
-                fi
-              fi
-            fi
-          '
-          
-          # Create deployment package using files built in Docker
-          mkdir -p deployment
-          
-          # Copy all dependencies to deployment directory
-          cp -r build_output/summarize_lecture/package/* deployment/
-          
-          # Create directory structure in deployment
-          mkdir -p deployment/jobs/summarize_lecture
-          mkdir -p deployment/prompts
-          
-          # Copy Python files to maintain relative path structure
-          cp build_output/summarize_lecture/*.py deployment/jobs/summarize_lecture/
-          
-          # Copy prompts directory
-          cp -r build_output/prompts/* deployment/prompts/
-          
-          # Create the lambda_handler wrapper at root level
-          cat > deployment/lambda_handler.py << 'EOF'
-          import sys
-          sys.path.insert(0, '.')
-          from jobs.summarize_lecture.handler import handler
-          
-          def lambda_handler(event, context):
-              return handler(event, context)
-          EOF
-          
-          # Create deployment zip
-          cd deployment
-          zip -r ../deployment.zip .
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -136,25 +26,62 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Update Lambda function code
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Create lambda Dockerfile
         run: |
+          # Create a Dockerfile for the Lambda function
+          cat > Dockerfile << 'EOF'
+          FROM public.ecr.aws/lambda/python:3.13
+          
+          # Install system dependencies for PyMuPDF
+          RUN yum update -y && \
+              yum install -y gcc gcc-c++ make && \
+              yum install -y freetype-devel zlib-devel jbig2dec-devel && \
+              yum install -y harfbuzz-devel libXext-devel libXt-devel libcurl-devel
+          
+          # Copy requirements file
+          COPY jobs/summarize_lecture/requirements.txt ${LAMBDA_TASK_ROOT}
+          
+          # Install Python dependencies
+          RUN pip install -r requirements.txt && \
+              rm requirements.txt
+          
+          # Copy function code and prompts
+          COPY jobs/summarize_lecture/ ${LAMBDA_TASK_ROOT}/jobs/summarize_lecture/
+          COPY prompts/ ${LAMBDA_TASK_ROOT}/prompts/
+          
+          # Create the lambda_handler wrapper
+          RUN echo 'import sys\nsys.path.insert(0, ".")\nfrom jobs.summarize_lecture.handler import handler\n\ndef lambda_handler(event, context):\n    return handler(event, context)' > ${LAMBDA_TASK_ROOT}/lambda_handler.py
+          
+          # Set the CMD to the handler
+          CMD [ "lambda_handler.lambda_handler" ]
+          EOF
+
+      - name: Build and push Docker image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          # Build the docker image
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG .
+          
+          # Push the docker image
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+          
+          # Save the image URI
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Update Lambda function
+        run: |
+          # Update the Lambda function to use the new container image
           aws lambda update-function-code \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --zip-file fileb://deployment.zip
-
-      - name: Wait for Lambda update completion
-        run: |
-          aws lambda wait function-updated \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
-
-      - name: Update Lambda configuration
-        run: |
-          aws lambda update-function-configuration \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --handler lambda_handler.lambda_handler \
-            --environment Variables={ENV="dev"}
-
-          # Wait for the configuration update to complete
+            --image-uri ${{ steps.build-image.outputs.image }}
+          
+          # Wait for the update to complete
           aws lambda wait function-updated \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
 
