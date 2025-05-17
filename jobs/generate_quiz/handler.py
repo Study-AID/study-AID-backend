@@ -1,14 +1,13 @@
+import boto3
 import json
 import logging
 import os
-import traceback
-import uuid
-from datetime import datetime
-
-import boto3
 import psycopg2
 import psycopg2.extras
+import traceback
+import uuid
 from botocore.config import Config
+from datetime import datetime
 
 from openai_client import OpenAIClient
 
@@ -94,11 +93,12 @@ def get_lecture_info(lecture_id):
         conn = get_db_connection()
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             query = """
-            SELECT l.id, l.course_id, l.user_id, l.material_path, l.title, l.summary, c.id as course_id
-            FROM app.lectures l
-            JOIN app.courses c ON l.course_id = c.id
-            WHERE l.id = %s AND l.deleted_at IS NULL
-            """
+                    SELECT l.id, l.course_id, l.user_id, l.material_path, l.title, l.summary, c.id as course_id
+                    FROM app.lectures l
+                             JOIN app.courses c ON l.course_id = c.id
+                    WHERE l.id = %s
+                      AND l.deleted_at IS NULL \
+                    """
             cursor.execute(query, (lecture_id,))
             lecture = cursor.fetchone()
 
@@ -187,10 +187,10 @@ def save_quiz_to_db(lecture_id, user_id, quiz_data, title=None):
         with conn.cursor() as cursor:
             # Insert quiz
             query = """
-            INSERT INTO app.quizzes 
-            (id, lecture_id, user_id, title, status, contents_generated_at, created_at)
-            VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
-            """
+                    INSERT INTO app.quizzes
+                    (id, lecture_id, user_id, title, status, contents_generated_at, created_at)
+                    VALUES (%s, %s, %s, %s, %s, NOW(), NOW()) \
+                    """
             cursor.execute(query, (quiz_id, lecture_id, user_id, title, 'not_started'))
 
             # Debug: Log quiz data structure
@@ -294,10 +294,10 @@ def log_activity(course_id, user_id, activity_type, contents_type, details):
             activity_details = json.dumps(details)
 
             query = """
-            INSERT INTO app.course_activity_logs 
-            (id, course_id, user_id, activity_type, contents_type, activity_details)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """
+                    INSERT INTO app.course_activity_logs
+                    (id, course_id, user_id, activity_type, contents_type, activity_details)
+                    VALUES (%s, %s, %s, %s, %s, %s) \
+                    """
             cursor.execute(query, (
                 activity_id,
                 course_id,
