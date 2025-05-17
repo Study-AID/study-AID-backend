@@ -1,4 +1,4 @@
-name: [Dev] Deploy Generate Exam
+name: Dev - Deploy Generate Exam
 
 on:
   push:

@@ -1,4 +1,4 @@
-name: [Prod] Database Migration
+name: Prod - Database Migration
 
 on:
   push:

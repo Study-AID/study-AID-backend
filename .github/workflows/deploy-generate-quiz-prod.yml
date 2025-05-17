@@ -1,4 +1,4 @@
-name: [Prod] Deploy Generate Quiz
+name: Prod - Deploy Generate Quiz
 
 on:
   push:

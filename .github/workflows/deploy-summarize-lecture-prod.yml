@@ -1,4 +1,4 @@
-name: [Prod] Deploy Summarize Lecture
+name: Prod - Deploy Summarize Lecture
 
 on:
   push:
