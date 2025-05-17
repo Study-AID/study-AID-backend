@@ -114,9 +114,11 @@ def get_lecture_info(lecture_id):
             conn.close()
 
 
-def get_lecture_content(lecture_info):
+def get_lecture_content(lecture_id):
     """Get lecture content either from summary or from the original file"""
     try:
+        lecture_info = get_lecture_info(lecture_id)
+
         # First check if we have a summary
         # TODO(mj): get from parsed_text.
         summary = lecture_info.get('summary')
@@ -323,6 +325,8 @@ def lambda_handler(event, context):
             message = json.loads(record['body'])
 
             # Extract information from the message
+            user_id = message.get('user_id')
+            course_id = message.get('course_id')
             lecture_id = message.get('lecture_id')
             quiz_title = message.get('title')
 
@@ -343,13 +347,8 @@ def lambda_handler(event, context):
                 logger.error("Missing required lecture_id in message")
                 continue
 
-            # Get lecture info
-            lecture_info = get_lecture_info(lecture_id)
-            user_id = lecture_info['user_id']
-            course_id = lecture_info['course_id']
-
             # Get lecture content
-            lecture_content = get_lecture_content(lecture_info)
+            lecture_content = get_lecture_content(lecture_id)
 
             # Generate quiz using OpenAI
             openai_client = OpenAIClient()
@@ -363,7 +362,6 @@ def lambda_handler(event, context):
             activity_details = {
                 "action": "generate_quiz",
                 "lecture_id": lecture_id,
-                "lecture_title": lecture_info['title'],
                 "quiz_id": quiz_id,
                 "quiz_title": quiz_title,
                 "true_or_false_count": question_counts['true_or_false_count'],

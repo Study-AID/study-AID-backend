@@ -127,33 +127,6 @@ def extract_text_from_pdf(file_path):
         raise
 
 
-def get_lecture_info(lecture_id):
-    """Get lecture information from the database"""
-    conn = None
-    try:
-        conn = get_db_connection()
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            query = """
-            SELECT l.id, l.course_id, l.user_id, l.material_path, l.title, c.id as course_id
-            FROM app.lectures l
-            JOIN app.courses c ON l.course_id = c.id
-            WHERE l.id = %s AND l.deleted_at IS NULL
-            """
-            cursor.execute(query, (lecture_id,))
-            lecture = cursor.fetchone()
-
-            if not lecture:
-                raise ValueError(f"No lecture found with id: {lecture_id}")
-
-            return dict(lecture)
-    except Exception as e:
-        logger.error(f"Error getting lecture info: {e}")
-        raise
-    finally:
-        if conn:
-            conn.close()
-
-
 def update_lecture_status(lecture_id, status):
     """Update the lecture summary status in the database"""
     conn = None
@@ -248,6 +221,8 @@ def lambda_handler(event, context):
             message = json.loads(record['body'])
 
             # Extract information from the message
+            user_id = message.get('user_id')
+            course_id = message.get('course_id')
             lecture_id = message.get('lecture_id')
             s3_bucket = message.get('s3_bucket')
             s3_key = message.get('s3_key')
@@ -255,12 +230,6 @@ def lambda_handler(event, context):
             if not all([lecture_id, s3_bucket, s3_key]):
                 logger.error("Missing required parameters in message")
                 continue
-
-            # Get lecture info to access course_id and user_id
-            # TODO(mj): check if summary already exists for this lecture.
-            lecture_info = get_lecture_info(lecture_id)
-            course_id = lecture_info['course_id']
-            user_id = lecture_info['user_id']
 
             # Update status to in_progress
             update_lecture_status(lecture_id, 'in_progress')
@@ -284,7 +253,6 @@ def lambda_handler(event, context):
             activity_details = {
                 "action": "generate_summary",
                 "lecture_id": lecture_id,
-                "lecture_title": lecture_info['title']
             }
             log_activity(course_id, user_id, 'update', 'lecture', activity_details)
 
