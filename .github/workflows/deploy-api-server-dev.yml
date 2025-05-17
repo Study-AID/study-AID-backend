@@ -82,6 +82,25 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
+      - name: Confirm task definition actually deployed
+        id: confirm-deploy
+        run: |
+          LATEST_REVISION=$(aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_FAMILY }} \
+            --query "taskDefinition.revision" --output text)
+
+          DEPLOYED_REVISION=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query "services[0].deployments[?status=='PRIMARY'].taskDefinition" --output text | awk -F: '{print $NF}')
+
+          echo "latest=$LATEST_REVISION" >> $GITHUB_OUTPUT
+          echo "deployed=$DEPLOYED_REVISION" >> $GITHUB_OUTPUT
+
+          if [ "$LATEST_REVISION" != "$DEPLOYED_REVISION" ]; then
+            echo "::error title=Deployment Rollback::ECS rolled back to previous task definition"
+            exit 1
+          fi
+
       - name: Notify Slack on Success
         if: success()
         uses: 8398a7/action-slack@v3
