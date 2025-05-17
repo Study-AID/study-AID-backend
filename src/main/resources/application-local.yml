@@ -53,3 +53,12 @@ minio:
 
 aws:  
   region: ap-northeast-2
+
+# LocalStack Configuration
+localstack:
+  endpoint: http://localstack:4566
+
+# SQS Configuration for Local Testing
+sqs:
+  generate-summary:
+    queue-url: http://sqs.ap-northeast-2.localstack.localstack.cloud:4566/000000000000/local-study-aid-summarize-lecture
