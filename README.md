@@ -113,6 +113,8 @@ make migration-info       # 데이터베이스 스키마 버전 확인
 ## SQL 변경과 DB 마이그레이션
 DB에 새로운 sql 반영은 make run 과 별도로 해주셔야 합니다.
 
+### 로컬 개발 환경
+
 1. flyway/migrations 디렉토리에 새 SQL 파일 생성
    
    예: V2__add_school_column_to_user_table.sql   
@@ -129,4 +131,18 @@ DB에 새로운 sql 반영은 make run 과 별도로 해주셔야 합니다.
    ```
    make migration-info 실행 결과에서 State가 Pending이면 아직 마이그레이션 안 된 상태입니다.
 
-   참고: 로컬 개발 단계에서 DB 스키마 롤백하려면 make clean, 새로 작성한 sql 파일을 삭제/수정, make migrate 
+   참고: 로컬 개발 단계에서 DB 스키마 롤백하려면 make clean, 새로 작성한 sql 파일을 삭제/수정, make migrate
+
+태그 기반 자동 마이그레이션을 사용합니다:
+
+#### Dev 환경
+```bash
+git tag migrate-db-1-dev
+git push origin migrate-db-1-dev
+```
+
+#### Prod 환경
+```bash
+git tag migrate-db-1
+git push origin migrate-db-1
+```
