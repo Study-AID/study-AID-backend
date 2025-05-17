@@ -65,16 +65,3 @@ jobs:
           aws lambda get-function \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --query 'Configuration.[FunctionArn, LastModified, Version]'
-
-      - name: Tag deployment
-        run: |
-          # Get the git tag that triggered this deployment
-          DEPLOY_TAG=${GITHUB_REF#refs/tags/}
-          
-          # Create a git tag for the deployment
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          
-          DEPLOYMENT_TAG="deployed-prod-${DEPLOY_TAG}-$(date +%Y%m%d-%H%M%S)"
-          git tag -a $DEPLOYMENT_TAG -m "Production deployment of $DEPLOY_TAG"
-          git push origin $DEPLOYMENT_TAG
