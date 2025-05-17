@@ -1,0 +1,71 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://study-aid.dev/schemas/generate_exam.json",
+    "title": "GenerateExam",
+    "type": "object",
+    "required": [
+        "schema_version",
+        "request_id",
+        "occurred_at",
+        "user_id",
+        "course_id",
+        "title",
+        "referenced_lecture_ids",
+        "true_or_false_count",
+        "multiple_choice_count",
+        "short_answer_count",
+        "essay_count"
+    ],
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "request_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "user_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "course_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "title": {
+            "type": "string",
+            "maxLength": 255
+        },
+        "referenced_lecture_ids": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        },
+        "true_or_false_count": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "multiple_choice_count": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "short_answer_count": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "essay_count": {
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "additionalProperties": false
+}
