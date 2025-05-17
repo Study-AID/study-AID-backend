@@ -3,7 +3,7 @@ name: Dev - Deploy dev-generate-exam Lambda Job
 on:
   push:
     tags:
-      - 'deploy-exam-[0-9]*.[0-9]*.[0-9]*-dev'
+      - 'deploy-job-generate-exam-[0-9]+.[0-9]+.[0-9]+-dev'
 
 env:
   LAMBDA_FUNCTION_NAME: dev-generate-exam
