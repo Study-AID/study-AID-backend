@@ -3,7 +3,7 @@ name: Prod - Database Migration
 on:
   push:
     tags:
-      - 'migrate-db-[0-9]*'
+      - 'migrate-db-[0-9]+'
       - '!migrate-db-*-dev'  # Exclude dev tags
 
 env:

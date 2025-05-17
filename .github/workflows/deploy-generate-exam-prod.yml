@@ -3,8 +3,8 @@ name: Prod - Deploy prod-generate-exam Lambda Job
 on:
   push:
     tags:
-      - 'deploy-exam-[0-9]*.[0-9]*.[0-9]*'
-      - '!deploy-exam-*-dev'  # Exclude dev tags
+      - 'deploy-job-generate-exam-[0-9]+.[0-9]+.[0-9]+'
+      - '!deploy-job-generate-exam-*-dev'  # Exclude dev tags
 
 env:
   LAMBDA_FUNCTION_NAME: prod-generate-exam
