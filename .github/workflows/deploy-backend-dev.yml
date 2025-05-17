@@ -1,0 +1,189 @@
+name: Dev - Deploy Backend to ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'Dockerfile.prod'
+      - '.github/workflows/deploy-backend-dev.yml'
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: study_aid/backend
+  ECS_CLUSTER: study_aid
+  ECS_SERVICE: studyaid-dev-ecs-service
+  CONTAINER_NAME: api-server
+  TASK_DEFINITION_FAMILY: backend
+
+jobs:
+  deploy:
+    name: Deploy Backend to ECS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build with Gradle
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build -Pprofile=dev
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: dev-${{ github.sha }}
+        run: |
+          docker build -f Dockerfile.prod -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:dev
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:dev
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_FAMILY }} \
+          --query taskDefinition > task-definition.json
+
+      - name: Add log configuration to task definition 
+        run: | 
+          jq '.containerDefinitions[0].logConfiguration = { 
+            logDriver: "awslogs", 
+            options: { 
+              "awslogs-group": "/ecs/backend", 
+              "awslogs-region": "ap-northeast-2", 
+              "awslogs-stream-prefix": "api-server" 
+            } 
+          }' task-definition.json > task-definition-with-logs.json 
+
+      - name: Update container image in task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition-with-logs.json # 
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Notify Slack on Success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,repo,commit,message
+          custom_payload: |
+            {
+              "attachments": [
+                {
+                  "color": "good",
+                  "title": "✅ 배포 성공: Backend -> ECS",
+                  "fields": [
+                    {
+                      "title": "레포지토리",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "브랜치",
+                      "value": "main",
+                      "short": true
+                    },
+                    {
+                      "title": "커밋 메시지",
+                      "value": "${{ github.event.head_commit.message }}",
+                      "short": false
+                    },
+                    {
+                      "title": "이미지 태그",
+                      "value": "dev-${{ github.sha }}",
+                      "short": true
+                    },
+                    {
+                      "title": "작업자",
+                      "value": "${{ github.actor }}",
+                      "short": true
+                    }
+                  ],
+                  "footer": "GitHub Actions",
+                  "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                  "ts": "${{ github.event.repository.updated_at }}"
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,repo,commit,message
+          custom_payload: |
+            {
+              "attachments": [
+                {
+                  "color": "danger",
+                  "title": "❌ 배포 실패: Backend -> ECS",
+                  "fields": [
+                    {
+                      "title": "레포지토리",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "브랜치",
+                      "value": "main",
+                      "short": true
+                    },
+                    {
+                      "title": "커밋 메시지",
+                      "value": "${{ github.event.head_commit.message }}",
+                      "short": false
+                    },
+                    {
+                      "title": "작업자",
+                      "value": "${{ github.actor }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Actions 링크",
+                      "value": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                      "short": false
+                    }
+                  ],
+                  "footer": "GitHub Actions",
+                  "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                  "ts": "${{ github.event.repository.updated_at }}"
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
