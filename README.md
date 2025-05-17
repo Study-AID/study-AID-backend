@@ -133,16 +133,14 @@ DB에 새로운 sql 반영은 make run 과 별도로 해주셔야 합니다.
 
    참고: 로컬 개발 단계에서 DB 스키마 롤백하려면 make clean, 새로 작성한 sql 파일을 삭제/수정, make migrate
 
-태그 기반 자동 마이그레이션을 사용합니다:
-
-#### Dev 환경
+### Dev 환경 마이그레이션
 ```bash
-git tag migrate-db-1-dev
-git push origin migrate-db-1-dev
+git tag migrate-db-<version>-dev
+git push origin migrate-db-<version>-dev
 ```
 
-#### Prod 환경
+### Prod 환경 마이그레이션
 ```bash
-git tag migrate-db-1
-git push origin migrate-db-1
+git tag migrate-db-<version>
+git push origin migrate-db-<version>
 ```
