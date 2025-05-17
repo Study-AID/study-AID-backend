@@ -12,84 +12,113 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    container:
-      image: amazonlinux:2023
-      # Amazon Linux 2023 matches the Lambda runtime environment
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+          
+      - name: Setup custom build environment
         run: |
-          dnf update -y
-          dnf install -y python3.13 python3.13-devel gcc gcc-c++ curl git
-          curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13
+          # Create a build directory for Lambda dependencies
+          mkdir -p lambda-build
+          
+          # Create a Dockerfile for our Amazon Linux 2023 build environment
+          cat > lambda-build/Dockerfile << 'EOF'
+          FROM amazonlinux:2023
+          
+          # Install necessary build tools and dependencies
+          RUN dnf update -y && \
+              dnf install -y python3.13 python3.13-devel gcc gcc-c++ curl git zip unzip \
+                           mupdf-devel freetype-devel zlib-devel jbig2dec-devel harfbuzz-devel \
+                           openjpeg2-devel libXext-devel mesa-libGLU-devel libXt-devel libcurl-devel \
+                           tar gzip findutils
+          
+          # Install pip
+          RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13
+          
+          # Set working directory
+          WORKDIR /build
+          EOF
+          
+          # Build the Docker image
+          docker build -t lambda-amazonlinux2023-build lambda-build/
 
-      - name: Install system dependencies
+      - name: Build Lambda package with Docker
         run: |
-          # Install required system packages for PyMuPDF and other dependencies
-          dnf install -y mupdf-devel freetype-devel zlib-devel jbig2dec-devel harfbuzz-devel openjpeg2-devel libXext-devel mesa-libGLU-devel libXt-devel libcurl-devel
-
-      - name: Install dependencies
-        working-directory: ./jobs/summarize_lecture
-        run: |
-          # Create a backup of the requirements file
-          cp requirements.txt requirements.txt.bak
+          # Create a temporary directory for building
+          mkdir -p build_output
           
-          # Try with a specific version of PyMuPDF that works better on Amazon Linux 2023
-          sed -i 's/pymupdf==1.23.8/pymupdf==1.22.5/g' requirements.txt
+          # Copy requirements and source files to a directory that will be mounted
+          cp -r ./jobs/summarize_lecture build_output/
+          cp -r ./prompts build_output/
           
-          # Install dependencies using pre-compiled binaries where possible
-          python3.13 -m pip install --upgrade pip
-          python3.13 -m pip install -r requirements.txt --target ./package --no-cache-dir
-          
-          # If it fails, try alternative approaches
-          if [ $? -ne 0 ]; then
-            echo "Falling back to alternative installation method"
-            # Restore original requirements
-            cp requirements.txt.bak requirements.txt
-            # Remove PyMuPDF from requirements
-            grep -v pymupdf requirements.txt > temp_requirements.txt
-            # Install everything else
-            python3.13 -m pip install -r temp_requirements.txt --target ./package
-            # Try to install PyMuPDF with specific build flags
-            CFLAGS="-fPIC" python3.13 -m pip install pymupdf==1.22.5 --target ./package --no-binary :all:
+          # Run Docker container to build the Lambda package
+          docker run --rm -v $(pwd)/build_output:/build lambda-amazonlinux2023-build /bin/bash -c '
+            cd /build/summarize_lecture
             
-            # If that fails too, just continue without PyMuPDF
+            # Create a backup of the requirements file
+            cp requirements.txt requirements.txt.bak
+            
+            # Try with a specific version of PyMuPDF that works better on Amazon Linux 2023
+            sed -i "s/pymupdf==1.23.8/pymupdf==1.22.5/g" requirements.txt
+            
+            # Create package directory
+            mkdir -p package
+            
+            # Install dependencies using pre-compiled binaries where possible
+            python3.13 -m pip install --upgrade pip
+            python3.13 -m pip install -r requirements.txt --target ./package --no-cache-dir
+            
+            # If it fails, try alternative approaches
             if [ $? -ne 0 ]; then
-              echo "Warning: PyMuPDF installation failed. Package will be deployed without PyMuPDF support."
+              echo "Falling back to alternative installation method"
+              # Restore original requirements
+              cp requirements.txt.bak requirements.txt
+              # Remove PyMuPDF from requirements
+              grep -v pymupdf requirements.txt > temp_requirements.txt
+              # Install everything else
+              python3.13 -m pip install -r temp_requirements.txt --target ./package
+              # Try to install PyMuPDF with specific build flags
+              CFLAGS="-fPIC" python3.13 -m pip install pymupdf==1.22.5 --target ./package --no-binary :all:
+              
+              # If that fails too, just continue without PyMuPDF
+              if [ $? -ne 0 ]; then
+                echo "Warning: PyMuPDF installation failed. Package will be deployed without PyMuPDF support."
+              fi
             fi
-          fi
-
-      - name: Prepare deployment package
-        run: |
-          # Create deployment directory
+          '
+          
+          # Create deployment package using files built in Docker
           mkdir -p deployment
-
+          
           # Copy all dependencies to deployment directory
-          cp -r ./jobs/summarize_lecture/package/* deployment/
-
+          cp -r build_output/summarize_lecture/package/* deployment/
+          
           # Create directory structure in deployment
           mkdir -p deployment/jobs/summarize_lecture
           mkdir -p deployment/prompts
-
+          
           # Copy Python files to maintain relative path structure
-          cp ./jobs/summarize_lecture/*.py deployment/jobs/summarize_lecture/
-
+          cp build_output/summarize_lecture/*.py deployment/jobs/summarize_lecture/
+          
           # Copy prompts directory
-          cp -r ./prompts/* deployment/prompts/
-
+          cp -r build_output/prompts/* deployment/prompts/
+          
           # Create the lambda_handler wrapper at root level
           cat > deployment/lambda_handler.py << 'EOF'
           import sys
           sys.path.insert(0, '.')
           from jobs.summarize_lecture.handler import handler
-
+          
           def lambda_handler(event, context):
               return handler(event, context)
           EOF
-
+          
           # Create deployment zip
           cd deployment
           zip -r ../deployment.zip .
