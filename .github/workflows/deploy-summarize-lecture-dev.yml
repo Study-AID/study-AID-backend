@@ -27,19 +27,24 @@ jobs:
           # Create a build directory for Lambda dependencies
           mkdir -p lambda-build
           
-          # Create a Dockerfile for Lambda Python runtime on Amazon Linux 2023
+          # Create a Dockerfile for Lambda Python 3.13 runtime
           cat > lambda-build/Dockerfile << 'EOF'
-          FROM public.ecr.aws/sam/build-python3.11:latest-al2023
+          FROM public.ecr.aws/lambda/python:3.13
           
           # Install additional build dependencies
-          RUN dnf install -y zip unzip
+          RUN yum update -y && \
+              yum install -y gcc gcc-c++ make zip unzip tar gzip findutils
+          
+          # Install PyMuPDF dependencies
+          RUN yum install -y freetype-devel zlib-devel libjpeg-devel \
+                            libffi-devel openssl-devel
               
           # Set working directory
           WORKDIR /var/task
           EOF
           
           # Build the Docker image
-          docker build -t lambda-python-al2023-build lambda-build/
+          docker build -t lambda-python3-13-build lambda-build/
 
       - name: Build Lambda package with Docker
         run: |
@@ -51,7 +56,7 @@ jobs:
           cp -r ./prompts build_output/
           
           # Run Docker container to build the Lambda package
-          docker run --rm -v $(pwd)/build_output:/var/task lambda-python-al2023-build /bin/bash -c '
+          docker run --rm -v $(pwd)/build_output:/var/task lambda-python3-13-build /bin/bash -c '
             cd /var/task/summarize_lecture
             
             # Create a backup of the requirements file
