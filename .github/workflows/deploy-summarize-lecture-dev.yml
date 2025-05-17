@@ -12,25 +12,46 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    container:
+      image: public.ecr.aws/sam/build-python3.13:latest-x86_64
+      # This image is based on Amazon Linux 2023 and is similar to Lambda runtime environment
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
+      # Container already has Python 3.13 installed, so we skip Python setup
 
+      - name: Install system dependencies
+        run: |
+          # Install required system packages for PyMuPDF and other dependencies
+          yum install -y gcc gcc-c++ python3-devel mupdf-devel freetype-devel zlib-devel jbig2dec-devel harfbuzz-devel openjpeg2-devel libXext-devel mesa-libGL-devel libXt-devel curl-devel
+          
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
       - name: Install dependencies
         working-directory: ./jobs/summarize_lecture
         run: |
-          uv pip install -r requirements.txt --target ./package
+          # Use pip directly instead of uv for better compatibility
+          pip3 install --upgrade pip
+          # Use --platform to match Lambda environment
+          pip3 install -r requirements.txt --target ./package --platform manylinux2014_x86_64 \
+            --only-binary=:all: --implementation cp --python-version 313 --abi cp313
+          
+          # If PyMuPDF still fails, we can install a specific compatible version or without pymupdf
+          if [ $? -ne 0 ]; then
+            echo "Falling back to alternative installation method"
+            # Remove PyMuPDF from requirements
+            grep -v pymupdf requirements.txt > temp_requirements.txt
+            # Install everything else
+            pip3 install -r temp_requirements.txt --target ./package
+            # Try to install PyMuPDF with different options
+            pip3 install pymupdf==1.23.8 --target ./package --no-deps --no-binary :all:
+          fi
 
       - name: Prepare deployment package
         run: |
