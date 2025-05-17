@@ -1,18 +1,16 @@
+import boto3
 import json
 import logging
 import os
-import traceback
-import uuid
-from datetime import datetime
-
-import boto3
 import psycopg2
 import psycopg2.extras
+import traceback
+import uuid
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from datetime import datetime
 
 from openai_client import OpenAIClient
-from summary_models import Summary
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -134,11 +132,11 @@ def update_lecture_status(lecture_id, status):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             query = """
-            UPDATE app.lectures 
-            SET summary_status = %s, 
-                updated_at = NOW() 
-            WHERE id = %s
-            """
+                    UPDATE app.lectures
+                    SET summary_status = %s,
+                        updated_at     = NOW()
+                    WHERE id = %s \
+                    """
             cursor.execute(query, (status, lecture_id))
 
         conn.commit()
@@ -162,12 +160,12 @@ def update_lecture_summary(lecture_id, summary):
 
             # Update the lecture record
             query = """
-            UPDATE app.lectures 
-            SET summary = %s, 
-                summary_status = 'completed', 
-                updated_at = NOW() 
-            WHERE id = %s
-            """
+                    UPDATE app.lectures
+                    SET summary        = %s,
+                        summary_status = 'completed',
+                        updated_at     = NOW()
+                    WHERE id = %s \
+                    """
             cursor.execute(query, (summary_json, lecture_id))
 
         conn.commit()
@@ -190,10 +188,10 @@ def log_activity(course_id, user_id, activity_type, contents_type, details):
             activity_details = json.dumps(details)
 
             query = """
-            INSERT INTO app.course_activity_logs 
-            (id, course_id, user_id, activity_type, contents_type, activity_details)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """
+                    INSERT INTO app.course_activity_logs
+                    (id, course_id, user_id, activity_type, contents_type, activity_details)
+                    VALUES (%s, %s, %s, %s, %s, %s) \
+                    """
             cursor.execute(query, (
                 activity_id,
                 course_id,
