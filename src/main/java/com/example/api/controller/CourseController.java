@@ -22,12 +22,9 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/v1/courses")
 @Tag(name = "Course", description = "Course API")
-public class CourseController {
+public class CourseController extends BaseController {
     private final CourseService courseService;
     private final SemesterService semesterService;
-
-    // TODO(mj): remove this placeholder user ID and use actual authenticated user ID.
-    private final UUID PLACEHOLDER_USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
     public CourseController(CourseService courseService, SemesterService semesterService) {
         this.courseService = courseService;
@@ -66,8 +63,7 @@ public class CourseController {
             }
     )
     public ResponseEntity<CourseListResponse> getCoursesBySemester(@PathVariable UUID semesterId) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         // Check if semester exists and user owns it.
         var semesterOutput = semesterService.findSemesterById(semesterId);
@@ -116,8 +112,7 @@ public class CourseController {
             }
     )
     public ResponseEntity<CourseResponse> getCourseById(@PathVariable UUID id) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Check course exists and user owns it.
@@ -165,8 +160,7 @@ public class CourseController {
             }
     )
     public ResponseEntity<CourseResponse> createCourse(@RequestBody CreateCourseRequest request) {
-        // TODO(mj): Obtain authenticated user ID instead of placeholder
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Validate semester exists and user has access to it
@@ -241,8 +235,7 @@ public class CourseController {
     public ResponseEntity<CourseResponse> updateCourse(
             @PathVariable UUID id,
             @RequestBody UpdateCourseRequest request) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Validate name
@@ -317,8 +310,7 @@ public class CourseController {
     public ResponseEntity<Void> updateCourseGrades(
             @PathVariable UUID id,
             @RequestBody UpdateCourseGradesRequest request) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Validate grade values
@@ -388,8 +380,7 @@ public class CourseController {
             }
     )
     public ResponseEntity<Void> deleteCourse(@PathVariable UUID id) {
-        // TODO(mj): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Check course exists and user owns it.

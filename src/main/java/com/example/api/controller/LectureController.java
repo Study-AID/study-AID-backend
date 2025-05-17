@@ -33,12 +33,9 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/v1/lectures")
 @Tag(name = "lecture", description = "Lecture API")
-public class LectureController {
+public class LectureController extends BaseController {
     private LectureService lectureService;
     private CourseService courseService;
-
-    // TODO(yoon): remove this placeholder user ID and use actual authenticated user ID.
-    private final UUID PLACEHOLDER_USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
     public LectureController(LectureService lectureService, CourseService courseService) {
         this.lectureService = lectureService;
@@ -77,8 +74,7 @@ public class LectureController {
         }
     )
     public ResponseEntity<LectureListResponse> getLecturesByCourse(@PathVariable UUID courseId) {
-        // TODO(yoon): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         // Check if the course exists
         var courseOutput = courseService.findCourseById(courseId);
@@ -127,8 +123,7 @@ public class LectureController {
         }
     )
     public ResponseEntity<LectureResponse> getLectureById(@PathVariable UUID id) {
-        // TODO(yoon): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
         try {
             // Check if the lecture exists
             Optional<LectureOutput> lectureOutput = lectureService.findLectureById(id);
@@ -170,8 +165,7 @@ public class LectureController {
         }
     )
     public ResponseEntity<LectureResponse> createLecture(@RequestBody CreateLectureRequest request) {
-        // TODO(yoon): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         // TODO(yoon): Remove this placeholder data and use actual data from server data
         String testTitle = "Test Title";
@@ -256,8 +250,7 @@ public class LectureController {
         @PathVariable UUID id,
         @RequestBody UpdateLectureRequest request
     ) {
-        // TODO(yoon): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Check if the lecture exists
@@ -344,8 +337,7 @@ public class LectureController {
         @PathVariable UUID id,
         @RequestBody UpdateLectureDisplayOrderLexRequest request
     ) {
-        // TODO(yoon): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Check if the lecture exists
@@ -408,8 +400,7 @@ public class LectureController {
         }
     )
     public ResponseEntity<Void> deleteLecture(@PathVariable UUID id) {
-        // TODO(yoon): Get authenticated user ID from security context
-        UUID userId = PLACEHOLDER_USER_ID;
+        UUID userId = getAuthenticatedUserId();
 
         try {
             // Check if the lecture exists

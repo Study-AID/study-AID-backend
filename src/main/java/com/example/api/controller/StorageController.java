@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/v1/storage")
 @Tag(name = "Storage", description = "Storage API")
 @RequiredArgsConstructor
-public class StorageController {
+public class StorageController extends BaseController {
     private final StorageService storageService;
 
     @PostMapping("/upload")
