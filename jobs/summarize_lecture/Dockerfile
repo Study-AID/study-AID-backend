@@ -28,9 +28,6 @@ RUN cp /var/task/jobs/summarize_lecture/handler.py /var/task/handler.py
 RUN cp /var/task/jobs/summarize_lecture/openai_client.py /var/task/
 RUN cp /var/task/jobs/summarize_lecture/summary_models.py /var/task/
 
-# Create lambda_handler.py that imports and calls the lambda_handler function
-RUN echo 'from handler import lambda_handler\n\ndef lambda_handler(event, context):\n    return lambda_handler(event, context)' > /var/task/lambda_handler.py
-
 # Install Lambda runtime interface client
 RUN pip install --no-cache-dir awslambdaric
 
@@ -41,4 +38,4 @@ ENV PYTHONPATH=/var/task
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
 
 # Set the Lambda handler as CMD
-CMD [ "lambda_handler.lambda_handler" ]
+CMD [ "handler.lambda_handler" ]
