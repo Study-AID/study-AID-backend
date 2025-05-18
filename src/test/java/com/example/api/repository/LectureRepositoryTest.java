@@ -213,5 +213,4 @@ public class LectureRepositoryTest {
         assertThat(deletedLecture).isNotNull();
         assertThat(deletedLecture.getDeletedAt()).isNotNull();
     }
-
 }

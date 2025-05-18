@@ -11,10 +11,17 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class SQSMessageConfig {
     private GenerateSummary generateSummary = new GenerateSummary();
+    private GenerateQuiz generateQuiz = new GenerateQuiz();
 
     @Getter
     @Setter
     public static class GenerateSummary {
+        private String queueUrl;
+    }
+
+    @Getter
+    @Setter
+    public static class GenerateQuiz {
         private String queueUrl;
     }
 }
