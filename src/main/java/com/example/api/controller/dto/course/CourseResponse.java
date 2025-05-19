@@ -2,6 +2,7 @@ package com.example.api.controller.dto.course;
 
 import com.example.api.service.dto.course.CourseOutput;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,15 +15,19 @@ import java.util.UUID;
 @AllArgsConstructor
 @Schema(description = "Course response")
 public class CourseResponse {
+    @NotNull
     @Schema(description = "Unique ID of the course")
     private UUID id;
 
+    @NotNull
     @Schema(description = "Unique ID of the semester")
     private UUID semesterId;
 
+    @NotNull
     @Schema(description = "Unique ID of the user")
     private UUID userId;
 
+    @NotNull
     @Schema(description = "Name of the course")
     private String name;
 
@@ -35,9 +40,11 @@ public class CourseResponse {
     @Schema(description = "Completed credits for the course")
     private Integer completedCredits;
 
+    @NotNull
     @Schema(description = "Creation timestamp of the course")
     private LocalDateTime createdAt;
 
+    @NotNull
     @Schema(description = "Last update timestamp of the course")
     private LocalDateTime updatedAt;
 

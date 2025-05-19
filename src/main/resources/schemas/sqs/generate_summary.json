@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://study-aid.dev/schemas/generate_summary.json",
+  "title": "GenerateSummary",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_id",
+    "occurred_at",
+    "user_id",
+    "course_id",
+    "lecture_id",
+    "s3_bucket",
+    "s3_key"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "course_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "lecture_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "s3_bucket": {
+      "type": "string",
+      "minLength": 3
+    },
+    "s3_key": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

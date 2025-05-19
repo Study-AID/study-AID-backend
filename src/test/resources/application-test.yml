@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_UPPER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;INIT=RUNSCRIPT FROM 'classpath:init-schema.sql'
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      javax:
+        persistence:
+          schema-generation:
+            database:
+              action=none:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        default_schema: app
+        globally_quoted_identifiers: true
+    show-sql: true
+    defer-datasource-initialization: true
+
+  ai:
+    openai:
+      api-key: test
+      chat:
+        options:
+          model: gpt-4o

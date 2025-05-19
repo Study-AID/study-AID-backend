@@ -60,6 +60,13 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+
+    // MinIO
+    implementation 'io.minio:minio:8.5.7'
+
+    implementation platform('software.amazon.awssdk:bom:2.25.26') // AWS SDK BOM
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:sqs'
 }
 
 tasks.named('test') {

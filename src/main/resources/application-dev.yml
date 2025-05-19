@@ -1,0 +1,75 @@
+spring:
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:studyaid}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 120000
+      connection-timeout: 30000
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o
+
+# Server Configuration
+server:
+  port: 8080
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+
+# AWS Configuration
+aws:
+  region: ap-northeast-2
+
+storage:
+  bucket: ${AWS_S3_BUCKET}
+
+# Swagger UI Configuration
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: false  # Disable Swagger UI in production
+
+# Logging
+logging:
+  level:
+    root: WARN
+    org.springframework: WARN
+    com.example.api: INFO
+  file:
+    name: /app/logs/api-server.log
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Cache Configuration
+spring.cache:
+  type: redis
+  redis:
+    time-to-live: 3600000
+    cache-null-values: false
+
+# JWT Configuration
+jwt:
+  secret_key: ${JWT_SECRET_KEY}

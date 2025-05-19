@@ -1,23 +1,26 @@
 package com.example.api.controller;
 
+import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.course.CreateCourseRequest;
 import com.example.api.controller.dto.course.UpdateCourseGradesRequest;
 import com.example.api.controller.dto.course.UpdateCourseRequest;
 import com.example.api.repository.UserRepository;
+import com.example.api.security.jwt.JwtAuthenticationFilter;
 import com.example.api.security.jwt.JwtProvider;
 import com.example.api.service.CourseService;
 import com.example.api.service.SemesterService;
 import com.example.api.service.dto.course.*;
 import com.example.api.service.dto.semester.SemesterOutput;
+import com.example.api.util.WithMockUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,13 +39,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(
-        controllers = CourseController.class,
-        excludeAutoConfiguration = {
-                SecurityAutoConfiguration.class,
-                SecurityFilterAutoConfiguration.class
-        }
-)
+@WebMvcTest(CourseController.class)
+@Import({TestSecurityConfig.class})
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class CourseControllerTest {
     @Autowired
@@ -63,6 +62,9 @@ class CourseControllerTest {
     @MockBean
     private SemesterService semesterService;
 
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
     private UUID userId;
     private UUID semesterId;
     private UUID courseId;
@@ -71,7 +73,6 @@ class CourseControllerTest {
 
     @BeforeEach
     void setUp() {
-        // TODO(mj): use @WithMockUser or @WithSecurityContext instead of hard-coding userId
         userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
         semesterId = UUID.randomUUID();
         courseId = UUID.randomUUID();
@@ -97,6 +98,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("학기별 과목 목록 조회")
+    @WithMockUser
     void getCoursesBySemester() throws Exception {
         // Given
         when(semesterService.findSemesterById(semesterId))
@@ -117,6 +119,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("존재하지 않는 학기로 과목 조회")
+    @WithMockUser
     void getCoursesBySemester_SemesterNotFound() throws Exception {
         // Given
         when(semesterService.findSemesterById(semesterId))
@@ -132,6 +135,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("다른 사용자의 학기로 과목 조회")
+    @WithMockUser
     void getCoursesBySemester_Forbidden() throws Exception {
         // Given
         UUID otherUserId = UUID.randomUUID();
@@ -152,6 +156,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("ID로 과목 조회")
+    @WithMockUser
     void getCourseById() throws Exception {
         // Given
         when(courseService.findCourseById(courseId))
@@ -170,6 +175,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("ID로 과목 조회 시 찾을 수 없음")
+    @WithMockUser
     void getCourseById_NotFound() throws Exception {
         // Given
         when(courseService.findCourseById(courseId))
@@ -184,6 +190,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("ID로 과목 조회 시 권한 없음")
+    @WithMockUser
     void getCourseById_Forbidden() throws Exception {
         // Given
         UUID otherUserId = UUID.randomUUID();
@@ -205,6 +212,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("새 과목 생성")
+    @WithMockUser
     void createCourse() throws Exception {
         // Given
         CreateCourseRequest createRequest = new CreateCourseRequest();
@@ -236,6 +244,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("중복된 과목 생성 시 실패")
+    @WithMockUser
     void createCourse_DuplicateCourse() throws Exception {
         // Given
         CreateCourseRequest createRequest = new CreateCourseRequest();
@@ -259,6 +268,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("존재하지 않는 학기에 과목 생성")
+    @WithMockUser
     void createCourse_SemesterNotFound() throws Exception {
         // Given
         CreateCourseRequest createRequest = new CreateCourseRequest();
@@ -280,6 +290,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("과목 정보 업데이트")
+    @WithMockUser
     void updateCourse() throws Exception {
         // Given
         UpdateCourseRequest updateRequest = new UpdateCourseRequest();
@@ -318,6 +329,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("존재하지 않는 과목 업데이트")
+    @WithMockUser
     void updateCourse_NotFound() throws Exception {
         // Given
         UpdateCourseRequest updateRequest = new UpdateCourseRequest();
@@ -338,6 +350,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("다른 사용자의 과목 업데이트")
+    @WithMockUser
     void updateCourse_Forbidden() throws Exception {
         // Given
         UpdateCourseRequest updateRequest = new UpdateCourseRequest();
@@ -365,6 +378,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("과목 성적 정보 업데이트")
+    @WithMockUser
     void updateCourseGrades() throws Exception {
         // Given
         UpdateCourseGradesRequest updateGradesRequest = new UpdateCourseGradesRequest();
@@ -405,6 +419,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("유효하지 않은 성적 정보로 업데이트")
+    @WithMockUser
     void updateCourseGrades_InvalidGrades() throws Exception {
         // Given
         UpdateCourseGradesRequest updateGradesRequest = new UpdateCourseGradesRequest();
@@ -423,6 +438,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("과목 삭제")
+    @WithMockUser
     void deleteCourse() throws Exception {
         // Given
         when(courseService.findCourseById(courseId))
@@ -439,6 +455,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("존재하지 않는 과목 삭제")
+    @WithMockUser
     void deleteCourse_NotFound() throws Exception {
         // Given
         when(courseService.findCourseById(courseId))
@@ -454,6 +471,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("다른 사용자의 과목 삭제")
+    @WithMockUser
     void deleteCourse_Forbidden() throws Exception {
         // Given
         UUID otherUserId = UUID.randomUUID();

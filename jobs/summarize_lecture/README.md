@@ -1,6 +1,6 @@
-# Async LLM Jobs
+# Job for generating lecture summaries
 
-A Python Lambda function that generates summaries of lecture materials using OpenAI's LLM.
+Python Lambda 함수로, OpenAI의 LLM을 사용하여 참조 강의 자료를 기반으로 요약본을 생성합니다.
 
 ## 기술 스택
 

@@ -197,9 +197,41 @@ def get_event_data(job_name, event_file=None):
         return {
             'Records': [{
                 'body': json.dumps({
+                    'user_id': USER_ID,
+                    'course_id': COURSE_ID,
                     'lecture_id': LECTURE_ID,
                     's3_bucket': S3_BUCKET_NAME,
-                    's3_key': S3_KEY  # Use the constant S3_KEY
+                    's3_key': S3_KEY
+                })
+            }]
+        }
+    elif job_name == 'generate_exam':
+        return {
+            'Records': [{
+                'body': json.dumps({
+                    'user_id': USER_ID,
+                    'course_id': COURSE_ID,
+                    'referenced_lecture_ids': [LECTURE_ID],
+                    'true_or_false_count': 3,
+                    'multiple_choice_count': 3,
+                    'short_answer_count': 3,
+                    'essay_count': 3,
+                    'title': "Test Exam",
+                })
+            }]
+        }
+    elif job_name == 'generate_quiz':
+        return {
+            'Records': [{
+                'body': json.dumps({
+                    'user_id': USER_ID,
+                    'course_id': COURSE_ID,
+                    'lecture_id': LECTURE_ID,
+                    'true_or_false_count': 3,
+                    'multiple_choice_count': 3,
+                    'short_answer_count': 3,
+                    'essay_count': 3,
+                    'title': 'Test Quiz'
                 })
             }]
         }

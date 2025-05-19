@@ -1,0 +1,100 @@
+name: Dev - Deploy Generate Exam
+
+on:
+  push:
+    tags:
+      - 'deploy-exam-[0-9]*.[0-9]*.[0-9]*-dev'
+
+env:
+  LAMBDA_FUNCTION_NAME: dev-generate-exam
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        working-directory: ./jobs/generate_exam
+        run: |
+          uv pip install -r requirements.txt --target ./package
+
+      - name: Prepare deployment package
+        run: |
+          # Create deployment directory
+          mkdir -p deployment
+          
+          # Copy all dependencies to deployment directory
+          cp -r ./jobs/generate_exam/package/* deployment/
+          
+          # Create directory structure in deployment
+          mkdir -p deployment/jobs/generate_exam
+          mkdir -p deployment/prompts
+          
+          # Copy Python files to maintain relative path structure
+          cp ./jobs/generate_exam/*.py deployment/jobs/generate_exam/
+          
+          # Copy prompts directory
+          cp -r ./prompts/* deployment/prompts/
+          
+          # Create the lambda_handler wrapper at root level
+          cat > deployment/lambda_handler.py << 'EOF'
+          import sys
+          sys.path.insert(0, '.')
+          from jobs.generate_exam.handler import handler
+          
+          def lambda_handler(event, context):
+              return handler(event, context)
+          EOF
+          
+          # Create deployment zip
+          cd deployment
+          zip -r ../deployment.zip .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update Lambda function code
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --zip-file fileb://deployment.zip
+
+      - name: Wait for Lambda update completion
+        run: |
+          aws lambda wait function-updated \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
+
+      - name: Update Lambda configuration
+        run: |
+          aws lambda update-function-configuration \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --handler lambda_handler.lambda_handler \
+            --environment Variables={ENV="dev"}
+          
+          # Wait for the configuration update to complete
+          aws lambda wait function-updated \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
+
+      - name: Get Lambda function info
+        run: |
+          aws lambda get-function \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --query 'Configuration.[FunctionArn, LastModified, Version]'

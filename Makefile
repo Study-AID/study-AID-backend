@@ -25,6 +25,7 @@ help:
 	@echo "  make test-env-start       - Start test environment (PostgreSQL, LocalStack)"
 	@echo "  make test-env-setup       - Setup test database with sample data"
 	@echo "  make test-job-summarize   - Test summarize_lecture job"
+	@echo "  make test-job-quiz        - Test generate_quiz job"
 	@echo "  make test-job-shell       - Start a shell in test container for debugging"
 	@echo "  make test-env-stop        - Stop test environment containers"
 	@echo "  make test-env-clean       - Remove test environment including volumes"
@@ -44,8 +45,15 @@ build:
 # Start all services
 run:
 	docker compose up -d
+	@echo "Waiting for services to be ready..."
+	@sleep 5
+	@echo "Initializing LocalStack..."
+	@bash scripts/init-localstack.sh
 	@echo "API Server is running at http://localhost:8080/api"
 	@echo "Swagger UI is available at http://localhost:8080/api/swagger-ui.html"
+	@echo "MinIO Console is available at http://localhost:9001"
+	@echo "  - Username: minioadmin"
+	@echo "  - Password: minioadmin"
 
 # Follow logs
 logs:
@@ -130,6 +138,16 @@ test-env-setup:
 test-job-summarize:
 	@echo "Testing summarize_lecture job..."
 	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile summarize up --build
+
+# 퀴즈 생성 기능 테스트 (generate_quiz)
+test-job-quiz:
+	@echo "Testing generate_quiz job..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile quiz up --build
+
+# 시험 생성 기능 테스트 (generate_exam)
+test-job-exam:
+	@echo "Testing generate_exam job..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile exam up --build
 
 # 테스트용 셸 실행 (디버깅용)
 test-job-shell:
