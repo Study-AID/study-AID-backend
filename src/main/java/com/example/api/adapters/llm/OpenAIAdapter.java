@@ -110,8 +110,7 @@ public class OpenAIAdapter implements LLMAdapter {
                     .mapToInt(m -> m.getContent() != null ? m.getContent().length() : 0)
                     .sum() / 4;
 
-            log.info("[OpenAIAdapter] GPT 요청 구성 완료: 전체 메시지 수 = {}, 예상 토큰 수 = {}",
-                    allMessagesArray.length, totalTokenEstimate);
+            log.info("[OpenAIAdapter] GPT 요청 구성 완료: 예상 토큰 수 = {}", totalTokenEstimate);
             log.info("[OpenAIAdapter] GPT 호출 직전: 전체 prompt 길이 (글자 수) = {}",
                     Arrays.stream(allMessagesArray).mapToInt(m -> m.getContent().length()).sum());
 

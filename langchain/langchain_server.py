@@ -121,7 +121,7 @@ def find_references_in_lecture(lecture_id):
         if similarity >= min_similarity:
             text = doc.page_content.strip()
             page = doc.metadata.get("page", -1)
-            key = (text, page)
+            key = text
             if key not in seen:
                 seen.add(key)
                 results.append({
