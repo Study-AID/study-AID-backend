@@ -6,6 +6,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     g++ \
     gcc \
+    # CPU 수치 연산 최적화 필수 패키지
+    libopenblas-dev \
+    liblapack-dev \
+    libgomp1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -16,6 +20,13 @@ ENV TRANSFORMERS_CACHE=/tmp
 ENV HF_HOME=/tmp/huggingface
 ENV HF_HUB_DISABLE_SYMLINKS_WARNING=1
 
+# CPU 최적화 환경 변수 추가
+ENV OMP_NUM_THREADS=4 \
+    OPENBLAS_NUM_THREADS=4 \
+    MKL_NUM_THREADS=4 \
+    VECLIB_MAXIMUM_THREADS=4 \
+    NUMEXPR_NUM_THREADS=4
+
 WORKDIR /app
 
 # torch 먼저 설치 (CUDA 없이)
@@ -24,11 +35,11 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # 나머지 패키지 설치
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # 소스 코드 복사
 COPY . .
 
 EXPOSE 5000
 
-CMD ["python", "langchain_server.py"]
+CMD ["gunicorn", "--workers=1", "--threads=1", "--worker-class=gthread", "--bind=0.0.0.0:5000",  "langchain_server:app"]
