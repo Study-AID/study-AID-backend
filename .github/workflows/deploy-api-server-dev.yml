@@ -3,7 +3,7 @@ name: Dev - Deploy API Server to ECS
 on:
   push:
     tags:
-      - 'deploy-api-server-[0-9]*.[0-9]*.[0-9]*-dev'
+      - 'deploy-api-server-[0-9]+.[0-9]+.[0-9]+-dev'
   workflow_dispatch:
 
 env:
