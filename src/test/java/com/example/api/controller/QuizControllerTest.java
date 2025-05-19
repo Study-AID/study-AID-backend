@@ -4,8 +4,13 @@ import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.quiz.CreateQuizRequest;
 import com.example.api.controller.dto.quiz.CreateQuizResponseRequest;
+import com.example.api.controller.dto.quiz.SubmitQuizItem;
+import com.example.api.controller.dto.quiz.SubmitQuizRequest;
 import com.example.api.controller.dto.quiz.UpdateQuizRequest;
+import com.example.api.entity.Quiz;
 import com.example.api.entity.QuizItem;
+import com.example.api.entity.QuizResponse;
+import com.example.api.entity.enums.QuestionType;
 import com.example.api.entity.enums.Status;
 import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.UserRepository;
@@ -148,11 +153,11 @@ public class QuizControllerTest {
         testQuizOutput.setQuizItems(testQuizItems);
 
         testQuizResponseListOutput = new QuizResponseListOutput();
-        testQuizResponseListOutput.setQuizResponses(List.of(new QuizResponseOutput()));
-        testQuizResponseListOutput.getQuizResponses().get(0).setId(UUID.randomUUID());
-        testQuizResponseListOutput.getQuizResponses().get(0).setQuizId(quizId);
-        testQuizResponseListOutput.getQuizResponses().get(0).setUserId(userId);
-        testQuizResponseListOutput.getQuizResponses().get(0).setQuizItemId(testQuizItems.get(0).getId());
+        testQuizResponseListOutput.setQuizResponseOutputs(List.of(new QuizResponseOutput()));
+        testQuizResponseListOutput.getQuizResponseOutputs().get(0).setId(UUID.randomUUID());
+        testQuizResponseListOutput.getQuizResponseOutputs().get(0).setQuizId(quizId);
+        testQuizResponseListOutput.getQuizResponseOutputs().get(0).setUserId(userId);
+        testQuizResponseListOutput.getQuizResponseOutputs().get(0).setQuizItemId(testQuizItems.get(0).getId());
     }
     
     @Test
@@ -280,8 +285,29 @@ public class QuizControllerTest {
     @WithMockUser
     void createQuizResponse() throws Exception {
         // given
-        CreateQuizResponseRequest createQuizResponseRequest = new CreateQuizResponseRequest();
-        createQuizResponseRequest.setQuizItemId(testQuizItems.get(0).getId());
+        SubmitQuizRequest submitQuizRequest = new SubmitQuizRequest();
+
+        Quiz testQuiz = new Quiz();
+        testQuiz.setId(quizId);
+
+        QuizResponse testQuizResponse1 = new QuizResponse();
+        testQuizResponse1.setId(UUID.randomUUID());
+        testQuizResponse1.setQuiz(testQuiz);
+
+        when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
+        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
+        
+        
+        submitQuizRequest.setSubmitQuizItems(List.of(
+                new SubmitQuizItem(),
+                new SubmitQuizItem()
+        ));
+        submitQuizRequest.getSubmitQuizItems().get(0).setQuizItemId(testQuizItems.get(0).getId());
+        submitQuizRequest.getSubmitQuizItems().get(0).setQuestionType(QuestionType.true_or_false);
+        submitQuizRequest.getSubmitQuizItems().get(0).setSelectedBool(true);
+        submitQuizRequest.getSubmitQuizItems().get(1).setQuizItemId(testQuizItems.get(1).getId());
+        submitQuizRequest.getSubmitQuizItems().get(1).setQuestionType(QuestionType.multiple_choice);
+        submitQuizRequest.getSubmitQuizItems().get(1).setSelectedIndices(new Integer[]{0, 1});
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
         when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
@@ -289,11 +315,11 @@ public class QuizControllerTest {
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/submit", quizId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createQuizResponseRequest)))
+                        .content(objectMapper.writeValueAsString(submitQuizRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id", is(testQuizResponseListOutput.getQuizResponses().get(0).getId().toString())))
-                .andExpect(jsonPath("$.quizId", is(quizId.toString())))
-                .andExpect(jsonPath("$.userId", is(userId.toString())))
-                .andExpect(jsonPath("$.quizItemId", is(testQuizItems.get(0).getId().toString()))); 
+                .andExpect(jsonPath("$.submitQuizResponses[0].id", is(testQuizResponseListOutput.getQuizResponseOutputs().get(0).getId().toString())))
+                .andExpect(jsonPath("$.submitQuizResponses[0].quizId", is(quizId.toString())))
+                .andExpect(jsonPath("$.submitQuizResponses[0].userId", is(userId.toString())))
+                .andExpect(jsonPath("$.submitQuizResponses[0].quizItemId", is(testQuizItems.get(0).getId().toString())));
     }
 }

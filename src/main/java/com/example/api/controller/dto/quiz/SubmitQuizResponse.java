@@ -3,7 +3,6 @@ package com.example.api.controller.dto.quiz;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.example.api.service.dto.quiz.QuizResponseListOutput;
 import com.example.api.service.dto.quiz.QuizResponseOutput;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Quiz response DTO")
-public class QuizResponseResponse {
+public class SubmitQuizResponse {
     @Schema(description = "Quiz response ID")
     private UUID id;
 
@@ -34,8 +33,8 @@ public class QuizResponseResponse {
     @Schema(description = "Last update time")
     private LocalDateTime updatedAt;
 
-    public static QuizResponseResponse fromServiceDto(QuizResponseOutput quiz) {
-        return new QuizResponseResponse(
+    public static SubmitQuizResponse fromServiceDto(QuizResponseOutput quiz) {
+        return new SubmitQuizResponse(
                 quiz.getId(),
                 quiz.getQuizId(),
                 quiz.getQuizItemId(),

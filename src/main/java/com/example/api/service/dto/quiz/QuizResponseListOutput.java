@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuizResponseListOutput {
-    private List<QuizResponseOutput> quizResponses;
+    private List<QuizResponseOutput> quizResponseOutputs;
 
     public static QuizResponseListOutput fromEntities(List<QuizResponse> quizResponses) {
         List<QuizResponseOutput> quizResponseOutputs = quizResponses.stream()

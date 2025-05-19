@@ -11,7 +11,6 @@
         "course_id",
         "lecture_id",
         "title",
-        "parsed_text",
         "true_or_false_count",
         "multiple_choice_count",
         "short_answer_count",
@@ -45,10 +44,6 @@
         "title": {
             "type": "string",
             "maxLength": 255
-        },
-        "parsed_text": {
-            "type": "string",
-            "minLength": 1
         },
         "true_or_false_count": {
             "type": "integer",

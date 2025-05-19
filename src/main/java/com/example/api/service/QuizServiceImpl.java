@@ -104,7 +104,7 @@ public class QuizServiceImpl implements QuizService {
     @Override
     @Transactional
     public QuizResponseListOutput createQuizResponse(List<CreateQuizResponseInput> inputs) {
-        QuizResponseListOutput quizResponseOutputs = (QuizResponseListOutput) inputs.stream()
+        QuizResponseListOutput quizResponseListOutput = (QuizResponseListOutput) inputs.stream()
                 .map(input -> {
                     Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
                     QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
@@ -138,9 +138,7 @@ public class QuizServiceImpl implements QuizService {
         Quiz quiz = quizRepo.getReferenceById(inputs.get(0).getQuizId());
         quiz.setStatus(Status.submitted);
         quizRepo.updateQuiz(quiz);
-        // 퀴즈 풀이를 채점
-        gradeQuiz(quiz.getId());
-        return quizResponseOutputs;
+        return quizResponseListOutput;
     }
 
     @Override

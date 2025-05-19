@@ -417,13 +417,13 @@ public class QuizController extends BaseController {
             requestBody = @RequestBody(
                     description = "Quiz submission details",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = CreateQuizResponseRequest.class))
+                    content = @Content(schema = @Schema(implementation = SubmitQuizRequest.class))
             ),
             responses = {
                     @ApiResponse(
                         responseCode = "201", 
                         description = "Quiz solution submitted successfully",
-                        content = @Content(schema = @Schema(implementation = QuizResponseResponse.class))
+                        content = @Content(schema = @Schema(implementation = SubmitQuizListResponse.class))
                     ),
                     @ApiResponse(
                         responseCode = "403",
@@ -439,7 +439,7 @@ public class QuizController extends BaseController {
                     )
             }
     )
-    public ResponseEntity<QuizResponseListResponse> submitQuiz(
+    public ResponseEntity<SubmitQuizListResponse> submitQuiz(
             @PathVariable UUID id,
             @org.springframework.web.bind.annotation.RequestBody SubmitQuizRequest request
     ) {
@@ -458,27 +458,27 @@ public class QuizController extends BaseController {
             }
 
             // Submit the quiz solution
-            List<CreateQuizResponseInput> createQuizResponseInputs = request.getQuizResponses().stream()
-                    .map(quizResponse -> {
+            List<CreateQuizResponseInput> createQuizResponseListInputs = request.getSubmitQuizItems().stream()
+                    .map(submitQuizItem -> {
                         CreateQuizResponseInput input = new CreateQuizResponseInput();
                         input.setQuizId(id);
                         input.setUserId(userId);
-                        input.setQuizItemId(quizResponse.getQuizItem().getId());
-                        input.setSelectedBool(quizResponse.getSelectedBool());
-                        input.setSelectedIndices(quizResponse.getSelectedIndices());
-                        input.setTextAnswer(quizResponse.getTextAnswer());
+                        input.setQuizItemId(submitQuizItem.getQuizItemId());
+                        input.setSelectedBool(submitQuizItem.getSelectedBool());
+                        input.setSelectedIndices(submitQuizItem.getSelectedIndices());
+                        input.setTextAnswer(submitQuizItem.getTextAnswer());
                         return input;
                     })
                     .toList();
 
-            QuizResponseListOutput quizResponseListOutput = quizService.createQuizResponse(createQuizResponseInputs);
-            // quizResponseOutputs의 각 quizResponseOutput을 QuizResponseResponse로 변환하여 정상 처리되었는지 status를 확인
+            QuizResponseListOutput quizResponseListOutput = quizService.createQuizResponse(createQuizResponseListInputs);
+            // quizResponseOutputs의 각 quizResponseOutput을 SubmitQuizResponse 변환하여 정상 처리되었는지 status를 확인
 
-            List<QuizResponseResponse> quizResponseListResponse = quizResponseListOutput.getQuizResponses().stream()
-                    .map(quizResponse -> QuizResponseResponse.fromServiceDto(quizResponse))
+            List<SubmitQuizResponse> submitQuizListResponse = quizResponseListOutput.getQuizResponseOutputs().stream()
+                    .map(quizResponse -> SubmitQuizResponse.fromServiceDto(quizResponse))
                     .toList();
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(new QuizResponseListResponse(quizResponseListResponse));
+            return ResponseEntity.status(HttpStatus.CREATED).body(new SubmitQuizListResponse(submitQuizListResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {

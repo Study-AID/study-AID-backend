@@ -21,7 +21,6 @@ public class GenerateQuizMessage {
     private UUID lectureId;
     private UUID quizId;
     private String title;
-    private String parsedText;
     private int trueOrFalseCount;
     private int multipleChoiceCount;
     private int shortAnswerCount;

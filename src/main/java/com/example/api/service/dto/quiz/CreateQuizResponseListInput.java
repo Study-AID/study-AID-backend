@@ -8,8 +8,4 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateQuizResponseListInput {
     private List<CreateQuizResponseInput> quizResponseInputs;
-
-    public CreateQuizResponseListInput(List<CreateQuizResponseInput> quizResponseInputs) {
-        this.quizResponseInputs = quizResponseInputs;
-    }
 }
