@@ -65,3 +65,130 @@ jobs:
           aws lambda get-function \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --query 'Configuration.[FunctionArn, LastModified, Version]'
+
+      - name: Get current time
+        id: current-time
+        run: echo "time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Extract version from deployment tag
+        id: get-version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=$(echo $TAG_NAME | sed -E 's/deploy-job-generate-quiz-([0-9]+\.[0-9]+\.[0-9]+)/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack on Success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,repo,commit,message
+          custom_payload: |
+            {
+              "attachments": [
+                {
+                  "color": "good",
+                  "title": "✅ Deployment Success: Lambda -> prod-generate-quiz",
+                  "fields": [
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Version",
+                      "value": "${{ steps.get-version.outputs.version }}", 
+                      "short": true
+                    },
+                    {
+                      "title": "Commit Message",
+                      "value": "${{ github.event.head_commit.message }}",
+                      "short": false
+                    },
+                    {
+                      "title": "Lambda Function",
+                      "value": "${{ env.LAMBDA_FUNCTION_NAME }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Image Tag",
+                      "value": "${{ env.ECR_IMAGE_TAG }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Actor",
+                      "value": "${{ github.actor }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Action URL",
+                      "value": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                      "short": false
+                    }
+                  ],
+                  "footer": "GitHub Actions",
+                  "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                  "ts": "${{ steps.current-time.outputs.time }}"
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,repo,commit,message
+          custom_payload: |
+            {
+              "attachments": [
+                {
+                  "color": "danger",
+                  "title": "❌ Deployment Failed: Lambda -> prod-generate-quiz",
+                  "fields": [
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Version",
+                      "value": "${{ steps.get-version.outputs.version }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Commit Message",
+                      "value": "${{ github.event.head_commit.message }}",
+                      "short": false
+                    },
+                    {
+                      "title": "Lambda Function",
+                      "value": "${{ env.LAMBDA_FUNCTION_NAME }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Image Tag", 
+                      "value": "${{ env.ECR_IMAGE_TAG }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Actor",
+                      "value": "${{ github.actor }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Action URL",
+                      "value": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                      "short": false
+                    }
+                  ],
+                  "footer": "GitHub Actions",
+                  "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                  "ts": "${{ steps.current-time.outputs.time }}"
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
