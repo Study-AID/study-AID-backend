@@ -46,35 +46,43 @@ def create_schema(conn):
 
 def setup_test_tables(conn):
     """Create test tables in the database"""
-    # Define the schema based on the project's migrations
-    schema_files = [
-        Path("flyway/migrations/V1__init_schema.sql").resolve(),
-        Path("flyway/migrations/V2__add_school_column_to_user_table.sql").resolve(),
-        Path("flyway/migrations/V3__add_contents_generated_at_and_remove_unused_column.sql").resolve()
-    ]
+    # Get all migration files from the flyway/migrations directory
+    migrations_dir = Path("flyway/migrations").resolve()
 
-    for schema_file in schema_files:
-        if not schema_file.exists():
-            print(f"Warning: Schema file not found at {schema_file}")
-            continue
+    if not migrations_dir.exists():
+        print(f"Warning: Migrations directory not found at {migrations_dir}")
+        return
 
-        print(f"Applying schema from {schema_file.name}")
-        with open(schema_file, 'r') as f:
-            schema_sql = f.read()
+    # Find all SQL migration files and sort them by version number
+    migration_files = sorted([
+        f for f in migrations_dir.glob("V*.sql")
+        if f.is_file()
+    ], key=lambda x: int(x.stem.split('__')[0][1:]))  # Extract version number from V{number}__
+
+    if not migration_files:
+        print("No migration files found")
+        return
+
+    print(f"Found {len(migration_files)} migration files")
+
+    for migration_file in migration_files:
+        print(f"Applying migration from {migration_file.name}")
+        with open(migration_file, 'r') as f:
+            migration_sql = f.read()
 
         with conn.cursor() as cursor:
             try:
-                cursor.execute(schema_sql)
+                cursor.execute(migration_sql)
                 conn.commit()
-                print(f"Successfully applied {schema_file.name}")
+                print(f"Successfully applied {migration_file.name}")
             except Exception as e:
                 conn.rollback()
                 # Get details of the error
                 error_msg = str(e)
                 if "already exists" in error_msg:
-                    print(f"⚠️ Schema objects in {schema_file.name} already exist, continuing...")
+                    print(f"⚠Schema objects in {migration_file.name} already exist, continuing...")
                 else:
-                    print(f"Error applying schema {schema_file.name}: {e}")
+                    print(f"Error applying migration {migration_file.name}: {e}")
                 # Continue execution even if there are errors, as tables might already exist
 
 
