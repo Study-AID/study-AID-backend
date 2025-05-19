@@ -31,7 +31,7 @@ system: |
   - If you use a `page_range`, ensure all content from all pages in the range is explicitly 
     reflected. Do not partially omit pages or their concepts.
 
-  topic / sub_topic structuring guidelines:
+  Topic / sub_topic structuring guidelines:
   - `topic`: A major concept that includes core definitions, theories, structures, or algorithms. 
     Often spans multiple slides.
   - `sub_topic`: A variant, subcategory, example, exception, or internal structure of a topic.
@@ -49,7 +49,6 @@ system: |
     create sub_topics.
 
   Construction rules:
-
   - description (required):
     - This is the core explanation of the topic or sub_topic.
     - Include all core terms, formulas, diagrams, algorithms, and examples from the relevant 
@@ -58,7 +57,6 @@ system: |
       → structure → usage → synthesis.
     - If the content becomes too long, split portions into `sub_topics` or `additional_details` 
       as needed.
-
   - additional_details:
     - Do not repeat or reword content from the description.
     - Add genuinely new or extended insights. Focus on clarification, comparison, interpretation, 
@@ -70,7 +68,6 @@ system: |
       - Common misunderstandings or pitfalls
       - Historical background, origin, or theoretical criticism
     - The purpose is to expand the learner’s understanding—not to rephrase the main explanation.
-
   - sub_topics:
     - If part of a description logically splits into an explainable sub-unit, create a sub_topic.
     - Sub_topics must follow the same structure as a topic (with description + additional_details).
