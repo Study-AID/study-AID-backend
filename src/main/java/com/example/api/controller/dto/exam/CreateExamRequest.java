@@ -1,4 +1,4 @@
-package com.example.api.controller.dto.quiz;
+package com.example.api.controller.dto.exam;
 
 import java.util.UUID;
 
@@ -12,15 +12,19 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "quiz creation request")
-public class CreateQuizRequest {
+@Schema(description = "exam creation request")
+public class CreateExamRequest {
     @NotNull
-    @Schema(description = "ID of the lecture")
-    private UUID lectureId;
+    @Schema(description = "ID of the course")
+    private UUID courseId;
 
     @NotBlank
-    @Schema(description = "Title of the quiz")
+    @Schema(description = "Title of the exam")
     private String title;
+
+    @NotNull
+    @Schema(description = "Referenced lectures for the exam")
+    private UUID[] referencedLectures;
 
     @NotNull
     @Schema(description = "Number of true or false questions")

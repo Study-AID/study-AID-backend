@@ -23,6 +23,7 @@ import com.example.api.service.dto.quiz.CreateQuizInput;
 import com.example.api.service.dto.quiz.CreateQuizResponseInput;
 import com.example.api.service.dto.quiz.QuizListOutput;
 import com.example.api.service.dto.quiz.QuizOutput;
+import com.example.api.service.dto.quiz.QuizResponseListOutput;
 import com.example.api.service.dto.quiz.QuizResponseOutput;
 import com.example.api.service.dto.quiz.UpdateQuizInput;
 
@@ -75,7 +76,7 @@ public class QuizServiceImpl implements QuizService {
         quiz.setUser(user);
         quiz.setLecture(lecture);
         quiz.setTitle(input.getTitle());
-        quiz.setStatus(Status.not_started);
+        quiz.setStatus(Status.generate_in_progress);
 
         Quiz createdQuiz = quizRepo.createQuiz(quiz);      
         List<QuizItem> quizItems = quizItemRepo.findByQuizId(createdQuiz.getId());
@@ -88,7 +89,6 @@ public class QuizServiceImpl implements QuizService {
         Quiz quiz = new Quiz();
         quiz.setId(input.getId());
         quiz.setTitle(input.getTitle());
-        quiz.setStatus(input.getStatus());
 
         Quiz updateQuiz = quizRepo.updateQuiz(quiz);
         List<QuizItem> quizItems = quizItemRepo.findByQuizId(updateQuiz.getId());
@@ -101,42 +101,47 @@ public class QuizServiceImpl implements QuizService {
         quizRepo.deleteQuiz(quizId);
     }
 
-    // 퀴즈 풀이 저장 - QuizResponse create
-    public QuizResponseOutput createQuizResponse(CreateQuizResponseInput input) {
-        Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
-        QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
-        User user = userRepo.getReferenceById(input.getUserId());
+    @Override
+    @Transactional
+    public QuizResponseListOutput createQuizResponse(List<CreateQuizResponseInput> inputs) {
+        QuizResponseListOutput quizResponseOutputs = (QuizResponseListOutput) inputs.stream()
+                .map(input -> {
+                    Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
+                    QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
+                    User user = userRepo.getReferenceById(input.getUserId());
 
-        QuizResponse quizResponse = new QuizResponse();
-        quizResponse.setQuiz(quiz);
-        quizResponse.setQuizItem(quizItem);
-        quizResponse.setUser(user);
-        // selectedBool, selectedIndices, textAnswer을 set하는데 null일 수 있음.
-        // null일 경우에는 set하지 않음.
-        if (input.getSelectedBool() != null) {
-            quizResponse.setSelectedBool(input.getSelectedBool());
-        }
-        if (input.getSelectedIndices() != null) {
-            quizResponse.setSelectedIndices(input.getSelectedIndices());
-        }
-        if (input.getTextAnswer() != null) {
-            quizResponse.setTextAnswer(input.getTextAnswer());
-        }
-        // 퀴즈 풀이를 생성
-        QuizResponse createdQuizResponse = quizResponseRepo.createQuizResponse(quizResponse);
+                    QuizResponse quizResponse = new QuizResponse();
+                    quizResponse.setQuiz(quiz);
+                    quizResponse.setQuizItem(quizItem);
+                    quizResponse.setUser(user);
+                    // selectedBool, selectedIndices, textAnswer을 set하는데 null일 수 있음.
+                    // null일 경우에는 set하지 않음.
+                    if (input.getSelectedBool() != null) {
+                        quizResponse.setSelectedBool(input.getSelectedBool());
+                    }
+                    if (input.getSelectedIndices() != null) {
+                        quizResponse.setSelectedIndices(input.getSelectedIndices());
+                    }
+                    if (input.getTextAnswer() != null) {
+                        quizResponse.setTextAnswer(input.getTextAnswer());
+                    }
+                    // 퀴즈 풀이를 생성
+                    QuizResponse createdQuizResponse = quizResponseRepo.createQuizResponse(quizResponse);
 
-        // 퀴즈 풀이 저장이 성공했는지 확인한 후, 퀴즈의 상태를 submitted로 변경
-        if (createdQuizResponse == null) {
-            throw new RuntimeException("Failed to create quiz response");
-        }
+                    // 퀴즈 풀이 저장이 성공했는지 확인한 후, 퀴즈의 상태를 submitted로 변경
+                    if (createdQuizResponse == null) {
+                        throw new RuntimeException("Failed to create quiz response");
+                    }
+                    
+                    return QuizResponseOutput.fromEntity(createdQuizResponse);
+                }).toList();
+        Quiz quiz = quizRepo.getReferenceById(inputs.get(0).getQuizId());
         quiz.setStatus(Status.submitted);
         quizRepo.updateQuiz(quiz);
-
-        // gradeQuiz 메서드 호출
+        // 퀴즈 풀이를 채점
         gradeQuiz(quiz.getId());
-        return QuizResponseOutput.fromEntity(createdQuizResponse);
+        return quizResponseOutputs;
     }
-
 
     @Override
     @Transactional
@@ -172,6 +177,9 @@ public class QuizServiceImpl implements QuizService {
                     quizResponse.setIsCorrect(true);
                 }
             }
+            // TODO(jin): 서술형 문제 구현
+
+
             // // 점수 부여
             // if (quizResponse.getIsCorrect()) {
             //     quizResponse.setScore(quizItem.getPoints());

@@ -26,9 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -102,7 +101,7 @@ public class QuizControllerTest {
 
     // private QuizItem testQuizItem;
     private List<QuizItem> testQuizItems;
-    private QuizResponseOutput testQuizResponseOutput;
+    private QuizResponseListOutput testQuizResponseListOutput;
 
     @BeforeEach
     public void setUp() {
@@ -148,11 +147,12 @@ public class QuizControllerTest {
         testQuizItems.get(0).setId(UUID.randomUUID());
         testQuizOutput.setQuizItems(testQuizItems);
 
-        testQuizResponseOutput = new QuizResponseOutput();
-        testQuizResponseOutput.setId(UUID.randomUUID());
-        testQuizResponseOutput.setQuizId(quizId);
-        testQuizResponseOutput.setUserId(userId);
-        testQuizResponseOutput.setQuizItemId(testQuizItems.get(0).getId());
+        testQuizResponseListOutput = new QuizResponseListOutput();
+        testQuizResponseListOutput.setQuizResponses(List.of(new QuizResponseOutput()));
+        testQuizResponseListOutput.getQuizResponses().get(0).setId(UUID.randomUUID());
+        testQuizResponseListOutput.getQuizResponses().get(0).setQuizId(quizId);
+        testQuizResponseListOutput.getQuizResponses().get(0).setUserId(userId);
+        testQuizResponseListOutput.getQuizResponses().get(0).setQuizItemId(testQuizItems.get(0).getId());
     }
     
     @Test
@@ -205,7 +205,6 @@ public class QuizControllerTest {
         CreateQuizRequest createQuizRequest = new CreateQuizRequest();
         createQuizRequest.setLectureId(lectureId);
         createQuizRequest.setTitle("Quiz 1");
-        createQuizRequest.setParsedText("Parsed text for quiz generation");
         createQuizRequest.setTrueOrFalseCount(2);
         createQuizRequest.setMultipleChoiceCount(3);
         createQuizRequest.setShortAnswerCount(1);
@@ -238,7 +237,6 @@ public class QuizControllerTest {
         // given
         UpdateQuizRequest updateQuizRequest = new UpdateQuizRequest();
         updateQuizRequest.setTitle("Updated Quiz Title");
-        updateQuizRequest.setStatus(Status.not_started);
 
         // QuizOutput updatedQuizOutput = new QuizOutput();
 
@@ -253,14 +251,12 @@ public class QuizControllerTest {
                 .andExpect(jsonPath("$.id", is(quizId.toString())))
                 .andExpect(jsonPath("$.lectureId", is(lectureId.toString())))
                 .andExpect(jsonPath("$.userId", is(userId.toString())))
-                .andExpect(jsonPath("$.title", is("Quiz 1")))
-                .andExpect(jsonPath("$.status", is("not_started")));
+                .andExpect(jsonPath("$.title", is("Quiz 1")));
 
         verify(quizService, times(1)).findQuizById(quizId);
         verify(quizService, times(1)).updateQuiz(argThat(input -> 
                 input.getId().equals(quizId)    
                 && input.getTitle().equals("Updated Quiz Title")
-                && input.getStatus().equals(Status.not_started)
         ));
     }
 
@@ -288,14 +284,14 @@ public class QuizControllerTest {
         createQuizResponseRequest.setQuizItemId(testQuizItems.get(0).getId());
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
-        when(quizService.createQuizResponse(any(CreateQuizResponseInput.class))).thenReturn(testQuizResponseOutput);
+        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
 
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/submit", quizId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createQuizResponseRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id", is(testQuizResponseOutput.getId().toString())))
+                .andExpect(jsonPath("$.id", is(testQuizResponseListOutput.getQuizResponses().get(0).getId().toString())))
                 .andExpect(jsonPath("$.quizId", is(quizId.toString())))
                 .andExpect(jsonPath("$.userId", is(userId.toString())))
                 .andExpect(jsonPath("$.quizItemId", is(testQuizItems.get(0).getId().toString()))); 

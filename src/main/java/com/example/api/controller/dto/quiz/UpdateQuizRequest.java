@@ -1,7 +1,5 @@
 package com.example.api.controller.dto.quiz;
 
-import com.example.api.entity.enums.Status;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -14,8 +12,4 @@ public class UpdateQuizRequest {
     @NotBlank
     @Schema(description = "Updated quiz title")
     private String title;
-
-    @NotBlank
-    @Schema(description = "Updated quiz status")
-    private Status status;
 }

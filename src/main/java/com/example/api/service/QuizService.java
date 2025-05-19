@@ -1,5 +1,6 @@
 package com.example.api.service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,8 +26,8 @@ public interface QuizService {
     void deleteQuiz(UUID quizId);
 
     @Transactional
-    QuizResponseOutput createQuizResponse(CreateQuizResponseInput input);
-
+    QuizResponseListOutput createQuizResponse(List<CreateQuizResponseInput> inputs);
+    
     @Transactional
     void gradeQuiz(UUID quizId);
 }

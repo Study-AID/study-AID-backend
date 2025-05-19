@@ -3,6 +3,7 @@ package com.example.api.controller.dto.quiz;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.example.api.service.dto.quiz.QuizResponseListOutput;
 import com.example.api.service.dto.quiz.QuizResponseOutput;
 
 import io.swagger.v3.oas.annotations.media.Schema;

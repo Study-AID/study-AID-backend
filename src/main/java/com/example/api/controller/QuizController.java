@@ -171,7 +171,7 @@ public class QuizController extends BaseController {
         }        
     }
     
-    private void sendGenerateQuizMessage(UUID userId, QuizOutput quizOutput, String parsedText, int trueOrFalseCount, int multipleChoiceCount, int shortAnswerCount, int essayCount) {
+    private void sendGenerateQuizMessage(UUID userId, QuizOutput quizOutput, int trueOrFalseCount, int multipleChoiceCount, int shortAnswerCount, int essayCount) {
         GenerateQuizMessage message = GenerateQuizMessage.builder()
                 .schemaVersion("1.0.0")
                 .requestId(UUID.randomUUID())
@@ -179,8 +179,8 @@ public class QuizController extends BaseController {
                 .userId(userId)
                 .courseId(quizOutput.getLectureId())
                 .lectureId(quizOutput.getLectureId())
+                .quizId(quizOutput.getId())
                 .title(quizOutput.getTitle())
-                .parsedText(parsedText)
                 .trueOrFalseCount(trueOrFalseCount)
                 .multipleChoiceCount(multipleChoiceCount)
                 .shortAnswerCount(shortAnswerCount)
@@ -244,9 +244,6 @@ public class QuizController extends BaseController {
             if (request.getTitle() == null || request.getTitle().isBlank()) {
                 return ResponseEntity.badRequest().build();
             }
-            if (request.getParsedText() == null || request.getParsedText().isBlank()) {
-                return ResponseEntity.badRequest().build();
-            }
 
             // Validate the counts (0 or more)
             if (request.getTrueOrFalseCount() < 0 || request.getMultipleChoiceCount() < 0 ||
@@ -259,7 +256,6 @@ public class QuizController extends BaseController {
             createQuizInput.setLectureId(request.getLectureId());
             createQuizInput.setUserId(userId);
             createQuizInput.setTitle(request.getTitle());
-            createQuizInput.setParsedText(request.getParsedText());
             createQuizInput.setTrueOrFalseCount(request.getTrueOrFalseCount());
             createQuizInput.setMultipleChoiceCount(request.getMultipleChoiceCount());
             createQuizInput.setShortAnswerCount(request.getShortAnswerCount());
@@ -268,7 +264,7 @@ public class QuizController extends BaseController {
             QuizOutput createdQuizOutput = quizService.createQuiz(createQuizInput);
 
             // Send a message to SQS for quiz generation
-            sendGenerateQuizMessage(userId, createdQuizOutput, request.getParsedText(), request.getTrueOrFalseCount(), request.getMultipleChoiceCount(), request.getShortAnswerCount(), request.getEssayCount());
+            sendGenerateQuizMessage(userId, createdQuizOutput, request.getTrueOrFalseCount(), request.getMultipleChoiceCount(), request.getShortAnswerCount(), request.getEssayCount());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(QuizResponse.fromServiceDto(createdQuizOutput));
         } catch (IllegalArgumentException e) {
@@ -334,7 +330,6 @@ public class QuizController extends BaseController {
             UpdateQuizInput updateQuizInput = new UpdateQuizInput();
             updateQuizInput.setId(id);
             updateQuizInput.setTitle(request.getTitle());
-            updateQuizInput.setStatus(request.getStatus());
 
             // Update the quiz
             QuizOutput updatedQuizOutput = quizService.updateQuiz(updateQuizInput);
@@ -444,9 +439,9 @@ public class QuizController extends BaseController {
                     )
             }
     )
-    public ResponseEntity<QuizResponseResponse> submitQuiz(
+    public ResponseEntity<QuizResponseListResponse> submitQuiz(
             @PathVariable UUID id,
-            @org.springframework.web.bind.annotation.RequestBody CreateQuizResponseRequest request
+            @org.springframework.web.bind.annotation.RequestBody SubmitQuizRequest request
     ) {
         UUID userId = getAuthenticatedUserId();
 
@@ -463,18 +458,27 @@ public class QuizController extends BaseController {
             }
 
             // Submit the quiz solution
-            CreateQuizResponseInput createQuizResponseInput = new CreateQuizResponseInput();
-            createQuizResponseInput.setQuizId(id);
-            createQuizResponseInput.setUserId(userId);
-            createQuizResponseInput.setQuizItemId(request.getQuizItemId());
-            createQuizResponseInput.setSelectedBool(request.getSelectedBool());
-            createQuizResponseInput.setSelectedIndices(request.getSelectedIndices());
-            createQuizResponseInput.setTextAnswer(request.getTextAnswer());
+            List<CreateQuizResponseInput> createQuizResponseInputs = request.getQuizResponses().stream()
+                    .map(quizResponse -> {
+                        CreateQuizResponseInput input = new CreateQuizResponseInput();
+                        input.setQuizId(id);
+                        input.setUserId(userId);
+                        input.setQuizItemId(quizResponse.getQuizItem().getId());
+                        input.setSelectedBool(quizResponse.getSelectedBool());
+                        input.setSelectedIndices(quizResponse.getSelectedIndices());
+                        input.setTextAnswer(quizResponse.getTextAnswer());
+                        return input;
+                    })
+                    .toList();
 
-            QuizResponseOutput quizResponseOutput = quizService.createQuizResponse(createQuizResponseInput);
-            QuizResponseResponse quizResponseResponse = QuizResponseResponse.fromServiceDto(quizResponseOutput);
+            QuizResponseListOutput quizResponseListOutput = quizService.createQuizResponse(createQuizResponseInputs);
+            // quizResponseOutputs의 각 quizResponseOutput을 QuizResponseResponse로 변환하여 정상 처리되었는지 status를 확인
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(quizResponseResponse);
+            List<QuizResponseResponse> quizResponseListResponse = quizResponseListOutput.getQuizResponses().stream()
+                    .map(quizResponse -> QuizResponseResponse.fromServiceDto(quizResponse))
+                    .toList();
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(new QuizResponseListResponse(quizResponseListResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {

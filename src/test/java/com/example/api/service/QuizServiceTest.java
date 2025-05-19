@@ -183,7 +183,6 @@ public class QuizServiceTest {
         UpdateQuizInput input = new UpdateQuizInput();
         input.setId(quizId);
         input.setTitle("Updated Quiz");
-        input.setStatus(Status.not_started);
 
         Quiz updatedQuiz = new Quiz();
         updatedQuiz.setId(quizId);
