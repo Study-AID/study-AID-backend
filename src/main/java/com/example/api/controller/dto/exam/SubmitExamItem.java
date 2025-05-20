@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class SubmitExamItem {
-    private UUID quizItemId;
+    private UUID examItemId;
 
     private QuestionType questionType;
 

@@ -445,7 +445,7 @@ public class ExamController extends BaseController {
             }
 
             // Submit the exam responses
-            List<CreateExamResponseInput> createExamResponseListInput = request.getExamResponses().stream()
+            List<CreateExamResponseInput> createExamResponseListInput = request.getSubmitExamItems().stream()
                     .map(submitExamItem ->{
                         CreateExamResponseInput input = new CreateExamResponseInput();
                         input.setExamId(id);
