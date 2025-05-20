@@ -241,6 +241,16 @@ def log_activity(course_id, user_id, activity_type, contents_type, details):
             conn.rollback()
 
 
+def format_parsed_text(parsed_text):
+    formatted_content = []
+    for page in parsed_text.pages:
+        formatted_content.append({
+            "page": page.page_number,
+            "content": page.text
+        })
+    return formatted_content
+
+
 def lambda_handler(event, context):
     """Main function to handle the event from SQS"""
     try:
@@ -273,13 +283,13 @@ def lambda_handler(event, context):
             # Update lecture with parsed text
             update_lecture_parsed_text(lecture_id, parsed_text)
 
-            # Concatenate all page text for summary generation
-            lecture_content = '\n'.join([page.text for page in parsed_text.pages])
+            # Format parsed text for v2 prompt
+            formatted_content = format_parsed_text(parsed_text)
 
             # Generate summary using OpenAI
             openai_client = OpenAIClient()
             prompt_path = get_prompt_path()
-            summary = openai_client.generate_summary(lecture_content, prompt_path)
+            summary = openai_client.generate_summary(formatted_content, prompt_path)
 
             # Update lecture with summary
             update_lecture_summary(lecture_id, summary)
@@ -295,7 +305,6 @@ def lambda_handler(event, context):
             os.remove(local_file_path)
 
             logger.info(f"Successfully processed the lecture of {lecture_id}")
-
         return {
             'statusCode': 200,
             'body': json.dumps('Lecture summarization completed successfully')
@@ -311,7 +320,6 @@ def lambda_handler(event, context):
                 update_lecture_status(lecture_id, 'failed')
             except Exception as db_error:
                 logger.error(f"Error updating lecture status: {db_error}")
-
         return {
             'statusCode': 500,
             'body': json.dumps(f'Error processing lecture: {str(e)}')
