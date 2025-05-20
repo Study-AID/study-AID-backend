@@ -75,7 +75,6 @@ class QnaChatControllerTest {
     void readChatSuccess() throws Exception {
         // Given
         List<ReadQnaChatOutput.MessageItem> messages = List.of(
-                // role/content 패턴 사용
                 new ReadQnaChatOutput.MessageItem("user", "재귀 함수란 무엇인가요?"),
                 new ReadQnaChatOutput.MessageItem("assistant", "재귀 함수는 자기 자신을 호출하는 함수입니다.")
         );

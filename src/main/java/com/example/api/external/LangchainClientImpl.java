@@ -1,6 +1,7 @@
 package com.example.api.external;
 
 import com.example.api.adapters.llm.ChatMessage;
+import com.example.api.entity.ParsedText;
 import com.example.api.exception.InternalServerErrorException;
 import com.example.api.exception.NotFoundException;
 import com.example.api.external.dto.langchain.*;
@@ -28,7 +29,7 @@ public class LangchainClientImpl implements LangchainClient {
     private String langchainServerUrl;
 
     @Override
-    public LectureEmbeddingResponse generateLectureEmbeddings(UUID lectureId, String parsedText) {
+    public LectureEmbeddingResponse generateLectureEmbeddings(UUID lectureId, ParsedText parsedText) {
         log.info("[LangchainClient] 호출: generateLectureEmbeddings(lectureId={})", lectureId);
 
         LectureEmbeddingRequest body = new LectureEmbeddingRequest(parsedText);

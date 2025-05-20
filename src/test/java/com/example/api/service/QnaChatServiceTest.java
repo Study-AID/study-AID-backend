@@ -2,10 +2,7 @@ package com.example.api.service;
 
 import com.example.api.adapters.llm.ChatMessage;
 import com.example.api.adapters.llm.LLMAdapter;
-import com.example.api.entity.Lecture;
-import com.example.api.entity.QnaChat;
-import com.example.api.entity.QnaChatMessage;
-import com.example.api.entity.User;
+import com.example.api.entity.*;
 import com.example.api.entity.enums.MessageRole;
 import com.example.api.exception.NotFoundException;
 import com.example.api.exception.UnauthorizedException;
@@ -72,7 +69,9 @@ public class QnaChatServiceTest {
         testLecture = new Lecture();
         testLecture.setId(TEST_LECTURE_ID);
         testLecture.setTitle("테스트 강의");
-        testLecture.setParsedText("재귀 함수는 자기 자신을 호출하는 함수입니다.");
+        ParsedPage parsedPage = new ParsedPage(1, "재귀 함수는 자기 자신을 호출하는 함수입니다.");
+        ParsedText parsedText = new ParsedText(1, List.of(parsedPage));
+        testLecture.setParsedText(parsedText);
 
         testQnaChat = new QnaChat();
         testQnaChat.setId(TEST_CHAT_ID);

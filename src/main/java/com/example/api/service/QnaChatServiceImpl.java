@@ -3,6 +3,7 @@ package com.example.api.service;
 import com.example.api.adapters.llm.ChatMessage;
 import com.example.api.adapters.llm.LLMAdapter;
 import com.example.api.entity.Lecture;
+import com.example.api.entity.ParsedText;
 import com.example.api.entity.enums.MessageRole;
 import com.example.api.exception.BadRequestException;
 import com.example.api.exception.InternalServerErrorException;
@@ -52,8 +53,9 @@ public class QnaChatServiceImpl implements QnaChatService {
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
         Lecture lecture = lectureRepository.findById(input.getLectureId())
                 .orElseThrow(() -> new NotFoundException("강의 자료를 찾을 수 없습니다"));
+        ParsedText parsedText = lecture.getParsedText();
 
-        // TODO(jin): move vectorization timing from chat creation to after the lecture file uploaded
+        // TODO(jin): move vectorization timing from chat creation to after the lecture file uploaded, remove is_vectorized column
         // 강의자료 벡터화(Langchain): 채팅방 생성 시 수행
         try {
             langchainClient.findReferencesInLecture(lecture.getId(), "dummy question for check vectorization", 1, 0.3);
@@ -62,11 +64,11 @@ public class QnaChatServiceImpl implements QnaChatService {
             log.info("강의 자료 {} 이미 벡터화 완료됨", lecture.getId());
         } catch (NotFoundException e) {
             log.info("강의 자료 {} 벡터화 시작", lecture.getId());
-            if (lecture.getParsedText() == null || lecture.getParsedText().isBlank()) {
+            if (parsedText == null || parsedText.getPages() == null || parsedText.getPages().isEmpty()) {
                 throw new BadRequestException("강의 자료에 텍스트가 없습니다: " + lecture.getId());
             }
             try {
-                langchainClient.generateLectureEmbeddings(lecture.getId(), lecture.getParsedText());
+                langchainClient.generateLectureEmbeddings(lecture.getId(), parsedText);
                 lecture.setIsVectorized(true);
                 lectureRepository.save(lecture);
                 log.info("강의 자료 {} 벡터화 완료", lecture.getId());
@@ -99,15 +101,17 @@ public class QnaChatServiceImpl implements QnaChatService {
         long vectorCheckStartTime = System.currentTimeMillis();
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new NotFoundException("강의 자료를 찾을 수 없습니다."));
+        ParsedText parsedText = lecture.getParsedText();
+
         if (lecture.getIsVectorized() == null || !lecture.getIsVectorized()) {
             log.info("[QnaChatService] 강의자료 벡터화 필요: lectureId={}", lectureId);
-            if (lecture.getParsedText() == null || lecture.getParsedText().isBlank()) {
+            if (parsedText == null || parsedText.getPages() == null || parsedText.getPages().isEmpty()) {
                 log.error("parsedText가 null 또는 공백입니다. 벡터화 요청 중단");
                 throw new BadRequestException("강의 자료에 텍스트가 없습니다: " + lectureId); 
             }
             try {
                 long vectorizationStartTime = System.currentTimeMillis();
-                langchainClient.generateLectureEmbeddings(lectureId, lecture.getParsedText());
+                langchainClient.generateLectureEmbeddings(lectureId, parsedText);
                 lecture.setIsVectorized(true); 
                 lectureRepository.save(lecture);
                 log.info("[Performance] 강의자료 벡터화 재시도 성공: lectureId={}, 소요시간={}ms", lectureId, System.currentTimeMillis() - vectorizationStartTime);
