@@ -58,7 +58,7 @@ make test-env-stop
 
 ### 네트워크 구성
 - PostgreSQL: `localhost:5433` (외부 포트)
-- LocalStack S3: `http://localhost:4566`
+- LocalStack S3: `http://localhost:4567`
 
 ### 테스트 데이터
 테스트 데이터는 자동으로 생성되며 각 작업 실행 시 다음 정보를 사용합니다:
