@@ -9,6 +9,7 @@
         "occurred_at",
         "user_id",
         "course_id",
+        "exam_id",
         "title",
         "referenced_lecture_ids",
         "true_or_false_count",
@@ -34,6 +35,10 @@
             "format": "uuid"
         },
         "course_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "exam_id": {
             "type": "string",
             "format": "uuid"
         },

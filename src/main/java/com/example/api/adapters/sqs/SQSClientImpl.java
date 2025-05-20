@@ -66,4 +66,28 @@ public class SQSClientImpl implements SQSClient {
             throw new RuntimeException("Failed to send SQS message", e);
         }
     }
+
+    @Override
+    public void sendGenerateExamMessage(GenerateExamMessage message) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+
+            String messageBody = mapper.writeValueAsString(message);
+
+            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
+                    .queueUrl(sqsMessageConfig.getGenerateExam().getQueueUrl())
+                    .messageBody(messageBody)
+                    .build();
+
+            SendMessageResponse response = sqsClient.sendMessage(sendMessageRequest);
+
+            logger.info("Successfully sent generate exam message with requestId: {} and messageId: {}",
+                    message.getRequestId(), response.messageId());
+
+        } catch (Exception e) {
+            logger.error("Failed to send generate exam message for courseId: {}", message.getCourseId(), e);
+            throw new RuntimeException("Failed to send SQS message", e);
+        }
+    }
 }

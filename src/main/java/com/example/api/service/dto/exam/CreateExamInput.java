@@ -12,4 +12,8 @@ public class CreateExamInput {
     private UUID userId;
     private String title;
     private UUID[] referencedLectures;
+    private int trueOrFalseCount;
+    private int multipleChoiceCount;
+    private int shortAnswerCount;
+    private int essayCount;
 }

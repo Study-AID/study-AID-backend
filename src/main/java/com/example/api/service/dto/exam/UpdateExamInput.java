@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class UpdateExamInput {
-    
     private UUID id;
     private String title;
 }

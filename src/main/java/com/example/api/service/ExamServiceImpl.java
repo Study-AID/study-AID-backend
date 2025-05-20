@@ -65,7 +65,7 @@ public class ExamServiceImpl implements ExamService {
         exam.setUser(user);
         exam.setCourse(course);
         exam.setTitle(input.getTitle());
-        exam.setStatus(Status.not_started);
+        exam.setStatus(Status.generate_in_progress);
 
         Exam createdExam = examRepo.createExam(exam);
         List<ExamItem> examItems = examItemRepo.findByExamId(createdExam.getId());
@@ -78,7 +78,8 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional
     public ExamOutput updateExam(UpdateExamInput input) {
-        Exam exam = examRepo.getReferenceById(input.getId());
+        Exam exam = new Exam();
+        exam.setId(input.getId());
         exam.setTitle(input.getTitle());
 
         Exam updatedExam = examRepo.updateExam(exam);

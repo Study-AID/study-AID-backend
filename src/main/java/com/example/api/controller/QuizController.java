@@ -13,7 +13,6 @@ import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.controller.dto.quiz.*;
 import com.example.api.service.LectureService;
 import com.example.api.service.QuizService;
-import com.example.api.service.StorageService;
 import com.example.api.service.dto.quiz.*;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,7 +48,6 @@ public class QuizController extends BaseController {
     public QuizController(
             QuizService quizService, 
             LectureService lectureService, 
-            StorageService storageService, 
             SQSClient sqsClient
     ) {
         this.quizService = quizService;
@@ -171,13 +169,13 @@ public class QuizController extends BaseController {
         }        
     }
     
-    private void sendGenerateQuizMessage(UUID userId, QuizOutput quizOutput, int trueOrFalseCount, int multipleChoiceCount, int shortAnswerCount, int essayCount) {
+    private void sendGenerateQuizMessage(UUID userId, UUID courseId, QuizOutput quizOutput, int trueOrFalseCount, int multipleChoiceCount, int shortAnswerCount, int essayCount) {
         GenerateQuizMessage message = GenerateQuizMessage.builder()
                 .schemaVersion("1.0.0")
                 .requestId(UUID.randomUUID())
                 .occurredAt(OffsetDateTime.now())
                 .userId(userId)
-                .courseId(quizOutput.getLectureId())
+                .courseId(courseId)
                 .lectureId(quizOutput.getLectureId())
                 .quizId(quizOutput.getId())
                 .title(quizOutput.getTitle())
@@ -263,8 +261,19 @@ public class QuizController extends BaseController {
 
             QuizOutput createdQuizOutput = quizService.createQuiz(createQuizInput);
 
+            // Get the courseId from the lecture
+            UUID courseId = lectureOutput.get().getCourseId();
+
             // Send a message to SQS for quiz generation
-            sendGenerateQuizMessage(userId, createdQuizOutput, request.getTrueOrFalseCount(), request.getMultipleChoiceCount(), request.getShortAnswerCount(), request.getEssayCount());
+            sendGenerateQuizMessage(
+                    userId, 
+                    courseId, 
+                    createdQuizOutput, 
+                    request.getTrueOrFalseCount(), 
+                    request.getMultipleChoiceCount(), 
+                    request.getShortAnswerCount(), 
+                    request.getEssayCount()
+            );
 
             return ResponseEntity.status(HttpStatus.CREATED).body(QuizResponse.fromServiceDto(createdQuizOutput));
         } catch (IllegalArgumentException e) {
@@ -288,7 +297,7 @@ public class QuizController extends BaseController {
             requestBody = @RequestBody(
                     description = "Updated quiz details",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = QuizResponse.class))
+                    content = @Content(schema = @Schema(implementation = UpdateQuizRequest.class))
             ),
             responses = {
                     @ApiResponse(
@@ -471,13 +480,17 @@ public class QuizController extends BaseController {
                     })
                     .toList();
 
+            // createQuizResponse는 사용자가 답한 퀴즈 풀이를 생성하는 method
             QuizResponseListOutput quizResponseListOutput = quizService.createQuizResponse(createQuizResponseListInputs);
             // quizResponseOutputs의 각 quizResponseOutput을 SubmitQuizResponse 변환하여 정상 처리되었는지 status를 확인
 
             List<SubmitQuizResponse> submitQuizListResponse = quizResponseListOutput.getQuizResponseOutputs().stream()
                     .map(quizResponse -> SubmitQuizResponse.fromServiceDto(quizResponse))
                     .toList();
-
+            
+            // quizService의 gradeQuiz를 비동기로 호출
+            quizService.gradeQuiz(id);
+            
             return ResponseEntity.status(HttpStatus.CREATED).body(new SubmitQuizListResponse(submitQuizListResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();

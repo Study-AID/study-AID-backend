@@ -12,15 +12,15 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GenerateQuizMessage {
+public class GenerateExamMessage {
     private String schemaVersion;
     private UUID requestId;
     private OffsetDateTime occurredAt;
     private UUID userId;
     private UUID courseId;
-    private UUID lectureId;
-    private UUID quizId;
+    private UUID examId;
     private String title;
+    private UUID[] referencedLectures;
     private int trueOrFalseCount;
     private int multipleChoiceCount;
     private int shortAnswerCount;

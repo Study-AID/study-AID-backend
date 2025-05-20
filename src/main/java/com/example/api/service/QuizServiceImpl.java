@@ -1,5 +1,6 @@
 package com.example.api.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +12,7 @@ import com.example.api.entity.Lecture;
 import com.example.api.entity.Quiz;
 import com.example.api.entity.QuizItem;
 import com.example.api.entity.QuizResponse;
+import com.example.api.entity.QuizResult;
 import com.example.api.entity.User;
 import com.example.api.entity.enums.QuestionType;
 import com.example.api.entity.enums.Status;
@@ -18,6 +20,7 @@ import com.example.api.repository.LectureRepository;
 import com.example.api.repository.QuizItemRepository;
 import com.example.api.repository.QuizRepository;
 import com.example.api.repository.QuizResponseRepository;
+import com.example.api.repository.QuizResultRepository;
 import com.example.api.repository.UserRepository;
 import com.example.api.service.dto.quiz.CreateQuizInput;
 import com.example.api.service.dto.quiz.CreateQuizResponseInput;
@@ -37,6 +40,7 @@ public class QuizServiceImpl implements QuizService {
     private LectureRepository lectureRepo;
 
     private QuizResponseRepository quizResponseRepo;
+    private QuizResultRepository quizResultRepo;
 
     @Autowired
     public void QuizService(
@@ -190,5 +194,17 @@ public class QuizServiceImpl implements QuizService {
         quiz.setStatus(Status.graded);
         
         quizRepo.updateQuiz(quiz);
+
+        // 퀴즈 결과 생성 
+        // TODO(yoon) : 퀴즈 결과 생성 로직을 별개의 메서드로 분리
+        QuizResult quizResult = new QuizResult();
+        quizResult.setQuiz(quiz);
+        quizResult.setUser(quizResponses.get(0).getUser());
+        quizResult.setScore(totalScore);
+        quizResult.setMaxScore(totalScore);
+        quizResult.setFeedback("Feedback");
+        quizResult.setStartTime(quizResponses.get(0).getCreatedAt());
+        quizResult.setEndTime(LocalDateTime.now());
+        quizResultRepo.createQuizResult(quizResult);
     }
 }
