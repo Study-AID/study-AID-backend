@@ -132,7 +132,7 @@ public class QuizServiceImpl implements QuizService {
                     // 퀴즈 풀이를 생성
                     QuizResponse createdQuizResponse = quizResponseRepo.createQuizResponse(quizResponse);
 
-                    // 퀴즈 풀이 저장이 성공했는지 확인한 후, 퀴즈의 상태를 submitted로 변경
+                    // 퀴즈 풀이 저장이 성공했는지 확인
                     if (createdQuizResponse == null) {
                         throw new RuntimeException("Failed to create quiz response");
                     }
@@ -156,6 +156,9 @@ public class QuizServiceImpl implements QuizService {
         float totalScore = 0;
         for (QuizResponse quizResponse : quizResponses) {
             QuizItem quizItem = quizItemRepo.getReferenceById(quizResponse.getQuizItem().getId());
+            if (quizItem.getQuestionType() == null) {
+                throw new IllegalArgumentException("Exam item question type cannot be null");
+            }
             if (quizItem.getQuestionType() == QuestionType.true_or_false) {
                 // true/false 문제
                 if (quizResponse.getSelectedBool() != null && quizResponse.getSelectedBool().equals(quizItem.getIsTrueAnswer())) {

@@ -29,6 +29,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 
 
@@ -417,6 +419,61 @@ public class ExamController extends BaseController {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.error("Error deleting exam with ID: " + id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 풀이 제출 API
+    @PostMapping("/{id}/submit")
+    @Operation(
+    )
+    public ResponseEntity<SubmitExamListResponse> submitExam(
+            @PathVariable UUID id,
+            @org.springframework.web.bind.annotation.RequestBody SubmitExamRequest request
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // Check if the exam exists and if the user has access to it
+            var examOutput = examService.findExamById(id);
+            if (examOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (!examOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            // Submit the exam responses
+            List<CreateExamResponseInput> createExamResponseListInput = request.getExamResponses().stream()
+                    .map(submitExamItem ->{
+                        CreateExamResponseInput input = new CreateExamResponseInput();
+                        input.setExamId(id);
+                        input.setExamItemId(submitExamItem.getExamItemId());
+                        input.setUserId(userId);
+                        input.setSelectedBool(submitExamItem.getSelectedBool());
+                        input.setSelectedIndices(submitExamItem.getSelectedIndices());
+                        input.setTextAnswer(submitExamItem.getTextAnswer());
+                        return input;
+                    }).toList();
+
+            ExamResponseListOutput examResponseListOutput = examService.createExamResponse(createExamResponseListInput);
+
+            List<SubmitExamResponse> submitExamListResponse = examResponseListOutput.getExamResponseOutputs().stream()
+                    .map(examResponse -> SubmitExamResponse.fromServiceDto(examResponse))
+                    .toList();
+            if (submitExamListResponse.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+
+            // examService의 gradeExam 메서드를 호출하여 채점
+            examService.gradeExam(id);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(new SubmitExamListResponse(submitExamListResponse));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error submitting exam with ID: " + id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

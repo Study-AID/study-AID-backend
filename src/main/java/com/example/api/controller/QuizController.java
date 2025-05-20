@@ -467,7 +467,7 @@ public class QuizController extends BaseController {
             }
 
             // Submit the quiz solution
-            List<CreateQuizResponseInput> createQuizResponseListInputs = request.getSubmitQuizItems().stream()
+            List<CreateQuizResponseInput> createQuizResponseListInput = request.getSubmitQuizItems().stream()
                     .map(submitQuizItem -> {
                         CreateQuizResponseInput input = new CreateQuizResponseInput();
                         input.setQuizId(id);
@@ -481,14 +481,17 @@ public class QuizController extends BaseController {
                     .toList();
 
             // createQuizResponse는 사용자가 답한 퀴즈 풀이를 생성하는 method
-            QuizResponseListOutput quizResponseListOutput = quizService.createQuizResponse(createQuizResponseListInputs);
-            // quizResponseOutputs의 각 quizResponseOutput을 SubmitQuizResponse 변환하여 정상 처리되었는지 status를 확인
+            QuizResponseListOutput quizResponseListOutput = quizService.createQuizResponse(createQuizResponseListInput);
 
+            // quizResponseOutputs의 각 quizResponseOutput을 SubmitQuizResponse 변환하여 정상 처리되었는지 status를 확인
             List<SubmitQuizResponse> submitQuizListResponse = quizResponseListOutput.getQuizResponseOutputs().stream()
                     .map(quizResponse -> SubmitQuizResponse.fromServiceDto(quizResponse))
                     .toList();
+            if (submitQuizListResponse.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
             
-            // quizService의 gradeQuiz를 비동기로 호출
+            // quizService의 gradeQuiz를 호출
             quizService.gradeQuiz(id);
             
             return ResponseEntity.status(HttpStatus.CREATED).body(new SubmitQuizListResponse(submitQuizListResponse));

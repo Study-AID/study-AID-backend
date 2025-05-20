@@ -3,8 +3,6 @@ package com.example.api.repository;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import com.example.api.entity.QuizResult;
@@ -15,8 +13,6 @@ import jakarta.transaction.Transactional;
 
 @Repository
 public class QuizResultRepositoryImpl implements QuizResultRepositoryCustom {
-    private static final Logger logger = LoggerFactory.getLogger(QuizResultRepositoryImpl.class);
-
     @PersistenceContext
     private EntityManager manager;
 
