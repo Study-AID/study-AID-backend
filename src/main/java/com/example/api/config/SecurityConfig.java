@@ -51,7 +51,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000"
+                "http://localhost:3000",
+                "http://studyaid-dev-alb-1539956535.ap-northeast-2.elb.amazonaws.com"
                 //필요시 도메인 추가
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
