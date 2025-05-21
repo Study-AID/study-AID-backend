@@ -38,7 +38,7 @@ public class QnaChatMessageRepositoryTest {
         UUID userUuid = UUID.randomUUID();
         User user = new User();
         user.setId(userUuid);
-        //user.setSchool(school);
+        user.setSchool(school);
         user.setName("Test User");
         user.setEmail("test@example.com");
         user.setAuthType(AuthType.email);
@@ -91,7 +91,7 @@ public class QnaChatMessageRepositoryTest {
         qnaChatMessage.setId(qnaChatMessageUuid);
         qnaChatMessage.setQnaChat(qnaChat);
         qnaChatMessage.setUser(user);
-        qnaChatMessage.setMessage("이것은 메시지인가요, 메세지인가요.");
+        qnaChatMessage.setContent("이것은 메시지인가요, 메세지인가요.");
 
 
         qnaChatMessageRepository.save(qnaChatMessage);

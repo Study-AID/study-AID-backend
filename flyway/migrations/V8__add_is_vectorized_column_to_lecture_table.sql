@@ -1,0 +1,2 @@
+ALTER TABLE app.lectures
+    ADD COLUMN is_vectorized BOOLEAN DEFAULT FALSE NOT NULL;

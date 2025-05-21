@@ -41,6 +41,7 @@ logging:
     com.example.api: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.example.api.adapters.llm.OpenAIAdapter: DEBUG
 
 # JWT Configuration
 jwt:
@@ -51,7 +52,7 @@ minio:
   access-key: minioadmin
   secret-key: minioadmin
 
-aws:  
+aws:
   region: ap-northeast-2
 
 # LocalStack Configuration
@@ -62,3 +63,18 @@ localstack:
 sqs:
   generate-summary:
     queue-url: http://sqs.ap-northeast-2.localstack.localstack.cloud:4566/000000000000/local-study-aid-summarize-lecture
+
+# LangChain Server
+langchain:
+  server:
+    url: http://langchain-server:5000
+
+# WebClient, RestTemplate Configuration
+web-client:
+  connect-timeout-ms: 3000 # 3s
+  response-timeout-ms: 60000 # 60s
+  max-in-memory-size: 10485760 # 10MB
+
+rest-template:
+  connect-timeout-ms: 3000 # 3s
+  read-timeout-ms: 60000 # 60s

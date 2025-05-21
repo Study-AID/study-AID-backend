@@ -1,0 +1,8 @@
+flask==2.3.3
+langchain==0.1.16
+langchain-community==0.0.32
+huggingface_hub==0.20.3
+sentence-transformers==2.2.2
+chromadb==0.4.18
+pymupdf==1.23.8
+torch==2.1.0+cpu
