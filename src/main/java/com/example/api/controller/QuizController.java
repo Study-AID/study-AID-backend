@@ -170,7 +170,6 @@ public class QuizController extends BaseController {
         }        
     }
     
-    @Async
     private void sendGenerateQuizMessage(UUID userId, UUID courseId, QuizOutput quizOutput, int trueOrFalseCount, int multipleChoiceCount, int shortAnswerCount, int essayCount) {
         GenerateQuizMessage message = GenerateQuizMessage.builder()
                 .schemaVersion("1.0.0")

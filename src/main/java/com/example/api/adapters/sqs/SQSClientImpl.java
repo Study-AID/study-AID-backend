@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
@@ -19,6 +20,7 @@ public class SQSClientImpl implements SQSClient {
     private final SqsClient sqsClient;
     private final SQSMessageConfig sqsMessageConfig;
 
+    @Async
     @Override
     public void sendGenerateSummaryMessage(GenerateSummaryMessage message) {
         try {
@@ -43,6 +45,7 @@ public class SQSClientImpl implements SQSClient {
         }
     }
 
+    @Async
     @Override
     public void sendGenerateQuizMessage(GenerateQuizMessage message) {
         try {
@@ -67,6 +70,7 @@ public class SQSClientImpl implements SQSClient {
         }
     }
 
+    @Async
     @Override
     public void sendGenerateExamMessage(GenerateExamMessage message) {
         try {

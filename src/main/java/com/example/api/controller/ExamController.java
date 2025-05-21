@@ -164,7 +164,6 @@ public class ExamController extends BaseController {
         }
     }
 
-    @Async
     private void sendGenerateExamMessage(UUID userId, ExamOutput examOutput, int trueOrFalseCount, int multipleChoiceCount, int shortAnswerCount, int essayCount) {
         GenerateExamMessage message = GenerateExamMessage.builder()
                 .schemaVersion("1.0.0")
