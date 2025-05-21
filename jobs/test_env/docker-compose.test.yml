@@ -25,7 +25,7 @@ services:
       LOCALSTACK_VOLUME_DIR: /opt/localstack/data
       PERSISTENCE: 1
     ports:
-      - "4566:4566"
+      - "4567:4566"
     volumes:
       - localstack-test-data:/opt/localstack/data
     healthcheck:

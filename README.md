@@ -8,10 +8,12 @@ Study AID API server and LLM processing jobs for Study AID service.
 - **API Docs**: Swagger/OpenAPI
 - **Database**: PostgreSQL
 - **Cache**: Redis
+- **Storage**: MinIO (S3 호환)
 - **Containerization**: Docker
 - **Build Tool**: Gradle
 - **Migration**: Flyway
 - **Background Jobs**: AWS Lambda (Python)
+- **Local Cloud Emulation**: LocalStack
 
 ## 프로젝트 구조
 
@@ -66,6 +68,8 @@ Study AID API server and LLM processing jobs for Study AID service.
 3. API Endpoints:
     - Swagger UI: http://localhost:8080/api/swagger-ui.html
     - Health Check: http://localhost:8080/api/v1/health
+4. 기타 서비스:
+    - MinIO 콘솔: http://localhost:9001 (계정: minioadmin/minioadmin)
 
 ### 명령어 목록
 
@@ -80,14 +84,16 @@ make ps                   # 실행 중인 컨테이너 목록
 make pgsql-cli            # PostgreSQL 접속
 make redis-cli            # Redis CLI 접속
 make test                 # 테스트 실행
+make test_win             # 테스트 실행 (Windows)
 make test-coverage        # 테스트 실행 및 커버리지 리포트 생성
+make test-coverage_win    # 테스트 실행 및 커버리지 리포트 생성 (Windows)
 make open-test-report     # 브라우저로 테스트 결과 확인
 make open-coverage-report # 브라우저로 테스트 커버리지 결과 확인
 make migrate              # 데이터베이스 마이그레이션
 make migration-info       # 데이터베이스 스키마 버전 확인
 ```
 
-## 테스트
+## API 서버 테스트
 
 테스트를 실행하고 보고서를 확인하는 방법:
 
@@ -110,8 +116,13 @@ make migration-info       # 데이터베이스 스키마 버전 확인
    make open-coverage-report
    ```
 
+## Lambda Job 테스트
+
+Lambda 함수들의 로컬 테스트와 배포에 관한 자세한 정보는 [Lambda 작업 문서](jobs/README.md)를 참고하세요.
+
+
 ## SQL 변경과 DB 마이그레이션
-DB에 새로운 sql 반영은 make run 과 별도로 해주셔야 합니다.
+DB에 새로운 sql 반영은 make run 과 별도로 해주셔야 합니다. make run 명령어 실행 후 기다리면 LocalStack도 자동으로 초기화됩니다.
 
 ### 로컬 개발 환경
 

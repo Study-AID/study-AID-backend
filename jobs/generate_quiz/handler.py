@@ -1,16 +1,17 @@
+import boto3
 import json
 import logging
 import os
-import traceback
-import uuid
-from datetime import datetime
-
-import boto3
 import psycopg2
 import psycopg2.extras
+import traceback
+import uuid
 from botocore.config import Config
+from datetime import datetime
+from typing import List, Dict, Any, Optional
 
 from openai_client import OpenAIClient
+from parsed_text_models import ParsedPage, ParsedText
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -94,11 +95,12 @@ def get_lecture_info(lecture_id):
         conn = get_db_connection()
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             query = """
-            SELECT l.id, l.course_id, l.user_id, l.material_path, l.title, l.summary, c.id as course_id
-            FROM app.lectures l
-            JOIN app.courses c ON l.course_id = c.id
-            WHERE l.id = %s AND l.deleted_at IS NULL
-            """
+                    SELECT l.id, l.course_id, l.user_id, l.material_path, l.title, l.parsed_text, c.id as course_id
+                    FROM app.lectures l
+                             JOIN app.courses c ON l.course_id = c.id
+                    WHERE l.id = %s
+                      AND l.deleted_at IS NULL 
+                    """
             cursor.execute(query, (lecture_id,))
             lecture = cursor.fetchone()
 
@@ -114,19 +116,42 @@ def get_lecture_info(lecture_id):
             conn.close()
 
 
-def get_lecture_content(lecture_id):
-    """Get lecture content either from summary or from the original file"""
+def process_parsed_text(parsed_text_json: str) -> str:
+    """Process parsed_text JSON into a text string for quiz generation"""
     try:
+        # Either parse the JSON string or use it directly if it's already a dict
+        if isinstance(parsed_text_json, str):
+            parsed_text_data = json.loads(parsed_text_json)
+        else:
+            parsed_text_data = parsed_text_json
+
+        # Validate the parsed_text data against our model
+        parsed_text = ParsedText.model_validate(parsed_text_data)
+
+        # Combine all page texts into a single string
+        combined_text = ""
+        for page in parsed_text.pages:
+            combined_text += f"\n\n--- Page {page.page_number} ---\n\n"
+            combined_text += page.text
+
+        return combined_text
+    except Exception as e:
+        logger.error(f"Error processing parsed_text: {e}")
+        raise
+
+
+def get_lecture_content(lecture_id):
+    """Get lecture content from parsed_text from the lecture record"""
+    try:
+        # Get lecture information from the database
         lecture_info = get_lecture_info(lecture_id)
+        
+        # Check if we have parsed_text in the lecture info
+        if lecture_info.get('parsed_text'):
+            logger.info(f"Using parsed_text from database for lecture_id: {lecture_info['id']}")
+            return process_parsed_text(lecture_info['parsed_text'])
 
-        # First check if we have a summary
-        # TODO(mj): get from parsed_text.
-        summary = lecture_info.get('summary')
-        if summary and isinstance(summary, dict) and 'content' in summary:
-            logger.info(f"Using summary for lecture_id: {lecture_info['id']}")
-            return summary['content']
-
-        # If no summary, get the content from the original file
+        # If no parsed_text, get the content from the original file
         s3_key = lecture_info.get('material_path')
         if not s3_key:
             raise ValueError(f"No material path found for lecture: {lecture_info['id']}")
@@ -171,34 +196,58 @@ def extract_text_from_pdf(file_path):
         raise
 
 
-def save_quiz_to_db(lecture_id, user_id, quiz_data, title=None):
-    """Save the generated quiz to the database"""
+def update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, title=None):
+    """Update the quiz in the database with the generated items"""
     conn = None
+    value_params = []  # Initialize value_params at function level
+    query = ""  # Initialize query at function level
+    
     try:
         conn = get_db_connection()
-
-        # Generate a UUID for the quiz
-        quiz_id = str(uuid.uuid4())
 
         # Default title if not provided
         if not title:
             title = f"Quiz on {datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
         with conn.cursor() as cursor:
-            # Insert quiz
+            # First, check if the quiz exists
             query = """
-            INSERT INTO app.quizzes 
-            (id, lecture_id, user_id, title, status, contents_generated_at, created_at)
-            VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
-            """
-            cursor.execute(query, (quiz_id, lecture_id, user_id, title, 'not_started'))
+                    SELECT id
+                    FROM app.quizzes
+                    WHERE id = %s 
+                    """
+            cursor.execute(query, (quiz_id,))
+            existing_quiz = cursor.fetchone()
+
+            if not existing_quiz:
+                logger.error(f"Quiz with id {quiz_id} not found")
+                raise ValueError(f"Quiz with id {quiz_id} not found")
+
+            # Update quiz status and title
+            query = """
+                    UPDATE app.quizzes
+                    SET title                 = %s,
+                        status                = %s,
+                        contents_generated_at = NOW(),
+                        updated_at            = NOW()
+                    WHERE id = %s 
+                    """
+            cursor.execute(query, (title, 'not_started', quiz_id))
+
+            # Delete existing quiz items to replace with new ones
+            query = """
+                    DELETE
+                    FROM app.quiz_items
+                    WHERE quiz_id = %s 
+                    """
+            cursor.execute(query, (quiz_id,))
 
             # Debug: Log quiz data structure
             logger.info(f"Quiz data structure: {quiz_data}")
 
             # Prepare bulk data for quiz items
             bulk_values = []
-            value_params = []
+            value_params = []  # Reset value_params
 
             # Process each question from the quiz_questions array
             if 'quiz_questions' in quiz_data and quiz_data['quiz_questions']:
@@ -265,18 +314,18 @@ def save_quiz_to_db(lecture_id, user_id, quiz_data, title=None):
                 logger.warning("No quiz items to insert!")
 
         conn.commit()
-        logger.info(f"Quiz saved to database with id: {quiz_id} for lecture_id: {lecture_id}")
+        logger.info(f"Quiz updated in database with id: {quiz_id} for lecture_id: {lecture_id}")
         return quiz_id
 
     except Exception as e:
         if conn:
             conn.rollback()
-        logger.error(f"Error saving quiz to database: {e}")
+        logger.error(f"Error updating quiz in database: {e}")
         logger.error(f"Error type: {type(e)}")
         logger.error(f"Error details: {str(e)}")
-        # Log the actual query for debugging
-        if 'query' in locals():
-            logger.error(f"Failed query: {query}")
+        # Log the actual query for debugging - now query and value_params are always defined
+        logger.error(f"Failed query: {query}")
+        if value_params:
             logger.error(f"Query params: {value_params}")
         raise
     finally:
@@ -294,10 +343,10 @@ def log_activity(course_id, user_id, activity_type, contents_type, details):
             activity_details = json.dumps(details)
 
             query = """
-            INSERT INTO app.course_activity_logs 
-            (id, course_id, user_id, activity_type, contents_type, activity_details)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """
+                    INSERT INTO app.course_activity_logs
+                    (id, course_id, user_id, activity_type, contents_type, activity_details)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """
             cursor.execute(query, (
                 activity_id,
                 course_id,
@@ -329,6 +378,7 @@ def lambda_handler(event, context):
             course_id = message.get('course_id')
             lecture_id = message.get('lecture_id')
             quiz_title = message.get('title')
+            quiz_id = message.get('quiz_id')  # Get the quiz_id for update
 
             # Get question counts by type with default values
             question_counts = {
@@ -347,7 +397,11 @@ def lambda_handler(event, context):
                 logger.error("Missing required lecture_id in message")
                 continue
 
-            # Get lecture content
+            if not quiz_id:
+                logger.error("Missing required quiz_id in message")
+                continue
+
+            # Get lecture content from the parsed_text field in the lecture table
             lecture_content = get_lecture_content(lecture_id)
 
             # Generate quiz using OpenAI
@@ -355,8 +409,8 @@ def lambda_handler(event, context):
             prompt_path = get_prompt_path()
             quiz_data = openai_client.generate_quiz(lecture_content, question_counts, prompt_path)
 
-            # Save quiz to database
-            quiz_id = save_quiz_to_db(lecture_id, user_id, quiz_data, quiz_title)
+            # Update quiz in database
+            update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, quiz_title)
 
             # Log the activity
             activity_details = {
@@ -369,13 +423,13 @@ def lambda_handler(event, context):
                 "short_answer_count": question_counts['short_answer_count'],
                 "essay_count": question_counts['essay_count'],
             }
-            log_activity(course_id, user_id, 'create', 'quiz', activity_details)
+            log_activity(course_id, user_id, 'update', 'quiz', activity_details)
 
-            logger.info(f"Successfully generated quiz {quiz_id} for lecture {lecture_id}")
+            logger.info(f"Successfully updated quiz {quiz_id} for lecture {lecture_id}")
 
         return {
             'statusCode': 200,
-            'body': json.dumps('Quiz generation completed successfully')
+            'body': json.dumps('Quiz update completed successfully')
         }
 
     except Exception as e:
@@ -384,5 +438,5 @@ def lambda_handler(event, context):
 
         return {
             'statusCode': 500,
-            'body': json.dumps(f'Error generating quiz: {str(e)}')
+            'body': json.dumps(f'Error updating quiz: {str(e)}')
         }

@@ -1,24 +1,40 @@
-name: Prod - Deploy prod-generate-quiz Lambda Job
+name: Dev - Deploy API Server to ECS
 
 on:
   push:
     tags:
-      - 'deploy-job-generate-quiz-[0-9]+.[0-9]+.[0-9]+'
-      - '!deploy-job-generate-quiz-*-dev'  # Exclude dev tags
+      - 'deploy-api-server-[0-9]+.[0-9]+.[0-9]+-dev'
+  workflow_dispatch:
 
 env:
-  LAMBDA_FUNCTION_NAME: prod-generate-quiz
   AWS_REGION: ap-northeast-2
-  ECR_REPOSITORY: study-aid-lambda
-  ECR_IMAGE_TAG: prod-generate-quiz
+  ECR_REPOSITORY: study_aid/backend
+  ECS_CLUSTER: study_aid
+  ECS_SERVICE: studyaid-dev-ecs-service
+  CONTAINER_NAME: api-server
+  TASK_DEFINITION_FAMILY: backend
 
 jobs:
   deploy:
+    name: Deploy API Server to ECS
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build with Gradle
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build -Pprofile=dev
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -31,51 +47,62 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push Docker image
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          # Create ECR repository if it doesn't exist
-          aws ecr describe-repositories --repository-names $ECR_REPOSITORY || \
-            aws ecr create-repository --repository-name $ECR_REPOSITORY
-          
-          # Build the docker image using the Dockerfile in the function directory
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG -f jobs/generate_quiz/Dockerfile .
-          
-          # Push the docker image
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
-          
-          # Save the image URI
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG" >> $GITHUB_OUTPUT
-
-      - name: Update Lambda function
-        run: |
-          # Update the Lambda function to use the new container image
-          aws lambda update-function-code \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --image-uri ${{ steps.build-image.outputs.image }}
-          
-          # Wait for the update to complete
-          aws lambda wait function-updated \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
-
-      - name: Get Lambda function info
-        run: |
-          aws lambda get-function \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --query 'Configuration.[FunctionArn, LastModified, Version]'
-
-      - name: Get current time
-        id: current-time
-        run: echo "time=$(date +%s)" >> $GITHUB_OUTPUT
-
       - name: Extract version from deployment tag
         id: get-version
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
-          VERSION=$(echo $TAG_NAME | sed -E 's/deploy-job-generate-quiz-([0-9]+\.[0-9]+\.[0-9]+)/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION=$(echo $TAG_NAME | sed -E 's/deploy-api-server-([0-9]+\.[0-9]+\.[0-9]+)-dev/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT 
+
+      - name: Build, tag Docker image, and push it to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: dev-api-server-${{ steps.get-version.outputs.version }}
+        run: |
+          docker build -f Dockerfile.prod -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG 
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_FAMILY }} \
+          --query taskDefinition > task-definition.json
+
+      - name: Update container image in task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Confirm task definition actually deployed
+        id: confirm-deploy
+        run: |
+          LATEST_REVISION=$(aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_FAMILY }} \
+            --query "taskDefinition.revision" --output text)
+
+          DEPLOYED_REVISION=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query "services[0].deployments[?status=='PRIMARY'].taskDefinition" --output text | awk -F: '{print $NF}')
+
+          echo "latest=$LATEST_REVISION" >> $GITHUB_OUTPUT
+          echo "deployed=$DEPLOYED_REVISION" >> $GITHUB_OUTPUT
+
+          if [ "$LATEST_REVISION" != "$DEPLOYED_REVISION" ]; then
+            echo "::error title=Deployment Rollback::ECS rolled back to previous task definition"
+            exit 1
+          fi
 
       - name: Notify Slack on Success
         if: success()
@@ -88,7 +115,7 @@ jobs:
               "attachments": [
                 {
                   "color": "good",
-                  "title": "✅ Deployment Success: Lambda -> prod-generate-quiz",
+                  "title": "✅ Deployment Success: API Server -> ECS",
                   "fields": [
                     {
                       "title": "Repository",
@@ -106,13 +133,8 @@ jobs:
                       "short": false
                     },
                     {
-                      "title": "Lambda Function",
-                      "value": "${{ env.LAMBDA_FUNCTION_NAME }}",
-                      "short": true
-                    },
-                    {
                       "title": "Image Tag",
-                      "value": "${{ env.ECR_IMAGE_TAG }}",
+                      "value": "dev-api-server-${{ steps.get-version.outputs.version }}",
                       "short": true
                     },
                     {
@@ -146,7 +168,7 @@ jobs:
               "attachments": [
                 {
                   "color": "danger",
-                  "title": "❌ Deployment Failed: Lambda -> prod-generate-quiz",
+                  "title": "❌ Deployment Failed: API Server -> ECS",
                   "fields": [
                     {
                       "title": "Repository",
@@ -164,13 +186,8 @@ jobs:
                       "short": false
                     },
                     {
-                      "title": "Lambda Function",
-                      "value": "${{ env.LAMBDA_FUNCTION_NAME }}",
-                      "short": true
-                    },
-                    {
                       "title": "Image Tag", 
-                      "value": "${{ env.ECR_IMAGE_TAG }}",
+                      "value": "dev-api-server-${{ steps.get-version.outputs.version }}",
                       "short": true
                     },
                     {

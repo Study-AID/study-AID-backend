@@ -3,7 +3,7 @@ name: Dev - Database Migration
 on:
   push:
     tags:
-      - 'migrate-db-[0-9]*-dev'
+      - 'migrate-db-[0-9]+-dev'
 
 env:
   FLYWAY_VERSION: '10.4.1'  # Update as needed
