@@ -60,6 +60,7 @@ jwt:
 
 storage:
   bucket: study-aid-lecture-materials
+  cloudfront-endpoint: ${CLOUDFRONT_ENDPOINT:https://example-cloudfront.net}
 
 # SQS Configuration
 sqs:

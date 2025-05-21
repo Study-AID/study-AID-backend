@@ -1,5 +1,6 @@
 package com.example.api.controller.dto.lecture;
 
+import com.example.api.config.StorageConfig;
 import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.entity.ParsedText;
 import com.example.api.service.dto.lecture.LectureOutput;
@@ -34,11 +35,8 @@ public class LectureResponse {
     @Schema(description = "Title of the lecture")
     private String title;
 
-    @Schema(description = "Path to the lecture material")
-    private String materialPath;
-
-    @Schema(description = "Type of the lecture material")
-    private String materialType;
+    @Schema(description = "Full URL to the lecture material")
+    private String materialUrl;
 
     @Schema(description = "Display order lexicographically")
     private String displayOrderLex;
@@ -63,14 +61,13 @@ public class LectureResponse {
     @Schema(description = "Last update timestamp of the lecture")
     private LocalDateTime updatedAt;
 
-    public static LectureResponse fromServiceDto(LectureOutput lecture) {
+    public static LectureResponse fromServiceDto(LectureOutput lecture, StorageConfig storageConfig) {
         return new LectureResponse(
                 lecture.getId(),
                 lecture.getCourseId(),
                 lecture.getUserId(),
                 lecture.getTitle(),
-                lecture.getMaterialPath(),
-                lecture.getMaterialType(),
+                storageConfig.getFullMaterialUrl(lecture.getMaterialPath()),
                 lecture.getDisplayOrderLex(),
                 lecture.getParsedText(),
                 lecture.getNote(),

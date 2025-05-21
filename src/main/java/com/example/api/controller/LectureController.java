@@ -2,6 +2,7 @@ package com.example.api.controller;
 
 import com.example.api.adapters.sqs.GenerateSummaryMessage;
 import com.example.api.adapters.sqs.SQSClient;
+import com.example.api.config.StorageConfig;
 import com.example.api.controller.dto.lecture.*;
 import com.example.api.service.CourseService;
 import com.example.api.service.LectureService;
@@ -35,14 +36,17 @@ public class LectureController extends BaseController {
     private final CourseService courseService;
     private final StorageService storageService;
     private final SQSClient sqsClient;
+    private final StorageConfig storageConfig;
 
     public LectureController(
-            LectureService lectureService, CourseService courseService, StorageService storageService, SQSClient sqsClient
+            LectureService lectureService, CourseService courseService, StorageService storageService, 
+            SQSClient sqsClient, StorageConfig storageConfig
     ) {
         this.lectureService = lectureService;
         this.courseService = courseService;
         this.storageService = storageService;
         this.sqsClient = sqsClient;
+        this.storageConfig = storageConfig;
     }
 
     @GetMapping("/course/{courseId}")
@@ -90,7 +94,9 @@ public class LectureController extends BaseController {
         }
 
         LectureListOutput lectureListOutput = lectureService.findLecturesByCourseId(courseId);
-        List<LectureResponse> lectureListResponse = lectureListOutput.getLectures().stream().map(LectureResponse::fromServiceDto).toList();
+        List<LectureResponse> lectureListResponse = lectureListOutput.getLectures().stream()
+                .map(lecture -> LectureResponse.fromServiceDto(lecture, storageConfig))
+                .toList();
         return ResponseEntity.ok(new LectureListResponse(lectureListResponse));
     }
 
@@ -137,7 +143,7 @@ public class LectureController extends BaseController {
             if (!lectureOutput.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
-            return ResponseEntity.ok(LectureResponse.fromServiceDto(lectureOutput.get()));
+            return ResponseEntity.ok(LectureResponse.fromServiceDto(lectureOutput.get(), storageConfig));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -263,7 +269,7 @@ public class LectureController extends BaseController {
             // Send SQS message for summary generation
             sendGenerateSummaryMessage(createdLectureOutput, fileKey, userId);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(LectureResponse.fromServiceDto(createdLectureOutput));
+            return ResponseEntity.status(HttpStatus.CREATED).body(LectureResponse.fromServiceDto(createdLectureOutput, storageConfig));
         } catch (IllegalArgumentException e) {
             log.error("Invalid input data", e);
             return ResponseEntity.badRequest().build();
@@ -348,7 +354,7 @@ public class LectureController extends BaseController {
             updateLectureInput.setMaterialType(request.getMaterialType());
 
             LectureOutput updatedLectureOutput = lectureService.updateLecture(updateLectureInput);
-            LectureResponse lectureResponse = LectureResponse.fromServiceDto(updatedLectureOutput);
+            LectureResponse lectureResponse = LectureResponse.fromServiceDto(updatedLectureOutput, storageConfig);
             return ResponseEntity.ok(lectureResponse);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();

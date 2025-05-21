@@ -44,6 +44,7 @@ aws:
 
 storage:
   bucket: ${AWS_S3_BUCKET}
+  cloudfront-endpoint: ${CLOUDFRONT_ENDPOINT}
 
 # Swagger UI Configuration
 springdoc:
