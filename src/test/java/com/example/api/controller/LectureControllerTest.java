@@ -326,8 +326,6 @@ class LectureControllerTest {
         // Given
         UpdateLectureRequest updateLectureRequest = new UpdateLectureRequest();
         updateLectureRequest.setTitle("Updated Lecture Title");
-        updateLectureRequest.setMaterialPath("updated_material_path");
-        updateLectureRequest.setMaterialType("updated_material_type");
 
         LectureOutput updatedLectureOutput = new LectureOutput();
         updatedLectureOutput.setId(lectureId);
@@ -354,9 +352,7 @@ class LectureControllerTest {
 
         verify(lectureService).findLectureById(lectureId);
         verify(lectureService).updateLecture(argThat(input ->
-                input.getTitle().equals("Updated Lecture Title") &&
-                        input.getMaterialPath().equals("updated_material_path") &&
-                        input.getMaterialType().equals("updated_material_type")
+                input.getTitle().equals("Updated Lecture Title")
         ));
     }
 

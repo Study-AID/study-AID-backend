@@ -332,20 +332,10 @@ public class LectureController extends BaseController {
             if (request.getTitle() == null || request.getTitle().isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
-            // Validate materialPath
-            if (request.getMaterialPath() == null || request.getMaterialPath().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-            // Validate materialType
-            if (request.getMaterialType() == null || request.getMaterialType().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
 
             UpdateLectureInput updateLectureInput = new UpdateLectureInput();
             updateLectureInput.setId(id);
             updateLectureInput.setTitle(request.getTitle());
-            updateLectureInput.setMaterialPath(request.getMaterialPath());
-            updateLectureInput.setMaterialType(request.getMaterialType());
 
             LectureOutput updatedLectureOutput = lectureService.updateLecture(updateLectureInput);
             LectureResponse lectureResponse = LectureResponse.fromServiceDto(updatedLectureOutput);
