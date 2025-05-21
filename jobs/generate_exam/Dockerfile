@@ -21,12 +21,8 @@ COPY prompts/ /var/task/prompts/
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /var/task/jobs/generate_exam/requirements.txt
 
-# Move handler.py to the root directory
-RUN cp /var/task/jobs/generate_exam/handler.py /var/task/handler.py
-
 # Copy supporting modules to root to avoid import issues
-RUN cp /var/task/jobs/generate_exam/openai_client.py /var/task/
-RUN cp /var/task/jobs/generate_exam/exam_models.py /var/task/
+RUN cp /var/task/jobs/generate_quiz/*.py /var/task/
 
 # Install Lambda runtime interface client
 RUN pip install --no-cache-dir awslambdaric

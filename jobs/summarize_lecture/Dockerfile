@@ -21,12 +21,8 @@ COPY prompts/ /var/task/prompts/
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /var/task/jobs/summarize_lecture/requirements.txt
 
-# Move handler.py to the root directory
-RUN cp /var/task/jobs/summarize_lecture/handler.py /var/task/handler.py
-
 # Copy supporting modules to root to avoid import issues
-RUN cp /var/task/jobs/summarize_lecture/openai_client.py /var/task/
-RUN cp /var/task/jobs/summarize_lecture/summary_models.py /var/task/
+RUN cp /var/task/jobs/summarize_lecture/*.py /var/task/
 
 # Install Lambda runtime interface client
 RUN pip install --no-cache-dir awslambdaric
