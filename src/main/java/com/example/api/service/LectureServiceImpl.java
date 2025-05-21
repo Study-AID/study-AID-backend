@@ -85,8 +85,6 @@ public class LectureServiceImpl implements LectureService {
         Lecture lecture = new Lecture();
         lecture.setId(input.getId());
         lecture.setTitle(input.getTitle());
-        lecture.setMaterialPath(input.getMaterialPath());
-        lecture.setMaterialType(input.getMaterialType());
 
         Lecture updatedLecture = lectureRepo.updateLecture(lecture);
         return LectureOutput.fromEntity(updatedLecture);
