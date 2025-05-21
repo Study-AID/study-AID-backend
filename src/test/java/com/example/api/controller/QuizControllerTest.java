@@ -232,6 +232,7 @@ public class QuizControllerTest {
 
         verify(lectureService, times(1)).findLectureById(lectureId);
         verify(quizService, times(1)).createQuiz(any(CreateQuizInput.class));
+        verify(sqsClient, times(1)).sendGenerateQuizMessage(any());
     }
 
     @Test
@@ -321,4 +322,56 @@ public class QuizControllerTest {
                 .andExpect(jsonPath("$.submitQuizResponses[0].userId", is(userId.toString())))
                 .andExpect(jsonPath("$.submitQuizResponses[0].quizItemId", is(testQuizItems.get(0).getId().toString())));
     }
-}
+    
+    @Test
+    @DisplayName("유효하지 않은 요청으로 퀴즈 생성")
+    @WithMockUser
+    void createQuiz_InvalidRequest() throws Exception {
+        // given
+        CreateQuizRequest createQuizRequest = new CreateQuizRequest();
+        createQuizRequest.setLectureId(lectureId);
+        createQuizRequest.setTitle(""); // 빈 제목
+        createQuizRequest.setTrueOrFalseCount(2);
+        createQuizRequest.setMultipleChoiceCount(3);
+        createQuizRequest.setShortAnswerCount(1);
+        createQuizRequest.setEssayCount(1);
+
+        when(lectureService.findLectureById(lectureId)).thenReturn(Optional.of(testLectureOutput));
+
+        // when, then
+        mockMvc.perform(post("/v1/quizzes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createQuizRequest)))
+                .andExpect(status().isBadRequest());
+
+        verify(lectureService, times(1)).findLectureById(lectureId);
+        verify(quizService, never()).createQuiz(any(CreateQuizInput.class));
+        verify(sqsClient, never()).sendGenerateQuizMessage(any());
+    }
+    
+    @Test
+    @DisplayName("존재하지 않는 강의로 퀴즈 생성")
+    @WithMockUser
+    void createQuiz_LectureNotFound() throws Exception {
+        // given
+        CreateQuizRequest createQuizRequest = new CreateQuizRequest();
+        createQuizRequest.setLectureId(lectureId);
+        createQuizRequest.setTitle("Quiz 1");
+        createQuizRequest.setTrueOrFalseCount(2);
+        createQuizRequest.setMultipleChoiceCount(3);
+        createQuizRequest.setShortAnswerCount(1);
+        createQuizRequest.setEssayCount(1);
+
+        when(lectureService.findLectureById(lectureId)).thenReturn(Optional.empty());
+
+        // when, then
+        mockMvc.perform(post("/v1/quizzes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createQuizRequest)))
+                .andExpect(status().isNotFound());
+
+        verify(lectureService, times(1)).findLectureById(lectureId);
+        verify(quizService, never()).createQuiz(any(CreateQuizInput.class));
+        verify(sqsClient, never()).sendGenerateQuizMessage(any());
+    }
+        }
