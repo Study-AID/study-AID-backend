@@ -10,6 +10,7 @@
         "user_id",
         "course_id",
         "lecture_id",
+        "quiz_id",
         "title",
         "true_or_false_count",
         "multiple_choice_count",
@@ -38,6 +39,10 @@
             "format": "uuid"
         },
         "lecture_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "quiz_id": {
             "type": "string",
             "format": "uuid"
         },
