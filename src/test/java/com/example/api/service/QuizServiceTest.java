@@ -1,37 +1,27 @@
 package com.example.api.service;
 
-import com.example.api.entity.Course;
-import com.example.api.entity.Lecture;
-import com.example.api.entity.Quiz;
-import com.example.api.entity.QuizItem;
-import com.example.api.entity.Semester;
-import com.example.api.entity.User;
+import com.example.api.entity.*;
+import com.example.api.entity.enums.QuestionType;
 import com.example.api.entity.enums.Status;
 import com.example.api.entity.enums.SummaryStatus;
-import com.example.api.repository.LectureRepository;
-import com.example.api.repository.QuizItemRepository;
-import com.example.api.repository.QuizRepository;
-import com.example.api.repository.UserRepository;
+import com.example.api.repository.*;
 import com.example.api.service.dto.quiz.CreateQuizInput;
 import com.example.api.service.dto.quiz.QuizListOutput;
 import com.example.api.service.dto.quiz.QuizOutput;
 import com.example.api.service.dto.quiz.UpdateQuizInput;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,6 +37,12 @@ public class QuizServiceTest {
     private QuizItemRepository quizItemRepository;
 
     @Mock
+    private QuizResponseRepository quizResponseRepository;
+
+    @Mock
+    private QuizResultRepository quizResultRepository;
+
+    @Mock
     private UserRepository userRepository;
 
     @Mock
@@ -55,11 +51,23 @@ public class QuizServiceTest {
     @InjectMocks
     private QuizServiceImpl quizService;
 
+    @Captor
+    private ArgumentCaptor<QuizResponse> quizResponseCaptor;
+
+    @Captor
+    private ArgumentCaptor<Quiz> quizCaptor;
+
+    @Captor
+    private ArgumentCaptor<QuizResult> quizResultCaptor;
+
     private UUID userId;
     private UUID courseId;
     private UUID semesterId;
     private UUID lectureId;
     private UUID quizId;
+    private UUID quizItemId1;
+    private UUID quizItemId2;
+    private UUID quizItemId3;
 
     private User testUser;
     private Course testCourse;
@@ -68,6 +76,7 @@ public class QuizServiceTest {
     private Quiz testQuiz;
     private List<QuizItem> testQuizItems;
     private QuizOutput testQuizOutput;
+    private List<QuizResponse> testQuizResponses;
 
     @BeforeEach
     void setUp() {
@@ -76,6 +85,9 @@ public class QuizServiceTest {
         semesterId = UUID.randomUUID();
         lectureId = UUID.randomUUID();
         quizId = UUID.randomUUID();
+        quizItemId1 = UUID.randomUUID();
+        quizItemId2 = UUID.randomUUID();
+        quizItemId3 = UUID.randomUUID();
 
         testUser = new User();
         testUser.setId(userId);
@@ -108,7 +120,7 @@ public class QuizServiceTest {
         testLecture.setSummary(Map.of("summaryKey", "summaryValue"));
         testLecture.setSummaryStatus(SummaryStatus.not_started);
         testLecture.setCreatedAt(LocalDateTime.now());
-        testLecture.setUpdatedAt(LocalDateTime.now());  
+        testLecture.setUpdatedAt(LocalDateTime.now());
 
         testQuiz = new Quiz();
         testQuiz.setId(quizId);
@@ -119,16 +131,67 @@ public class QuizServiceTest {
         testQuiz.setCreatedAt(LocalDateTime.now());
         testQuiz.setUpdatedAt(LocalDateTime.now());
 
-        testQuizItems = Arrays.asList(
-                new QuizItem(),
-                new QuizItem()
-        );
-        testQuizItems.get(0).setId(UUID.randomUUID());
-        testQuizItems.get(0).setQuiz(testQuiz);
-        testQuizItems.get(1).setId(UUID.randomUUID());
-        testQuizItems.get(1).setQuiz(testQuiz);
+        // Create basic quiz items for basic tests
+        QuizItem basicItem1 = new QuizItem();
+        basicItem1.setId(UUID.randomUUID());
+        basicItem1.setQuiz(testQuiz);
 
+        QuizItem basicItem2 = new QuizItem();
+        basicItem2.setId(UUID.randomUUID());
+        basicItem2.setQuiz(testQuiz);
+
+        testQuizItems = Arrays.asList(basicItem1, basicItem2);
         testQuizOutput = QuizOutput.fromEntity(testQuiz, testQuizItems);
+
+        // Create quiz items for different question types for grade tests
+        QuizItem trueOrFalseItem = new QuizItem();
+        trueOrFalseItem.setId(quizItemId1);
+        trueOrFalseItem.setQuiz(testQuiz);
+        trueOrFalseItem.setQuestionType(QuestionType.true_or_false);
+        trueOrFalseItem.setQuestion("Is Java a static typed language?");
+        trueOrFalseItem.setIsTrueAnswer(true);
+
+        QuizItem multipleChoiceItem = new QuizItem();
+        multipleChoiceItem.setId(quizItemId2);
+        multipleChoiceItem.setQuiz(testQuiz);
+        multipleChoiceItem.setQuestionType(QuestionType.multiple_choice);
+        multipleChoiceItem.setQuestion("Which of these are JVM languages?");
+        multipleChoiceItem.setChoices(new String[]{"Java", "Kotlin", "C++", "Python"});
+        multipleChoiceItem.setAnswerIndices(new Integer[]{0, 1});
+
+        QuizItem shortAnswerItem = new QuizItem();
+        shortAnswerItem.setId(quizItemId3);
+        shortAnswerItem.setQuiz(testQuiz);
+        shortAnswerItem.setQuestionType(QuestionType.short_answer);
+        shortAnswerItem.setQuestion("What does JVM stand for?");
+        shortAnswerItem.setTextAnswer("Java Virtual Machine");
+
+        // Create quiz responses
+        QuizResponse trueOrFalseResponse = new QuizResponse();
+        trueOrFalseResponse.setId(UUID.randomUUID());
+        trueOrFalseResponse.setQuiz(testQuiz);
+        trueOrFalseResponse.setQuizItem(trueOrFalseItem);
+        trueOrFalseResponse.setUser(testUser);
+        trueOrFalseResponse.setSelectedBool(true); // Correct answer
+        trueOrFalseResponse.setCreatedAt(LocalDateTime.now());
+
+        QuizResponse multipleChoiceResponse = new QuizResponse();
+        multipleChoiceResponse.setId(UUID.randomUUID());
+        multipleChoiceResponse.setQuiz(testQuiz);
+        multipleChoiceResponse.setQuizItem(multipleChoiceItem);
+        multipleChoiceResponse.setUser(testUser);
+        multipleChoiceResponse.setSelectedIndices(new Integer[]{0, 1}); // Correct answer
+        multipleChoiceResponse.setCreatedAt(LocalDateTime.now());
+
+        QuizResponse shortAnswerResponse = new QuizResponse();
+        shortAnswerResponse.setId(UUID.randomUUID());
+        shortAnswerResponse.setQuiz(testQuiz);
+        shortAnswerResponse.setQuizItem(shortAnswerItem);
+        shortAnswerResponse.setUser(testUser);
+        shortAnswerResponse.setTextAnswer("Java Virtual Machine"); // Correct answer
+        shortAnswerResponse.setCreatedAt(LocalDateTime.now());
+
+        testQuizResponses = Arrays.asList(trueOrFalseResponse, multipleChoiceResponse, shortAnswerResponse);
     }
 
     @Test
@@ -167,7 +230,6 @@ public class QuizServiceTest {
         when(userRepository.getReferenceById(userId)).thenReturn(testUser);
         when(lectureRepository.getReferenceById(lectureId)).thenReturn(testLecture);
         when(quizRepository.createQuiz(any(Quiz.class))).thenReturn(testQuiz);
-        when(quizItemRepository.findByQuizId(quizId)).thenReturn(testQuizItems);
 
         QuizOutput result = quizService.createQuiz(input);
 
@@ -207,5 +269,134 @@ public class QuizServiceTest {
         quizService.deleteQuiz(quizId);
 
         verify(quizRepository, times(1)).deleteQuiz(quizId);
+    }
+
+    @Test
+    @DisplayName("퀴즈 채점 테스트 - 모든 답이 정확한 경우")
+    void gradeQuizWithAllCorrectAnswers() {
+        // given
+        testQuiz.setStatus(Status.submitted); // 채점을 위해 상태 변경
+
+        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
+        when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
+
+        // Item 1: true/false
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizResponses.get(0).getQuizItem());
+
+        // Item 2: multiple choice
+        when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(testQuizResponses.get(1).getQuizItem());
+
+        // Item 3: short answer
+        when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(testQuizResponses.get(2).getQuizItem());
+
+        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+        when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
+        when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
+
+        // when
+        quizService.gradeQuiz(quizId);
+
+        // then
+        verify(quizRepository, times(1)).getReferenceById(quizId);
+        verify(quizResponseRepository, times(1)).findByQuizId(quizId);
+        verify(quizItemRepository, times(3)).getReferenceById(any(UUID.class));
+
+        // Verify quiz status is updated to graded
+        verify(quizRepository).updateQuiz(quizCaptor.capture());
+        Quiz capturedQuiz = quizCaptor.getValue();
+        assertEquals(Status.graded, capturedQuiz.getStatus());
+
+        // Verify each response is updated with correct isCorrect flag
+        verify(quizResponseRepository, times(3)).updateQuizResponse(quizResponseCaptor.capture());
+        List<QuizResponse> capturedResponses = quizResponseCaptor.getAllValues();
+
+        // All responses should be marked as correct by the service
+        for (QuizResponse response : capturedResponses) {
+            assertEquals(Boolean.TRUE, response.getIsCorrect());
+        }
+
+        // Verify quiz result is created
+        verify(quizResultRepository).createQuizResult(any(QuizResult.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 채점 테스트 - 일부 답이 틀린 경우")
+    void gradeQuizWithSomeIncorrectAnswers() {
+        // given
+        testQuiz.setStatus(Status.submitted); // 채점을 위해 상태 변경
+
+        // Modify responses to have incorrect answers
+        testQuizResponses.get(0).setSelectedBool(false); // Wrong answer for true/false
+        testQuizResponses.get(1).setSelectedIndices(new Integer[]{0, 2}); // Wrong answer for multiple choice
+
+        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
+        when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
+
+        // Item 1: true/false
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizResponses.get(0).getQuizItem());
+
+        // Item 2: multiple choice
+        when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(testQuizResponses.get(1).getQuizItem());
+
+        // Item 3: short answer
+        when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(testQuizResponses.get(2).getQuizItem());
+
+        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+        when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
+        when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
+
+        // when
+        quizService.gradeQuiz(quizId);
+
+        // then
+        verify(quizRepository, times(1)).getReferenceById(quizId);
+        verify(quizResponseRepository, times(1)).findByQuizId(quizId);
+        verify(quizItemRepository, times(3)).getReferenceById(any(UUID.class));
+
+        // Verify quiz status is updated to graded
+        verify(quizRepository).updateQuiz(quizCaptor.capture());
+        Quiz capturedQuiz = quizCaptor.getValue();
+        assertEquals(Status.graded, capturedQuiz.getStatus());
+
+        // Verify each response is updated
+        verify(quizResponseRepository, times(3)).updateQuizResponse(quizResponseCaptor.capture());
+        List<QuizResponse> capturedResponses = quizResponseCaptor.getAllValues();
+
+        // The first two responses should NOT be marked as correct, but the third one should be
+        assertEquals(testQuizResponses.get(0).getId(), capturedResponses.get(0).getId());
+        assertEquals(Boolean.FALSE, capturedResponses.get(0).getIsCorrect()); // Wrong answer
+
+        assertEquals(testQuizResponses.get(1).getId(), capturedResponses.get(1).getId());
+        assertEquals(Boolean.FALSE, capturedResponses.get(1).getIsCorrect()); // Wrong answer
+
+        assertEquals(testQuizResponses.get(2).getId(), capturedResponses.get(2).getId());
+        assertEquals(Boolean.TRUE, capturedResponses.get(2).getIsCorrect()); // Correct
+
+        // Verify quiz result is created
+        verify(quizResultRepository).createQuizResult(any(QuizResult.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 채점 테스트 - question type이 null인 경우 예외 처리")
+    void gradeQuizWithNullQuestionType() {
+        // given
+        testQuiz.setStatus(Status.submitted); // 채점을 위해 상태 변경
+
+        // Set questionType to null
+        testQuizResponses.get(0).getQuizItem().setQuestionType(null);
+
+        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
+        when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizResponses.get(0).getQuizItem());
+
+        // when, then
+        assertThrows(IllegalArgumentException.class, () -> quizService.gradeQuiz(quizId));
+
+        verify(quizRepository, times(1)).getReferenceById(quizId);
+        verify(quizResponseRepository, times(1)).findByQuizId(quizId);
+        verify(quizItemRepository, times(1)).getReferenceById(quizItemId1);
+        verify(quizResponseRepository, never()).updateQuizResponse(any(QuizResponse.class));
+        verify(quizRepository, never()).updateQuiz(any(Quiz.class));
+        verify(quizResultRepository, never()).createQuizResult(any(QuizResult.class));
     }
 }

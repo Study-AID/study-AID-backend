@@ -1,35 +1,16 @@
 package com.example.api.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
+import com.example.api.entity.*;
+import com.example.api.entity.enums.QuestionType;
+import com.example.api.entity.enums.Status;
+import com.example.api.repository.*;
+import com.example.api.service.dto.exam.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.api.entity.Course;
-import com.example.api.entity.Exam;
-import com.example.api.entity.ExamItem;
-import com.example.api.entity.ExamResponse;
-import com.example.api.entity.ExamResult;
-import com.example.api.entity.User;
-import com.example.api.entity.enums.QuestionType;
-import com.example.api.entity.enums.Status;
-import com.example.api.repository.CourseRepository;
-import com.example.api.repository.ExamItemRepository;
-import com.example.api.repository.ExamRepository;
-import com.example.api.repository.ExamResponseRepository;
-import com.example.api.repository.ExamResultRepository;
-import com.example.api.repository.UserRepository;
-import com.example.api.service.dto.exam.CreateExamInput;
-import com.example.api.service.dto.exam.CreateExamResponseInput;
-import com.example.api.service.dto.exam.ExamListOutput;
-import com.example.api.service.dto.exam.ExamOutput;
-import com.example.api.service.dto.exam.ExamResponseListOutput;
-import com.example.api.service.dto.exam.ExamResponseOutput;
-import com.example.api.service.dto.exam.UpdateExamInput;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 public class ExamServiceImpl implements ExamService {
@@ -61,10 +42,10 @@ public class ExamServiceImpl implements ExamService {
     public Optional<ExamOutput> findExamById(UUID examId) {
         Optional<Exam> exam = examRepo.findById(examId);
         List<ExamItem> examItems = examItemRepo.findByExamId(examId);
-        
+
         return exam.map(e -> ExamOutput.fromEntity(e, examItems));
     }
-    
+
     @Override
     public ExamListOutput findExamsByCourseId(UUID courseId) {
         return ExamListOutput.fromEntities(examRepo.findByCourseId(courseId));
@@ -83,10 +64,6 @@ public class ExamServiceImpl implements ExamService {
         exam.setStatus(Status.generate_in_progress);
 
         Exam createdExam = examRepo.createExam(exam);
-        List<ExamItem> examItems = examItemRepo.findByExamId(createdExam.getId());
-        if (examItems.isEmpty()) {
-            throw new IllegalArgumentException("Exam items cannot be empty");
-        }
         return ExamOutput.fromEntity(createdExam, List.of());
     }
 
@@ -110,7 +87,7 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
-    public ExamResponseListOutput createExamResponse (List<CreateExamResponseInput> inputs) {
+    public ExamResponseListOutput createExamResponse(List<CreateExamResponseInput> inputs) {
         ExamResponseListOutput examResponseListOutput = (ExamResponseListOutput) inputs.stream()
                 .map(input -> {
                     Exam exam = examRepo.getReferenceById(input.getExamId());
@@ -130,10 +107,10 @@ public class ExamServiceImpl implements ExamService {
                     if (input.getTextAnswer() != null) {
                         examResponse.setTextAnswer(input.getTextAnswer());
                     }
-                    
+
                     // ExamResponse(퀴즈 풀이이) 생성
                     ExamResponse createdExamResponse = examResponseRepo.createExamResponse(examResponse);
-                    
+
                     // ExamResponse 저장이 성공했는지 확인
                     if (createdExamResponse == null) {
                         throw new RuntimeException("Failed to create exam response");
@@ -166,10 +143,15 @@ public class ExamServiceImpl implements ExamService {
                     examResponse.setIsCorrect(true);
                 }
             } else if (examItem.getQuestionType() == QuestionType.multiple_choice) {
-                // 객관식 문제에 대한 채점 로직
-                if (examResponse.getSelectedIndices() != null && examResponse.getSelectedIndices().equals(examItem.getAnswerIndices())) {
-                    // totalScore += examItem.getScore();
-                    examResponse.setIsCorrect(true);
+                // 객관식 문제에 대한 채점 로직 - 순서 상관없이 선택된 항목들이 정답과 일치하는지 확인
+                if (examResponse.getSelectedIndices() != null && examItem.getAnswerIndices() != null) {
+                    Set<Integer> selectedSet = new HashSet<>(Arrays.asList(examResponse.getSelectedIndices()));
+                    Set<Integer> answerSet = new HashSet<>(Arrays.asList(examItem.getAnswerIndices()));
+
+                    if (selectedSet.equals(answerSet)) {
+                        // totalScore += examItem.getScore();
+                        examResponse.setIsCorrect(true);
+                    }
                 }
             } else if (examItem.getQuestionType() == QuestionType.short_answer) {
                 // 단답형 문제에 대한 채점 로직
@@ -184,8 +166,8 @@ public class ExamServiceImpl implements ExamService {
         exam.setStatus(Status.graded);
         examRepo.updateExam(exam);
 
-        // 시험험 결과 생성 
-        // TODO(yoon) : 시험험 결과 생성 로직을 별개의 메서드로 분리
+        // 시험 결과 생성 
+        // TODO(yoon) : 시험 결과 생성 로직을 별개의 메서드로 분리
         ExamResult examResult = new ExamResult();
         examResult.setExam(exam);
         examResult.setUser(examResponses.get(0).getUser());

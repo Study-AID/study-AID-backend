@@ -1,36 +1,16 @@
 package com.example.api.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
+import com.example.api.entity.*;
+import com.example.api.entity.enums.QuestionType;
+import com.example.api.entity.enums.Status;
+import com.example.api.repository.*;
+import com.example.api.service.dto.quiz.*;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.example.api.entity.Lecture;
-import com.example.api.entity.Quiz;
-import com.example.api.entity.QuizItem;
-import com.example.api.entity.QuizResponse;
-import com.example.api.entity.QuizResult;
-import com.example.api.entity.User;
-import com.example.api.entity.enums.QuestionType;
-import com.example.api.entity.enums.Status;
-import com.example.api.repository.LectureRepository;
-import com.example.api.repository.QuizItemRepository;
-import com.example.api.repository.QuizRepository;
-import com.example.api.repository.QuizResponseRepository;
-import com.example.api.repository.QuizResultRepository;
-import com.example.api.repository.UserRepository;
-import com.example.api.service.dto.quiz.CreateQuizInput;
-import com.example.api.service.dto.quiz.CreateQuizResponseInput;
-import com.example.api.service.dto.quiz.QuizListOutput;
-import com.example.api.service.dto.quiz.QuizOutput;
-import com.example.api.service.dto.quiz.QuizResponseListOutput;
-import com.example.api.service.dto.quiz.QuizResponseOutput;
-import com.example.api.service.dto.quiz.UpdateQuizInput;
-
-import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 public class QuizServiceImpl implements QuizService {
@@ -61,7 +41,7 @@ public class QuizServiceImpl implements QuizService {
     public Optional<QuizOutput> findQuizById(UUID quizId) {
         Optional<Quiz> quiz = quizRepo.findById(quizId);
         List<QuizItem> quizItems = quizItemRepo.findByQuizId(quizId);
-        
+
         return quiz.map(q -> QuizOutput.fromEntity(q, quizItems));
     }
 
@@ -82,9 +62,8 @@ public class QuizServiceImpl implements QuizService {
         quiz.setTitle(input.getTitle());
         quiz.setStatus(Status.generate_in_progress);
 
-        Quiz createdQuiz = quizRepo.createQuiz(quiz);      
-        List<QuizItem> quizItems = quizItemRepo.findByQuizId(createdQuiz.getId());
-        return QuizOutput.fromEntity(createdQuiz, quizItems);
+        Quiz createdQuiz = quizRepo.createQuiz(quiz);
+        return QuizOutput.fromEntity(createdQuiz, List.of());
     }
 
     @Override
@@ -136,7 +115,7 @@ public class QuizServiceImpl implements QuizService {
                     if (createdQuizResponse == null) {
                         throw new RuntimeException("Failed to create quiz response");
                     }
-                    
+
                     return QuizResponseOutput.fromEntity(createdQuizResponse);
                 }).toList();
         Quiz quiz = quizRepo.getReferenceById(inputs.get(0).getQuizId());
@@ -166,11 +145,15 @@ public class QuizServiceImpl implements QuizService {
                     quizResponse.setIsCorrect(true);
                 }
             } else if (quizItem.getQuestionType() == QuestionType.multiple_choice) {
-                // 객관식 문제
-                if (quizResponse.getSelectedIndices() != null && quizResponse.getSelectedIndices().equals(quizItem.getAnswerIndices())) {
-                    // totalScore += quizItem.getPoints();
-                    quizResponse.setIsCorrect(true);
+                // 객관식 문제 - 순서 상관없이 선택된 항목들이 정답과 일치하는지 확인
+                if (quizResponse.getSelectedIndices() != null && quizItem.getAnswerIndices() != null) {
+                    Set<Integer> selectedSet = new HashSet<>(Arrays.asList(quizResponse.getSelectedIndices()));
+                    Set<Integer> answerSet = new HashSet<>(Arrays.asList(quizItem.getAnswerIndices()));
                     
+                    if (selectedSet.equals(answerSet)) {
+                        // totalScore += quizItem.getPoints();
+                        quizResponse.setIsCorrect(true);
+                    }
                 }
             } else if (quizItem.getQuestionType() == QuestionType.short_answer) {
                 // 주관식 문제
@@ -180,7 +163,6 @@ public class QuizServiceImpl implements QuizService {
                 }
             }
             // TODO(jin): 서술형 문제 구현
-
 
             // // 점수 부여
             // if (quizResponse.getIsCorrect()) {
@@ -192,7 +174,7 @@ public class QuizServiceImpl implements QuizService {
             quizResponseRepo.updateQuizResponse(quizResponse);
         }
         quiz.setStatus(Status.graded);
-        
+
         quizRepo.updateQuiz(quiz);
 
         // 퀴즈 결과 생성 
