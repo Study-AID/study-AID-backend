@@ -22,7 +22,7 @@ COPY prompts/ /var/task/prompts/
 RUN pip install --no-cache-dir -r /var/task/jobs/generate_exam/requirements.txt
 
 # Copy supporting modules to root to avoid import issues
-RUN cp /var/task/jobs/generate_quiz/*.py /var/task/
+RUN cp /var/task/jobs/generate_exam/*.py /var/task/
 
 # Install Lambda runtime interface client
 RUN pip install --no-cache-dir awslambdaric
