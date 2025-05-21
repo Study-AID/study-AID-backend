@@ -3,8 +3,15 @@ package com.example.api.repository;
 import com.example.api.entity.ExamResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.UUID;
 
-public interface ExamResponseRepository extends JpaRepository<ExamResponse, UUID> {
+public interface ExamResponseRepository extends JpaRepository<ExamResponse, UUID>, ExamResponseRepositoryCustom {
+    List<ExamResponse> findByExamId(UUID examId);
 
+    ExamResponse createExamResponse(ExamResponse examResponse);
+
+    ExamResponse updateExamResponse(ExamResponse examResponse);
+
+    void deleteExamResponse(UUID examResponseId);
 }
