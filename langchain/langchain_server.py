@@ -237,6 +237,7 @@ def check_embedding_result_status(lecture_id):
         print(f"[Langchain] 벡터 스토어 로드 실패 (체크용): {e}", flush=True)
         return jsonify(result), 500
 
+# TODO(jin): consider returning a safe fallback (e.g., empty references) after stabilizing performance for better UX
 # 질문을 벡터 임베딩하여 강의자료의 임베딩 결과와 비교하여 유사도 검색으로 출처 찾는 API
 @app.route("/lectures/<lecture_id>/references", methods=["POST"])
 def find_references_in_lecture(lecture_id):
