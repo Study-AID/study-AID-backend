@@ -6,7 +6,6 @@ import psycopg2
 import psycopg2.extras
 import traceback
 import uuid
-from botocore.config import Config
 from botocore.exceptions import ClientError
 from datetime import datetime
 
@@ -39,23 +38,8 @@ DB_CONFIG = {
 }
 
 # Initialize clients
-s3_params = {
-    'region_name': AWS_REGION,
-    'config': Config(
-        connect_timeout=10,
-        retries={'max_attempts': 3}
-    )
-}
-
-if S3_ENDPOINT_URL:
-    s3_params['endpoint_url'] = S3_ENDPOINT_URL
-
-if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-    s3_params['aws_access_key_id'] = AWS_ACCESS_KEY_ID
-    s3_params['aws_secret_access_key'] = AWS_SECRET_ACCESS_KEY
-
-s3_client = boto3.client('s3', **s3_params)
-
+# test.py와 정확히 동일한 방식으로 생성
+s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 
 def get_db_connection():
@@ -110,15 +94,31 @@ def download_file_from_s3(bucket, key, local_path):
     """Download a file from S3 to a local path"""
     try:
         logger.info(f"Downloading file from s3://{bucket}/{key} to {local_path}")
-        if S3_ENDPOINT_URL:
-            logger.info(f"Using S3 endpoint URL: {S3_ENDPOINT_URL}")
-
+        
+        # 디버깅용 로그 추가
+        logger.info(f"S3 client config: region={AWS_REGION}")
+        
+        # 객체 존재 여부 먼저 확인 
+        try:
+            s3_client.head_object(Bucket=bucket, Key=key)
+            logger.info(f"Object exists: {bucket}/{key}")
+        except Exception as head_error:
+            logger.error(f"Error checking object existence: {head_error}")
+        
+        # 다운로드 진행
         s3_client.download_file(bucket, key, local_path)
-        logger.info(f"Downloaded file from s3://{bucket}/{key} to {local_path}")
+        
+        # 다운로드 확인
+        if os.path.exists(local_path):
+            file_size = os.path.getsize(local_path)
+            logger.info(f"Downloaded file successfully to {local_path}, size: {file_size} bytes")
+        
         return local_path
     except ClientError as e:
-        logger.error(f"Error downloading file from S3: {e}")
-        logger.error(f"S3 bucket: {bucket}, key: {key}")
+        error_code = getattr(e, 'response', {}).get('Error', {}).get('Code', 'Unknown')
+        error_message = getattr(e, 'response', {}).get('Error', {}).get('Message', 'Unknown')
+        logger.error(f"Error downloading file from S3: Code={error_code}, Message={error_message}")
+        logger.error(f"Full error: {e}")
         raise
 
 
