@@ -31,6 +31,7 @@ public class SQSClientImpl implements SQSClient {
 
             SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
                     .queueUrl(sqsMessageConfig.getGenerateSummary().getQueueUrl())
+                    .messageGroupId(message.getLectureId().toString())
                     .messageBody(messageBody)
                     .build();
 
@@ -56,6 +57,7 @@ public class SQSClientImpl implements SQSClient {
 
             SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
                     .queueUrl(sqsMessageConfig.getGenerateQuiz().getQueueUrl())
+                    .messageGroupId(message.getLectureId().toString())
                     .messageBody(messageBody)
                     .build();
 
@@ -81,6 +83,7 @@ public class SQSClientImpl implements SQSClient {
 
             SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
                     .queueUrl(sqsMessageConfig.getGenerateExam().getQueueUrl())
+                    .messageGroupId(message.getExamId().toString())
                     .messageBody(messageBody)
                     .build();
 
