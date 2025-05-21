@@ -60,6 +60,7 @@ def check_database_connection():
                 print("Max database connection attempts reached. Tests may fail.")
                 return False
             time.sleep(2)
+    return None
 
 
 def check_s3_connection(endpoint_url):
@@ -103,6 +104,7 @@ def check_s3_connection(endpoint_url):
                 print("Max S3 connection attempts reached. Tests may fail if they depend on S3.")
                 return None
             time.sleep(2)
+    return None
 
 
 def create_sample_pdf():
