@@ -61,6 +61,23 @@ public class LangchainClientImpl implements LangchainClient {
     }
 
     @Override
+    public EmbeddingCheckResponse checkEmbeddingStatus(UUID lectureId) {
+        String url = langchainServerUrl + "/lectures/" + lectureId + "/embeddings/check";
+        try {
+            ResponseEntity<EmbeddingCheckResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    EmbeddingCheckResponse.class
+            );
+            return response.getBody();
+        } catch (Exception e) {
+            log.warn("[Langchain] 벡터 스토어 체크 실패: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
     public ReferenceResponse findReferencesInLecture(UUID lectureId, String question, int maxNumReferences, double minSimilarity) {
         try {log.info("[LangchainClient] 호출: findReferencesInLecture(lectureId={}, question={}, maxNumReferences={}, minSimilarity={})", lectureId, question, maxNumReferences, minSimilarity);
 
