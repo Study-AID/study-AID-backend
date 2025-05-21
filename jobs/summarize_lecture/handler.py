@@ -39,17 +39,23 @@ DB_CONFIG = {
 }
 
 # Initialize clients
-s3_client = boto3.client(
-    's3',
-    endpoint_url=S3_ENDPOINT_URL,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    region_name=AWS_REGION,
-    config=Config(
+s3_params = {
+    'region_name': AWS_REGION,
+    'config': Config(
         connect_timeout=10,
         retries={'max_attempts': 3}
     )
-)
+}
+
+if S3_ENDPOINT_URL:
+    s3_params['endpoint_url'] = S3_ENDPOINT_URL
+
+if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+    s3_params['aws_access_key_id'] = AWS_ACCESS_KEY_ID
+    s3_params['aws_secret_access_key'] = AWS_SECRET_ACCESS_KEY
+
+s3_client = boto3.client('s3', **s3_params)
+
 
 
 def get_db_connection():
