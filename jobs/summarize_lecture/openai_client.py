@@ -111,7 +111,7 @@ class OpenAIClient:
             # Format the user message with the lecture content
             user_message = template["user"].format(
                 language=language,
-                lecture_content=json.dumps(formatted_content, ensure_ascii=False),
+                lecture_content=json.dumps(formatted_content, ensure_ascii=False, separators=(',', ':'))
             )
 
             # Add chunk context to the user message if this is part of multiple chunks
@@ -199,7 +199,7 @@ class OpenAIClient:
                         {
                             "role": "user",
                             "content": OVERVIEW_MERGE_USER_PROMPT_TEMPLATE.format(
-                                overviews_json=json.dumps(overview_parts, ensure_ascii=False, indent=2)
+                                overviews_json=json.dumps(overview_parts, ensure_ascii=False, separators=(',', ':'))
                             )
                         }
                     ],
