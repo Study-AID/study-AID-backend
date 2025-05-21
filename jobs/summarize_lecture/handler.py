@@ -261,10 +261,6 @@ def lambda_handler(event, context):
             s3_bucket = message.get('s3_bucket')
             s3_key = message.get('s3_key')
 
-            if not all([lecture_id, s3_bucket, s3_key]):
-                logger.error("Missing required parameters in message")
-                continue
-
             # Update status to in_progress
             update_lecture_status(lecture_id, 'in_progress')
 

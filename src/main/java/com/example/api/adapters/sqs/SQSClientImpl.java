@@ -2,6 +2,7 @@ package com.example.api.adapters.sqs;
 
 import com.example.api.config.SQSMessageConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ public class SQSClientImpl implements SQSClient {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
+            mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
             String messageBody = mapper.writeValueAsString(message);
 
@@ -52,6 +54,7 @@ public class SQSClientImpl implements SQSClient {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
+            mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
             String messageBody = mapper.writeValueAsString(message);
 
@@ -78,6 +81,7 @@ public class SQSClientImpl implements SQSClient {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
+            mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
             String messageBody = mapper.writeValueAsString(message);
 
