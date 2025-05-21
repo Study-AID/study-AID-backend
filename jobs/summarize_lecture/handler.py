@@ -112,6 +112,7 @@ def download_file_from_s3(bucket, key, local_path):
         return local_path
     except ClientError as e:
         logger.error(f"Error downloading file from S3: {e}")
+        logger.error(f"S3 bucket: {bucket}, key: {key}")
         raise
 
 
