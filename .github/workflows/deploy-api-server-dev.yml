@@ -1,4 +1,4 @@
-name: Dev - Deploy API Server to ECS
+name: Dev - Deploy API Server (or Langchain server) to ECS
 
 on:
   push:
