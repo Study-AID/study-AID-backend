@@ -44,6 +44,7 @@ aws:
 
 storage:
   bucket: ${AWS_S3_BUCKET}
+  cloudfront-endpoint: ${CLOUDFRONT_ENDPOINT}
 
 # Swagger UI Configuration
 springdoc:
@@ -55,7 +56,7 @@ springdoc:
 # Logging
 logging:
   level:
-    root: WARN
+    root:
     org.springframework: WARN
     com.example.api: INFO
   file:
