@@ -12,6 +12,7 @@ from datetime import datetime
 
 from openai_client import OpenAIClient
 from parsed_text_models import ParsedText, ParsedPage
+from pdf_chunker import PDFChunker
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,10 @@ S3_ENDPOINT_URL = os.environ.get('AWS_ENDPOINT_URL')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
 AWS_REGION = os.environ.get('AWS_REGION', 'ap-northeast-2')
+
+# PDF chunking configuration
+DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
+MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '3'))
 
 # Database configuration
 DB_CONFIG = {
@@ -241,16 +246,6 @@ def log_activity(course_id, user_id, activity_type, contents_type, details):
             conn.rollback()
 
 
-def format_parsed_text(parsed_text):
-    formatted_content = []
-    for page in parsed_text.pages:
-        formatted_content.append({
-            "page": page.page_number,
-            "content": page.text
-        })
-    return formatted_content
-
-
 def lambda_handler(event, context):
     """Main function to handle the event from SQS"""
     try:
@@ -283,13 +278,26 @@ def lambda_handler(event, context):
             # Update lecture with parsed text
             update_lecture_parsed_text(lecture_id, parsed_text)
 
-            # Format parsed text for v2 prompt
-            formatted_content = format_parsed_text(parsed_text)
-
-            # Generate summary using OpenAI
-            openai_client = OpenAIClient()
+            # Get prompt path
             prompt_path = get_prompt_path()
-            summary = openai_client.generate_summary(formatted_content, prompt_path)
+
+            # Get chunk size from message or use default
+            chunk_size = message.get('chunk_size', DEFAULT_CHUNK_SIZE)
+            logger.info(
+                f"Using chunk size: {chunk_size} for lecture_id: {lecture_id} with {parsed_text.total_pages} total pages")
+
+            # Initialize components
+            pdf_chunker = PDFChunker(default_chunk_size=chunk_size)
+            openai_client = OpenAIClient()
+
+            # Split PDF into chunks
+            chunks = pdf_chunker.split_parsed_text(parsed_text, chunk_size)
+            chunk_details = ", ".join([f"{c['start_page']}-{c['end_page']}" for c in chunks])
+            logger.info(f"Split PDF into {len(chunks)} chunks: [{chunk_details}]")
+
+            # Process chunks in parallel and get merged summary
+            # TODO(mj): pass the language user selected
+            summary = openai_client.process_chunks_in_parallel(chunks, prompt_path, "한국어")
 
             # Update lecture with summary
             update_lecture_summary(lecture_id, summary)
@@ -298,6 +306,8 @@ def lambda_handler(event, context):
             activity_details = {
                 "action": "generate_summary",
                 "lecture_id": lecture_id,
+                "chunk_count": len(chunks),
+                "chunk_sizes": [chunk["end_page"] - chunk["start_page"] + 1 for chunk in chunks]
             }
             log_activity(course_id, user_id, 'update', 'lecture', activity_details)
 

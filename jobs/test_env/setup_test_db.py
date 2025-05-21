@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
+import json
 import os
+import psycopg2
 import sys
 import time
-import json
 from pathlib import Path
-
-import psycopg2
 
 
 def get_db_connection():
@@ -133,47 +132,49 @@ def insert_test_data(conn):
         with conn.cursor() as cursor:
             # Insert test school
             cursor.execute("""
-            INSERT INTO app.schools (id, name)
-            VALUES (%s, %s)
-            ON CONFLICT (id) DO NOTHING
-            """, (test_school_id, 'Test University'))
+                           INSERT INTO app.schools (id, name)
+                           VALUES (%s, %s)
+                           ON CONFLICT (id) DO NOTHING
+                           """, (test_school_id, 'Test University'))
 
             # Insert test user
             cursor.execute("""
-            INSERT INTO app.users (id, name, email, auth_type, school_id)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING
-            """, (test_user_id, 'Test User', 'test@example.com', 'email', test_school_id))
+                           INSERT INTO app.users (id, name, email, auth_type, school_id)
+                           VALUES (%s, %s, %s, %s, %s)
+                           ON CONFLICT (id) DO NOTHING
+                           """, (test_user_id, 'Test User', 'test@example.com', 'email', test_school_id))
 
             # Insert test semester
             cursor.execute("""
-            INSERT INTO app.semesters (id, user_id, name, year, season)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING
-            """, (test_semester_id, test_user_id, 'Test Semester', 2025, 'spring'))
+                           INSERT INTO app.semesters (id, user_id, name, year, season)
+                           VALUES (%s, %s, %s, %s, %s)
+                           ON CONFLICT (id) DO NOTHING
+                           """, (test_semester_id, test_user_id, 'Test Semester', 2025, 'spring'))
 
             # Insert test course
             cursor.execute("""
-            INSERT INTO app.courses (id, semester_id, user_id, name)
-            VALUES (%s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING
-            """, (test_course_id, test_semester_id, test_user_id, 'Test Course'))
+                           INSERT INTO app.courses (id, semester_id, user_id, name)
+                           VALUES (%s, %s, %s, %s)
+                           ON CONFLICT (id) DO NOTHING
+                           """, (test_course_id, test_semester_id, test_user_id, 'Test Course'))
 
             # Insert test lecture with parsed_text field
             cursor.execute("""
-            INSERT INTO app.lectures (id, course_id, user_id, title, material_path, material_type, display_order_lex, summary_status, parsed_text)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                parsed_text = EXCLUDED.parsed_text
-            """, (test_lecture_id, test_course_id, test_user_id, 'Test Lecture', 'sample_lecture.pdf', 'pdf', 'a',
-                  'not_started', sample_parsed_text))
-                  
+                           INSERT INTO app.lectures (id, course_id, user_id, title, material_path, material_type,
+                                                     display_order_lex, summary_status, parsed_text)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                           ON CONFLICT (id) DO UPDATE SET parsed_text = EXCLUDED.parsed_text
+                           """,
+                           (test_lecture_id, test_course_id, test_user_id, 'Test Lecture', 'sample_lecture.pdf', 'pdf',
+                            'a',
+                            'not_started', sample_parsed_text))
+
             # Insert test quiz
             cursor.execute("""
-            INSERT INTO app.quizzes (id, lecture_id, user_id, title, status, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
-            ON CONFLICT (id) DO NOTHING
-            """, (test_quiz_id, test_lecture_id, test_user_id, 'Test Quiz', 'not_started'))
+                           INSERT INTO app.quizzes (id, lecture_id, user_id, title, status, created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                           ON CONFLICT (id) DO NOTHING
+                           """, (test_quiz_id, test_lecture_id, test_user_id, 'Test Quiz', 'not_started'))
 
         conn.commit()
         print("Inserted test data into database")

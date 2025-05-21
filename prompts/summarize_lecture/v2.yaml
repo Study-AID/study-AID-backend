@@ -141,5 +141,5 @@ user: |
   The following lecture content is provided as a JSON array, with one slide per element. Please 
   organize the content into a dense and complete study guide according to the rules above.
 
-  language: 한국어  
+  language: {language}
   lecture_content: {lecture_content}
