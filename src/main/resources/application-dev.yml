@@ -73,4 +73,6 @@ spring.cache:
 
 # JWT Configuration
 jwt:
+  # TODO(mj): remove it after demo.
+  access-token-ttl-ms: 86400000 # 24시간
   secret_key: ${JWT_SECRET_KEY}
