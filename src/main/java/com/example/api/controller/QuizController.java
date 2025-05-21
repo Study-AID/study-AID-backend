@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -169,6 +170,7 @@ public class QuizController extends BaseController {
         }        
     }
     
+    @Async
     private void sendGenerateQuizMessage(UUID userId, UUID courseId, QuizOutput quizOutput, int trueOrFalseCount, int multipleChoiceCount, int shortAnswerCount, int essayCount) {
         GenerateQuizMessage message = GenerateQuizMessage.builder()
                 .schemaVersion("1.0.0")
@@ -494,7 +496,7 @@ public class QuizController extends BaseController {
             // quizService의 gradeQuiz를 호출
             quizService.gradeQuiz(id);
             
-            return ResponseEntity.status(HttpStatus.CREATED).body(new SubmitQuizListResponse(submitQuizListResponse));
+            return ResponseEntity.ok(new SubmitQuizListResponse(submitQuizListResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {

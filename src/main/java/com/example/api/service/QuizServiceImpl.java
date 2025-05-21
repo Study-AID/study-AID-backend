@@ -167,13 +167,10 @@ public class QuizServiceImpl implements QuizService {
                 }
             } else if (quizItem.getQuestionType() == QuestionType.multiple_choice) {
                 // 객관식 문제
-                if (quizResponse.getSelectedIndices() != null && quizResponse.getSelectedIndices().length > 0) {
-                    for (int index : quizResponse.getSelectedIndices()) {
-                        if (index < quizItem.getAnswerIndices().length && quizItem.getAnswerIndices()[index].equals(quizItem.getAnswerIndices()[index])) {
-                            // totalScore += quizItem.getPoints();
-                            quizResponse.setIsCorrect(true);
-                        }
-                    }
+                if (quizResponse.getSelectedIndices() != null && quizResponse.getSelectedIndices().equals(quizItem.getAnswerIndices())) {
+                    // totalScore += quizItem.getPoints();
+                    quizResponse.setIsCorrect(true);
+                    
                 }
             } else if (quizItem.getQuestionType() == QuestionType.short_answer) {
                 // 주관식 문제

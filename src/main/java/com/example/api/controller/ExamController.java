@@ -24,12 +24,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 
 
@@ -164,6 +164,7 @@ public class ExamController extends BaseController {
         }
     }
 
+    @Async
     private void sendGenerateExamMessage(UUID userId, ExamOutput examOutput, int trueOrFalseCount, int multipleChoiceCount, int shortAnswerCount, int essayCount) {
         GenerateExamMessage message = GenerateExamMessage.builder()
                 .schemaVersion("1.0.0")
@@ -469,7 +470,7 @@ public class ExamController extends BaseController {
             // examService의 gradeExam 메서드를 호출하여 채점
             examService.gradeExam(id);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(new SubmitExamListResponse(submitExamListResponse));
+            return ResponseEntity.ok(new SubmitExamListResponse(submitExamListResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {

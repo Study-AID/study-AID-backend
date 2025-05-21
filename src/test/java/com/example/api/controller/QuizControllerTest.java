@@ -3,7 +3,6 @@ package com.example.api.controller;
 import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.quiz.CreateQuizRequest;
-import com.example.api.controller.dto.quiz.CreateQuizResponseRequest;
 import com.example.api.controller.dto.quiz.SubmitQuizItem;
 import com.example.api.controller.dto.quiz.SubmitQuizRequest;
 import com.example.api.controller.dto.quiz.UpdateQuizRequest;
@@ -316,7 +315,7 @@ public class QuizControllerTest {
         mockMvc.perform(post("/v1/quizzes/{id}/submit", quizId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(submitQuizRequest)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.submitQuizResponses[0].id", is(testQuizResponseListOutput.getQuizResponseOutputs().get(0).getId().toString())))
                 .andExpect(jsonPath("$.submitQuizResponses[0].quizId", is(quizId.toString())))
                 .andExpect(jsonPath("$.submitQuizResponses[0].userId", is(userId.toString())))
