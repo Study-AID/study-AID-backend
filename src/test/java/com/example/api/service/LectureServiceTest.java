@@ -1,9 +1,6 @@
 package com.example.api.service;
 
-import com.example.api.entity.Course;
-import com.example.api.entity.Lecture;
-import com.example.api.entity.Semester;
-import com.example.api.entity.User;
+import com.example.api.entity.*;
 import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.CourseRepository;
 import com.example.api.repository.LectureRepository;
@@ -12,7 +9,6 @@ import com.example.api.service.dto.lecture.CreateLectureInput;
 import com.example.api.service.dto.lecture.LectureListOutput;
 import com.example.api.service.dto.lecture.LectureOutput;
 import com.example.api.service.dto.lecture.UpdateLectureInput;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,6 +53,7 @@ public class LectureServiceTest {
     private Semester testSemester;
     private Lecture testLecture;
     private LectureOutput testLectureOutput;
+    private ParsedText testParsedText;
 
     @BeforeEach
     void setUp() {
@@ -98,6 +95,15 @@ public class LectureServiceTest {
         testLecture.setCreatedAt(LocalDateTime.now());
         testLecture.setUpdatedAt(LocalDateTime.now());
 
+        // Create test parsed text
+        testParsedText = new ParsedText();
+        testParsedText.setTotalPages(2);
+        testParsedText.setPages(Arrays.asList(
+                new ParsedPage(1, "Page 1 content"),
+                new ParsedPage(2, "Page 2 content")
+        ));
+        testLecture.setParsedText(testParsedText);
+
         testLectureOutput = LectureOutput.fromEntity(testLecture);
     }
 
@@ -114,6 +120,16 @@ public class LectureServiceTest {
         assertTrue(output.isPresent());
         assertEquals(testLectureOutput.getId(), output.get().getId());
         assertEquals(testLectureOutput.getTitle(), output.get().getTitle());
+
+        // Verify parsedText
+        assertNotNull(output.get().getParsedText());
+        assertEquals(2, output.get().getParsedText().getTotalPages());
+        assertEquals(2, output.get().getParsedText().getPages().size());
+        assertEquals(1, output.get().getParsedText().getPages().get(0).getPageNumber());
+        assertEquals("Page 1 content", output.get().getParsedText().getPages().get(0).getText());
+        assertEquals(2, output.get().getParsedText().getPages().get(1).getPageNumber());
+        assertEquals("Page 2 content", output.get().getParsedText().getPages().get(1).getText());
+
         verify(lectureRepository).findById(lectureId);
     }
 
@@ -130,6 +146,15 @@ public class LectureServiceTest {
         assertNotNull(output);
         assertEquals(1, output.getLectures().size());
         assertEquals(testLectureOutput.getId(), output.getLectures().get(0).getId());
+
+        // Verify parsedText in the list
+        LectureOutput lecture = output.getLectures().get(0);
+        assertNotNull(lecture.getParsedText());
+        assertEquals(2, lecture.getParsedText().getTotalPages());
+        assertEquals(2, lecture.getParsedText().getPages().size());
+        assertEquals("Page 1 content", lecture.getParsedText().getPages().get(0).getText());
+        assertEquals("Page 2 content", lecture.getParsedText().getPages().get(1).getText());
+
         verify(lectureRepository).findByCourseId(courseId);
     }
 

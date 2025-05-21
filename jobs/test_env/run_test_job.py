@@ -20,6 +20,7 @@ S3_KEY = 'sample_lecture.pdf'
 USER_ID = '3da59f94-0b80-48cc-a891-7d1ab58dd308'
 COURSE_ID = 'd993e3bc-f563-457e-a8b4-8f8d83a889cd'
 LECTURE_ID = '743b2baa-16a5-4982-aa21-010ba83ca283'
+QUIZ_ID = 'a82f7c3e-5a9d-4e2a-b48f-32fc4539d6d0'
 
 
 def parse_arguments():
@@ -227,6 +228,7 @@ def get_event_data(job_name, event_file=None):
                     'user_id': USER_ID,
                     'course_id': COURSE_ID,
                     'lecture_id': LECTURE_ID,
+                    'quiz_id': QUIZ_ID,
                     'true_or_false_count': 3,
                     'multiple_choice_count': 3,
                     'short_answer_count': 3,

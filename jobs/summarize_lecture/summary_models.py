@@ -1,3 +1,4 @@
+from typing import List, Optional, Any
 from pydantic import BaseModel
 
 
@@ -22,12 +23,13 @@ class TopicDetails(BaseModel):
     title: str
     description: str
     page_range: PageRange
-    sub_topics: list['TopicDetails'] = []
+    additional_details: List[str] = []
+    sub_topics: List['TopicDetails'] = []
 
 
 class Summary(BaseModel):
     metadata: Metadata
     overview: str
-    keywords: list[Keyword]
-    topics: list[TopicDetails]
-    additional_references: list[str] = []
+    keywords: List[Keyword]
+    topics: List[TopicDetails]
+    additional_references: List[str] = []

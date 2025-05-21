@@ -1,12 +1,11 @@
 import json
 import logging
 import os
-from datetime import datetime
-
 import yaml
+from datetime import datetime
 from openai import OpenAI
 
-from summary_models import Summary, Metadata
+from summary_models import Summary
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +28,15 @@ class OpenAIClient:
             logger.error(f"Error loading prompt template: {e}")
             raise
 
-    def generate_summary(self, lecture_content, prompt_path):
+    def generate_summary(self, formatted_content, prompt_path):
         try:
             template = self.load_prompt_template(prompt_path)
             model_name = template.get("model", self.model)
 
             # Format the user message with the lecture content
-            user_message = template["user"].format(lecture_content=lecture_content)
+            user_message = template["user"].format(
+                lecture_content=json.dumps(formatted_content, ensure_ascii=False),
+            )
 
             # Create the completion with JSON response format
             response = self.client.chat.completions.create(
