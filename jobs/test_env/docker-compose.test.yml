@@ -25,7 +25,7 @@ services:
       LOCALSTACK_VOLUME_DIR: /opt/localstack/data
       PERSISTENCE: 1
     ports:
-      - "4566:4566"
+      - "4567:4566"
     volumes:
       - localstack-test-data:/opt/localstack/data
     healthcheck:
@@ -127,6 +127,7 @@ services:
       S3_BUCKET: study-aid-materials
       OPENAI_API_KEY: ${OPENAI_API_KEY:-test_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      DEFAULT_CHUNK_SIZE: 3
     volumes:
       - ../../:/app
     command: [ "python", "/app/jobs/test_env/run_test_job.py", "--job", "summarize_lecture" ]

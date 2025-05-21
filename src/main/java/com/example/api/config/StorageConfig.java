@@ -11,4 +11,19 @@ import org.springframework.stereotype.Component;
 @Setter
 public class StorageConfig {
     private String bucket;
+    private String cloudfrontEndpoint;
+
+    /**
+     * Returns the full Cloudfront URL for a material path
+     *
+     * @param materialPath the relative path of the material
+     * @return the full Cloudfront URL
+     */
+    public String getFullMaterialUrl(String materialPath) {
+        if (materialPath == null || materialPath.isEmpty()) {
+            return null;
+        }
+
+        return String.format("%s/%s", cloudfrontEndpoint, materialPath);
+    }
 }

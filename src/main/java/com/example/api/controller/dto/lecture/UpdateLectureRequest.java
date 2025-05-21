@@ -12,12 +12,4 @@ public class UpdateLectureRequest {
     @NotBlank  
     @Schema(description = "Updated lecture title")
     private String title;
-
-    @NotBlank
-    @Schema(description = "Updated lecture material path")
-    private String materialPath;
-
-    @NotBlank
-    @Schema(description = "Updated lecture material type")  
-    private String materialType;
 }

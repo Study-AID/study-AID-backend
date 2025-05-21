@@ -1,6 +1,7 @@
 package com.example.api.controller;
 
 import com.example.api.adapters.sqs.SQSClient;
+import com.example.api.config.StorageConfig;
 import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.lecture.UpdateLectureRequest;
 import com.example.api.entity.ParsedPage;
@@ -39,8 +40,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -80,6 +80,9 @@ class LectureControllerTest {
 
     @MockBean
     private SQSClient sqsClient;
+
+    @MockBean
+    private StorageConfig storageConfig;
 
     private UUID userId;
     private UUID semesterId;
@@ -131,6 +134,19 @@ class LectureControllerTest {
                 new ParsedPage(2, "Page 2 content")
         ));
         testLectureOutput.setParsedText(testParsedText);
+        testLectureOutput.setMaterialPath("test-key.pdf");
+        testLectureOutput.setMaterialType("pdf");
+
+        // Configure StorageConfig mock
+        when(storageConfig.getFullMaterialUrl(anyString()))
+                .thenAnswer(invocation -> {
+                    String materialPath = invocation.getArgument(0);
+                    return "https://example-cloudfront.net/" + materialPath;
+                });
+        when(storageConfig.getFullMaterialUrl("test-key.pdf"))
+                .thenReturn("https://example-cloudfront.net/test-key.pdf");
+        when(storageConfig.getFullMaterialUrl("updated_material_path"))
+                .thenReturn("https://example-cloudfront.net/updated_material_path");
     }
 
     // Add test methods here
@@ -151,7 +167,8 @@ class LectureControllerTest {
                 .andExpect(jsonPath("$.lectures[0].id").value(testLectureOutput.getId().toString()))
                 .andExpect(jsonPath("$.lectures[0].title").value("Introduction to Operating Systems"))
                 .andExpect(jsonPath("$.lectures[0].userId").value(userId.toString()))
-                .andExpect(jsonPath("$.lectures[0].courseId").value(courseId.toString()));
+                .andExpect(jsonPath("$.lectures[0].courseId").value(courseId.toString()))
+                .andExpect(jsonPath("$.lectures[0].materialUrl").value("https://example-cloudfront.net/test-key.pdf"));
 
         verify(courseService).findCourseById(courseId);
         verify(lectureService).findLecturesByCourseId(courseId);
@@ -224,7 +241,8 @@ class LectureControllerTest {
                 .andExpect(jsonPath("$.parsedText.pages[0].page_number").value(1))
                 .andExpect(jsonPath("$.parsedText.pages[0].text").value("Page 1 content"))
                 .andExpect(jsonPath("$.parsedText.pages[1].page_number").value(2))
-                .andExpect(jsonPath("$.parsedText.pages[1].text").value("Page 2 content"));
+                .andExpect(jsonPath("$.parsedText.pages[1].text").value("Page 2 content"))
+                .andExpect(jsonPath("$.materialUrl").value("https://example-cloudfront.net/test-key.pdf"));
 
         verify(lectureService).findLectureById(lectureId);
     }
@@ -294,7 +312,8 @@ class LectureControllerTest {
                 .andExpect(jsonPath("$.id").value(testLectureOutput.getId().toString()))
                 .andExpect(jsonPath("$.title").value("Introduction to Operating Systems"))
                 .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.courseId").value(courseId.toString()));
+                .andExpect(jsonPath("$.courseId").value(courseId.toString()))
+                .andExpect(jsonPath("$.materialUrl").value("https://example-cloudfront.net/test-key.pdf"));
 
         verify(courseService).findCourseById(courseId);
         verify(storageService).upload(any());
@@ -343,8 +362,6 @@ class LectureControllerTest {
         // Given
         UpdateLectureRequest updateLectureRequest = new UpdateLectureRequest();
         updateLectureRequest.setTitle("Updated Lecture Title");
-        updateLectureRequest.setMaterialPath("updated_material_path");
-        updateLectureRequest.setMaterialType("updated_material_type");
 
         LectureOutput updatedLectureOutput = new LectureOutput();
         updatedLectureOutput.setId(lectureId);
@@ -353,6 +370,7 @@ class LectureControllerTest {
         updatedLectureOutput.setTitle("Updated Lecture Title");
         updatedLectureOutput.setMaterialPath("updated_material_path");
         updatedLectureOutput.setMaterialType("updated_material_type");
+        updatedLectureOutput.setParsedText(testParsedText);
 
         when(lectureService.findLectureById(lectureId))
                 .thenReturn(Optional.of(testLectureOutput));
@@ -367,13 +385,12 @@ class LectureControllerTest {
                 .andExpect(jsonPath("$.id").value(testLectureOutput.getId().toString()))
                 .andExpect(jsonPath("$.title").value("Updated Lecture Title"))
                 .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.courseId").value(courseId.toString()));
+                .andExpect(jsonPath("$.courseId").value(courseId.toString()))
+                .andExpect(jsonPath("$.materialUrl").value("https://example-cloudfront.net/updated_material_path"));
 
         verify(lectureService).findLectureById(lectureId);
         verify(lectureService).updateLecture(argThat(input ->
-                input.getTitle().equals("Updated Lecture Title") &&
-                        input.getMaterialPath().equals("updated_material_path") &&
-                        input.getMaterialType().equals("updated_material_type")
+                input.getTitle().equals("Updated Lecture Title")
         ));
     }
 

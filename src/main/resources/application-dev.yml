@@ -44,12 +44,14 @@ aws:
 
 storage:
   bucket: ${AWS_S3_BUCKET}
+  cloudfront-endpoint: ${CLOUDFRONT_ENDPOINT}
 
 # Swagger UI Configuration
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
-    enabled: false  # Disable Swagger UI in production
+    operationsSorter: method
+    enabled: true
 
 # Logging
 logging:
@@ -72,4 +74,6 @@ spring.cache:
 
 # JWT Configuration
 jwt:
+  # TODO(mj): remove it after demo.
+  access-token-ttl-ms: 86400000 # 24시간
   secret_key: ${JWT_SECRET_KEY}

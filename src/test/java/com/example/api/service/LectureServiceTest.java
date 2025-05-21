@@ -193,8 +193,6 @@ public class LectureServiceTest {
         UpdateLectureInput input = new UpdateLectureInput();
         input.setId(lectureId);
         input.setTitle("Updated Title");
-        input.setMaterialPath("updated/path");
-        input.setMaterialType("pdf");
 
         when(lectureRepository.updateLecture(any(Lecture.class))).thenReturn(testLecture);
 

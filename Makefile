@@ -126,7 +126,7 @@ test-env-start:
 	cd jobs/test_env && docker-compose -f docker-compose.test.yml up -d postgres-test localstack-test setup-s3
 	@echo "Test environment started successfully!"
 	@echo "Database: PostgreSQL on localhost:5433"
-	@echo "S3: LocalStack on localhost:4566"
+	@echo "S3: LocalStack on localhost:4567"
 
 # 테스트 환경 초기화 및 데이터 세팅
 test-env-setup:

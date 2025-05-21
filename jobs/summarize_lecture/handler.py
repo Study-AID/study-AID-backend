@@ -1,19 +1,18 @@
+import boto3
 import json
 import logging
 import os
-import traceback
-import uuid
-from datetime import datetime
-
-import boto3
 import psycopg2
 import psycopg2.extras
+import traceback
+import uuid
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from datetime import datetime
 
 from openai_client import OpenAIClient
-from summary_models import Summary
 from parsed_text_models import ParsedText, ParsedPage
+from pdf_chunker import PDFChunker
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +24,10 @@ S3_ENDPOINT_URL = os.environ.get('AWS_ENDPOINT_URL')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
 AWS_REGION = os.environ.get('AWS_REGION', 'ap-northeast-2')
+
+# PDF chunking configuration
+DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
+MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '3'))
 
 # Database configuration
 DB_CONFIG = {
@@ -137,11 +140,11 @@ def update_lecture_status(lecture_id, status):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             query = """
-            UPDATE app.lectures
-            SET summary_status = %s,
-                updated_at = NOW()
-            WHERE id = %s
-            """
+                    UPDATE app.lectures
+                    SET summary_status = %s,
+                        updated_at     = NOW()
+                    WHERE id = %s
+                    """
             cursor.execute(query, (status, lecture_id))
 
         conn.commit()
@@ -165,12 +168,12 @@ def update_lecture_summary(lecture_id, summary):
 
             # Update the lecture record
             query = """
-            UPDATE app.lectures 
-            SET summary = %s, 
-                summary_status = 'completed', 
-                updated_at = NOW() 
-            WHERE id = %s
-            """
+                    UPDATE app.lectures
+                    SET summary        = %s,
+                        summary_status = 'completed',
+                        updated_at     = NOW()
+                    WHERE id = %s
+                    """
             cursor.execute(query, (summary_json, lecture_id))
 
         conn.commit()
@@ -194,11 +197,11 @@ def update_lecture_parsed_text(lecture_id, parsed_text):
 
             # Update the lecture record
             query = """
-            UPDATE app.lectures
-            SET parsed_text = %s,
-                updated_at = NOW()
-            WHERE id = %s
-            """
+                    UPDATE app.lectures
+                    SET parsed_text = %s,
+                        updated_at  = NOW()
+                    WHERE id = %s
+                    """
             cursor.execute(query, (parsed_text_json, lecture_id))
 
         conn.commit()
@@ -221,10 +224,10 @@ def log_activity(course_id, user_id, activity_type, contents_type, details):
             activity_details = json.dumps(details)
 
             query = """
-            INSERT INTO app.course_activity_logs 
-            (id, course_id, user_id, activity_type, contents_type, activity_details)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """
+                    INSERT INTO app.course_activity_logs
+                    (id, course_id, user_id, activity_type, contents_type, activity_details)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """
             cursor.execute(query, (
                 activity_id,
                 course_id,
@@ -258,10 +261,6 @@ def lambda_handler(event, context):
             s3_bucket = message.get('s3_bucket')
             s3_key = message.get('s3_key')
 
-            if not all([lecture_id, s3_bucket, s3_key]):
-                logger.error("Missing required parameters in message")
-                continue
-
             # Update status to in_progress
             update_lecture_status(lecture_id, 'in_progress')
 
@@ -275,13 +274,26 @@ def lambda_handler(event, context):
             # Update lecture with parsed text
             update_lecture_parsed_text(lecture_id, parsed_text)
 
-            # Concatenate all page text for summary generation
-            lecture_content = '\n'.join([page.text for page in parsed_text.pages])
-
-            # Generate summary using OpenAI
-            openai_client = OpenAIClient()
+            # Get prompt path
             prompt_path = get_prompt_path()
-            summary = openai_client.generate_summary(lecture_content, prompt_path)
+
+            # Get chunk size from message or use default
+            chunk_size = message.get('chunk_size', DEFAULT_CHUNK_SIZE)
+            logger.info(
+                f"Using chunk size: {chunk_size} for lecture_id: {lecture_id} with {parsed_text.total_pages} total pages")
+
+            # Initialize components
+            pdf_chunker = PDFChunker(default_chunk_size=chunk_size)
+            openai_client = OpenAIClient()
+
+            # Split PDF into chunks
+            chunks = pdf_chunker.split_parsed_text(parsed_text, chunk_size)
+            chunk_details = ", ".join([f"{c['start_page']}-{c['end_page']}" for c in chunks])
+            logger.info(f"Split PDF into {len(chunks)} chunks: [{chunk_details}]")
+
+            # Process chunks in parallel and get merged summary
+            # TODO(mj): pass the language user selected
+            summary = openai_client.process_chunks_in_parallel(chunks, prompt_path, "한국어")
 
             # Update lecture with summary
             update_lecture_summary(lecture_id, summary)
@@ -290,6 +302,8 @@ def lambda_handler(event, context):
             activity_details = {
                 "action": "generate_summary",
                 "lecture_id": lecture_id,
+                "chunk_count": len(chunks),
+                "chunk_sizes": [chunk["end_page"] - chunk["start_page"] + 1 for chunk in chunks]
             }
             log_activity(course_id, user_id, 'update', 'lecture', activity_details)
 
@@ -297,7 +311,6 @@ def lambda_handler(event, context):
             os.remove(local_file_path)
 
             logger.info(f"Successfully processed the lecture of {lecture_id}")
-
         return {
             'statusCode': 200,
             'body': json.dumps('Lecture summarization completed successfully')
@@ -313,7 +326,6 @@ def lambda_handler(event, context):
                 update_lecture_status(lecture_id, 'failed')
             except Exception as db_error:
                 logger.error(f"Error updating lecture status: {db_error}")
-
         return {
             'statusCode': 500,
             'body': json.dumps(f'Error processing lecture: {str(e)}')
