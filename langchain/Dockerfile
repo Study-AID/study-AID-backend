@@ -42,4 +42,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["gunicorn", "--workers=1", "--threads=1", "--worker-class=gthread", "--bind=0.0.0.0:5000",  "langchain_server:app"]
+CMD ["gunicorn", "--workers=1", "--threads=1", "--worker-class=gthread", "--bind=0.0.0.0:5000",  "langchain_server:app", "--timeout=240"]
