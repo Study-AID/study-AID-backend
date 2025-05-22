@@ -38,7 +38,7 @@ class WithMockUserSecurityContextFactory implements WithSecurityContextFactory<W
         user.setUpdatedAt(LocalDateTime.now());
 
         UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(user, null, null);
+                new UsernamePasswordAuthenticationToken(user.getId().toString(), null, null);
 
         context.setAuthentication(authentication);
         return context;
