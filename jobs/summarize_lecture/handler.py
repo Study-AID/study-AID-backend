@@ -63,14 +63,12 @@ def get_prompt_path():
     # Get prompt version from environment variable
     prompt_version = os.environ.get('PROMPT_VERSION', 'latest')
 
-    # Determine the prompt file to use
     prompt_dir = os.path.join(
         os.path.dirname(__file__), '..', '..', 'prompts', 'summarize_lecture',
     )
 
     # If 'latest' is specified or no version is provided, find the latest version
     if prompt_version == 'latest':
-        # List all files in the prompt directory
         prompt_files = [f for f in os.listdir(prompt_dir) if f.startswith('v') and f.endswith('.yaml')]
 
         if not prompt_files:

@@ -21,14 +21,14 @@ COPY prompts/ /var/task/prompts/
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /var/task/jobs/summarize_lecture/requirements.txt
 
-# Copy supporting modules to root to avoid import issues
-RUN cp /var/task/jobs/summarize_lecture/*.py /var/task/
-
 # Install Lambda runtime interface client
 RUN pip install --no-cache-dir awslambdaric
 
 # Set environment variables
 ENV PYTHONPATH=/var/task
+
+# 핸들러 실행 디렉토리를 jobs/summarize_lecture로 변경
+WORKDIR /var/task/jobs/summarize_lecture
 
 # Set the entrypoint
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
