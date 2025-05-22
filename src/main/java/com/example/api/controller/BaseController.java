@@ -18,29 +18,10 @@ public abstract class BaseController {
 
         if (authentication == null || !authentication.isAuthenticated() ||
                 authentication.getPrincipal() == null ||
-                !(authentication.getPrincipal() instanceof User)) {
+                !(authentication.getPrincipal() instanceof UUID)) {
             throw new IllegalStateException("No authenticated user found");
         }
 
-        User user = (User) authentication.getPrincipal();
-        return user.getId();
-    }
-
-    /**
-     * Get the authenticated user from the security context
-     *
-     * @return The authenticated user
-     * @throws IllegalStateException if no authenticated user is found
-     */
-    protected User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated() ||
-                authentication.getPrincipal() == null ||
-                !(authentication.getPrincipal() instanceof User)) {
-            throw new IllegalStateException("No authenticated user found");
-        }
-
-        return (User) authentication.getPrincipal();
+        return (UUID) authentication.getPrincipal();
     }
 }
