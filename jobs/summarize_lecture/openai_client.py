@@ -2,6 +2,7 @@ import concurrent.futures
 import json
 import logging
 import os
+import random
 import time
 import yaml
 from datetime import datetime
@@ -31,11 +32,16 @@ class OpenAIClient:
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY environment variable not set")
 
-        self.client = OpenAI(api_key=self.api_key)
+        # OpenAI 클라이언트 생성 시 타임아웃 설정 추가
+        self.client = OpenAI(
+            api_key=self.api_key,
+            timeout=60.0,
+            max_retries=0,   # 재시도를 tenacity에서 처리하므로 0으로 설정
+        )
         self.model = os.environ.get("OPENAI_MODEL", "gpt-4o")
 
         # Maximum number of concurrent API calls
-        self.max_concurrent = int(os.environ.get("MAX_CONCURRENT_CHUNKS", "3"))
+        self.max_concurrent = int(os.environ.get("MAX_CONCURRENT_CHUNKS", "1"))  # 기본값을 1로 낮춤
 
         # Prompt cache to avoid redundant loading
         self._prompt_cache = {}
@@ -76,20 +82,35 @@ class OpenAIClient:
             logger.error(f"Error generating summary: {e}")
             raise
 
-    @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6),
-           retry=retry_if_exception_type((TimeoutError, ConnectionError, Exception)))
+    def _add_jitter_delay(self, chunk_id=0, total_chunks=1):
+        """Add random jitter delay before API request to prevent thundering herd"""
+        if total_chunks > 1:  # 병렬 처리일 때만 적용
+            # 청크 ID에 따라 기본 딜레이 + 랜덤 jitter
+            base_delay = chunk_id * 0.5  # 각 청크마다 0.5초씩 차이
+            jitter = random.uniform(0, 2.0)  # 0-2초 랜덤 딜레이
+            total_delay = base_delay + jitter
+
+            logger.info(f"Adding jitter delay of {total_delay:.2f}s for chunk {chunk_id + 1}/{total_chunks}")
+            time.sleep(total_delay)
+
+    @retry(wait=wait_random_exponential(min=5, max=60), stop=stop_after_attempt(2),
+           retry=retry_if_exception_type((TimeoutError, ConnectionError)))
     def _complete_with_backoff(self, **kwargs):
         """Make an OpenAI API request with exponential backoff retry logic."""
         try:
-            start_time = time.time()
+            logger.info(f"Making OpenAI API request for model: {kwargs.get('model', self.model)}")
             response = self.client.chat.completions.create(**kwargs)
-            duration = time.time() - start_time
-            logger.info(f"OpenAI API request completed in {duration:.2f}s")
+            logger.info("OpenAI API request successful")
             return response
         except Exception as e:
-            # Log detailed error information
-            logger.warning(f"OpenAI API request failed: {type(e).__name__}: {str(e)}. Retrying...")
-            raise
+            logger.warning(f"OpenAI API request failed: {type(e).__name__}: {str(e)}")
+            # 재시도 가능한 예외인지 확인
+            if isinstance(e, (TimeoutError, ConnectionError)):
+                logger.warning("Will retry due to timeout/connection error")
+                raise
+            else:
+                logger.error("Non-retryable error, failing immediately")
+                raise
 
     # TODO(mj): pass the langauge user selected.
     def generate_chunk_summary(self, chunk, prompt_path, language="한국어"):
@@ -107,6 +128,9 @@ class OpenAIClient:
 
             # Log chunk processing start
             logger.info(f"Processing chunk {chunk_id + 1}/{total_chunks} (pages {start_page}-{end_page})")
+
+            # Add jitter delay for parallel processing
+            self._add_jitter_delay(chunk_id, total_chunks)
 
             # Format the user message with the lecture content
             user_message = template["user"].format(

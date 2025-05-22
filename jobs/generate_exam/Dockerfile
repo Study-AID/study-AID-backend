@@ -21,14 +21,14 @@ COPY prompts/ /var/task/prompts/
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /var/task/jobs/generate_exam/requirements.txt
 
-# Copy supporting modules to root to avoid import issues
-RUN cp /var/task/jobs/generate_exam/*.py /var/task/
-
 # Install Lambda runtime interface client
 RUN pip install --no-cache-dir awslambdaric
 
 # Set environment variables
 ENV PYTHONPATH=/var/task
+
+# 핸들러 실행 디렉토리를 jobs/generate_exam으로 변경
+WORKDIR /var/task/jobs/generate_exam
 
 # Set the entrypoint
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]

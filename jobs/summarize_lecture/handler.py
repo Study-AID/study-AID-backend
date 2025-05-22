@@ -26,7 +26,7 @@ AWS_REGION = os.environ.get('AWS_REGION', 'ap-northeast-2')
 
 # PDF chunking configuration
 DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
-MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '3'))
+MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '2'))
 
 # Database configuration
 DB_CONFIG = {
@@ -93,16 +93,6 @@ def download_file_from_s3(bucket, key, local_path):
     try:
         logger.info(f"Downloading file from s3://{bucket}/{key} to {local_path}")
         
-        # 디버깅용 로그 추가
-        logger.info(f"S3 client config: region={AWS_REGION}")
-        
-        # 객체 존재 여부 먼저 확인 
-        try:
-            s3_client.head_object(Bucket=bucket, Key=key)
-            logger.info(f"Object exists: {bucket}/{key}")
-        except Exception as head_error:
-            logger.error(f"Error checking object existence: {head_error}")
-        
         # 다운로드 진행
         s3_client.download_file(bucket, key, local_path)
         
@@ -116,7 +106,6 @@ def download_file_from_s3(bucket, key, local_path):
         error_code = getattr(e, 'response', {}).get('Error', {}).get('Code', 'Unknown')
         error_message = getattr(e, 'response', {}).get('Error', {}).get('Message', 'Unknown')
         logger.error(f"Error downloading file from S3: Code={error_code}, Message={error_message}")
-        logger.error(f"Full error: {e}")
         raise
 
 

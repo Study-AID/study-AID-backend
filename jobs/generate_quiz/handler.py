@@ -6,7 +6,6 @@ import psycopg2
 import psycopg2.extras
 import traceback
 import uuid
-from botocore.config import Config
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
@@ -19,17 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize clients
 s3_endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
-s3_client = boto3.client(
-    's3',
-    endpoint_url=s3_endpoint_url,
-    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID', None),
-    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY', None),
-    region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'),
-    config=Config(
-        connect_timeout=10,
-        retries={'max_attempts': 3}
-    )
-)
+s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 # Database configuration
 DB_CONFIG = {

@@ -1,6 +1,6 @@
 model: gpt-4o
 temperature: 0.3
-max_tokens: 16384
+max_tokens: 10240
 system: |
   You are a high-level educational material organizer.
 

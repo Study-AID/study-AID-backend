@@ -4,6 +4,7 @@ import os
 
 import yaml
 from openai import OpenAI
+from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception_type
 
 from exam_models import ExamResponse
 
@@ -16,7 +17,12 @@ class OpenAIClient:
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY environment variable not set")
 
-        self.client = OpenAI(api_key=self.api_key)
+        # OpenAI 클라이언트 생성 시 타임아웃 설정 추가
+        self.client = OpenAI(
+            api_key=self.api_key,
+            timeout=300.0,  # 5분 타임아웃
+            max_retries=0,   # 재시도 비활성화
+        )
         self.model = os.environ.get("OPENAI_MODEL", "gpt-4o")
 
     def load_prompt_template(self, prompt_path):
@@ -27,6 +33,25 @@ class OpenAIClient:
         except Exception as e:
             logger.error(f"Error loading prompt template: {e}")
             raise
+
+    @retry(wait=wait_random_exponential(min=5, max=60), stop=stop_after_attempt(2),
+           retry=retry_if_exception_type((TimeoutError, ConnectionError)))
+    def _complete_with_backoff(self, **kwargs):
+        """Make an OpenAI API request with exponential backoff retry logic."""
+        try:
+            logger.info(f"Making OpenAI API request for model: {kwargs.get('model', self.model)}")
+            response = self.client.chat.completions.create(**kwargs)
+            logger.info("OpenAI API request successful")
+            return response
+        except Exception as e:
+            logger.warning(f"OpenAI API request failed: {type(e).__name__}: {str(e)}")
+            # 재시도 가능한 예외인지 확인
+            if isinstance(e, (TimeoutError, ConnectionError)):
+                logger.warning("Will retry due to timeout/connection error")
+                raise
+            else:
+                logger.error("Non-retryable error, failing immediately")
+                raise
 
     def generate_exam(self, lecture_content, question_counts, prompt_path):
         try:
@@ -41,7 +66,7 @@ class OpenAIClient:
             )
 
             # Create the completion with structured output
-            completion = self.client.chat.completions.create(
+            completion = self._complete_with_backoff(
                 model=self.model,
                 messages=[
                     {
