@@ -4,6 +4,7 @@ import com.example.api.security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -33,8 +34,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         //JWT 인증 필요 없이 접속 가능한 공개 API
-                        .requestMatchers("/v1/auth/**",
+                        .requestMatchers("/v1/auth/signup/email",
+                                        "/v1/auth/login/email",
                                         "/swagger-ui.html",
                                         "/swagger-ui/**",
                                         "/api-docs/**",

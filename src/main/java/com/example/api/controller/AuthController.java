@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
@@ -22,7 +23,6 @@ import com.example.api.entity.User;
 @RequiredArgsConstructor
 @Tag(name = "Auth", description = "회원가입, 로그인, 로그아웃, 토큰 재발급 관련 API")
 
-// TODO(jin): 실제 오류 응답 코드 정리를 위해 dto 리팩토링 시 Auth 전용 ExceptionHandler 구현 예정
 public class AuthController {
 
     private final AuthService authService;
@@ -226,8 +226,9 @@ public class AuthController {
                         """)
                     ))
     })
-    public ResponseEntity<SimpleResponse<UserSummaryResponse>> getCurrentUserInfo(@AuthenticationPrincipal User user) {
-        UserSummaryResponse userSummaryResponse = authService.getCurrentUserInfo(user);
+    public ResponseEntity<SimpleResponse<UserSummaryResponse>> getCurrentUserInfo(Authentication authentication) {
+        String userId = authentication.getName();
+        UserSummaryResponse userSummaryResponse = authService.getCurrentUserInfo(userId);
         return ResponseEntity.ok(new SimpleResponse<>("사용자 정보 조회 성공", userSummaryResponse));
     }
 }

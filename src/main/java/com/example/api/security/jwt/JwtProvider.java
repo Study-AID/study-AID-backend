@@ -1,5 +1,6 @@
 package com.example.api.security.jwt;
 
+import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +20,9 @@ public class JwtProvider {
     private final JwtConfig jwtConfig;
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtConfig.getSecretKey().getBytes(StandardCharsets.UTF_8));
+        String secretKey = jwtConfig.getSecretKey();
+        byte[] keyBytes = Base64.getDecoder().decode(secretKey);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String createAccessToken(UUID userId) {

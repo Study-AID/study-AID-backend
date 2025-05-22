@@ -11,5 +11,5 @@ public interface AuthService {
     AuthResponse loginWithEmail(EmailLoginRequest req);
     void logout(LogoutRequest req);
     AuthResponse refreshToken(TokenRefreshRequest req);
-    UserSummaryResponse getCurrentUserInfo(User user);
+    UserSummaryResponse getCurrentUserInfo(String userIdString);
 }

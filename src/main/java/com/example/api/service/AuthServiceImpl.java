@@ -97,12 +97,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public UserSummaryResponse getCurrentUserInfo(User user) {
-        if (user == null) {
+    public UserSummaryResponse getCurrentUserInfo(String userIdString) {
+        if (userIdString == null) {
             throw new InvalidAccessTokenException();
         }
 
-        User currentUser = userRepository.findById(user.getId())
+        UUID userId = UUID.fromString(userIdString);
+        User currentUser = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
         return UserSummaryResponse.from(currentUser);
