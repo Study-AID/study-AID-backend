@@ -35,8 +35,8 @@ class OpenAIClient:
         # OpenAI 클라이언트 생성 시 타임아웃 설정 추가
         self.client = OpenAI(
             api_key=self.api_key,
-            timeout=60.0,
-            max_retries=0,   # 재시도를 tenacity에서 처리하므로 0으로 설정
+            timeout=300.0,  # 5분 타임아웃
+            max_retries=0,   # 재시도 비활성화
         )
         self.model = os.environ.get("OPENAI_MODEL", "gpt-4o")
 
