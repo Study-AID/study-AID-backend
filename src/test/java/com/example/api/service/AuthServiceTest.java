@@ -223,6 +223,7 @@ class AuthServiceTest {
         assertThat(exception.getMessage()).isEqualTo("유효하지 않은 액세스 토큰입니다.");
     }
 
+
     @Test
     @DisplayName("사용자 정보 조회 실패 - 사용자 없음")
     void getCurrentUserInfoFail_userNotFound() {
@@ -231,7 +232,7 @@ class AuthServiceTest {
 
         // when & then
         UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
-            authService.getCurrentUserInfo(user);
+            authService.getCurrentUserInfo(user.getId().toString());
         });
 
         assertThat(exception.getMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
@@ -259,7 +260,7 @@ class AuthServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         // when
-        UserSummaryResponse response = authService.getCurrentUserInfo(user);
+        UserSummaryResponse response = authService.getCurrentUserInfo(user.getId().toString());
 
         // then
         assertThat(response.getId()).isEqualTo(user.getId());
