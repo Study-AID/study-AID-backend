@@ -21,13 +21,14 @@ COPY prompts/ /var/task/prompts/
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /var/task/jobs/generate_quiz/requirements.txt
 
-RUN cp /var/task/jobs/generate_quiz/*.py /var/task/
-
 # Install Lambda runtime interface client
 RUN pip install --no-cache-dir awslambdaric
 
 # Set environment variables
 ENV PYTHONPATH=/var/task
+
+# 핸들러 실행 디렉토리를 jobs/generate_quiz로 변경
+WORKDIR /var/task/jobs/generate_quiz
 
 # Set the entrypoint
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]

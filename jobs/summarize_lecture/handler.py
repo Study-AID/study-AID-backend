@@ -6,7 +6,6 @@ import psycopg2
 import psycopg2.extras
 import traceback
 import uuid
-from botocore.config import Config
 from botocore.exceptions import ClientError
 from datetime import datetime
 
@@ -27,7 +26,7 @@ AWS_REGION = os.environ.get('AWS_REGION', 'ap-northeast-2')
 
 # PDF chunking configuration
 DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
-MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '3'))
+MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '2'))
 
 # Database configuration
 DB_CONFIG = {
@@ -39,17 +38,8 @@ DB_CONFIG = {
 }
 
 # Initialize clients
-s3_client = boto3.client(
-    's3',
-    endpoint_url=S3_ENDPOINT_URL,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    region_name=AWS_REGION,
-    config=Config(
-        connect_timeout=10,
-        retries={'max_attempts': 3}
-    )
-)
+# test.py와 정확히 동일한 방식으로 생성
+s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 
 def get_db_connection():
@@ -73,14 +63,12 @@ def get_prompt_path():
     # Get prompt version from environment variable
     prompt_version = os.environ.get('PROMPT_VERSION', 'latest')
 
-    # Determine the prompt file to use
     prompt_dir = os.path.join(
         os.path.dirname(__file__), '..', '..', 'prompts', 'summarize_lecture',
     )
 
     # If 'latest' is specified or no version is provided, find the latest version
     if prompt_version == 'latest':
-        # List all files in the prompt directory
         prompt_files = [f for f in os.listdir(prompt_dir) if f.startswith('v') and f.endswith('.yaml')]
 
         if not prompt_files:
@@ -104,14 +92,20 @@ def download_file_from_s3(bucket, key, local_path):
     """Download a file from S3 to a local path"""
     try:
         logger.info(f"Downloading file from s3://{bucket}/{key} to {local_path}")
-        if S3_ENDPOINT_URL:
-            logger.info(f"Using S3 endpoint URL: {S3_ENDPOINT_URL}")
-
+        
+        # 다운로드 진행
         s3_client.download_file(bucket, key, local_path)
-        logger.info(f"Downloaded file from s3://{bucket}/{key} to {local_path}")
+        
+        # 다운로드 확인
+        if os.path.exists(local_path):
+            file_size = os.path.getsize(local_path)
+            logger.info(f"Downloaded file successfully to {local_path}, size: {file_size} bytes")
+        
         return local_path
     except ClientError as e:
-        logger.error(f"Error downloading file from S3: {e}")
+        error_code = getattr(e, 'response', {}).get('Error', {}).get('Code', 'Unknown')
+        error_message = getattr(e, 'response', {}).get('Error', {}).get('Message', 'Unknown')
+        logger.error(f"Error downloading file from S3: Code={error_code}, Message={error_message}")
         raise
 
 
