@@ -18,10 +18,10 @@ public abstract class BaseController {
 
         if (authentication == null || !authentication.isAuthenticated() ||
                 authentication.getPrincipal() == null ||
-                !(authentication.getPrincipal() instanceof UUID)) {
+                !(authentication.getPrincipal() instanceof String)) {
             throw new IllegalStateException("No authenticated user found");
         }
 
-        return (UUID) authentication.getPrincipal();
+        return UUID.fromString((String) authentication.getPrincipal());
     }
 }
