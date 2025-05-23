@@ -61,10 +61,24 @@ jobs:
           wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/${FLYWAY_VERSION}/flyway-commandline-${FLYWAY_VERSION}-linux-x64.tar.gz | tar xvz
           mv flyway-${FLYWAY_VERSION} flyway-cli
 
-      - name: Run migration
+      - name: Check migration status and repair if needed
         working-directory: ./flyway
         run: |
-          ../flyway-cli/flyway -configFiles=flyway-dev.conf migrate
+          # Try migration first
+          if ! ../flyway-cli/flyway -configFiles=flyway-dev.conf migrate; then
+            echo "Migration failed. Checking if repair is needed..."
+
+            # Check if it's a checksum mismatch error
+            if ../flyway-cli/flyway -configFiles=flyway-dev.conf info 2>&1 | grep -q "checksum mismatch"; then
+              echo "Checksum mismatch detected. Running repair..."
+              ../flyway-cli/flyway -configFiles=flyway-dev.conf repair
+              echo "Repair completed. Retrying migration..."
+              ../flyway-cli/flyway -configFiles=flyway-dev.conf migrate
+            else
+              echo "Migration failed for reasons other than checksum mismatch."
+              exit 1
+            fi
+          fi
 
       - name: Check migration info
         working-directory: ./flyway
