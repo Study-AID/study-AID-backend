@@ -35,7 +35,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -408,5 +411,283 @@ class LectureControllerTest {
 
         verify(lectureService).findLectureById(lectureId);
         verify(lectureService).deleteLecture(lectureId);
+    }
+
+    // ===== Summary 변환 테스트 메서드들 (LectureControllerTest.java 하단에 추가) =====
+
+    @Test
+    @DisplayName("Summary 변환 테스트 - 완전한 데이터")
+    @WithMockUser
+    void convertMapToSummaryCompleteDataTest() throws Exception {
+        // Given - Python에서 생성될 수 있는 완전한 Summary 데이터 구조
+        Map<String, Object> summaryMap = createCompleteSummaryMap();
+        
+        LectureOutput lectureWithSummary = new LectureOutput();
+        lectureWithSummary.setId(lectureId);
+        lectureWithSummary.setUserId(userId);
+        lectureWithSummary.setCourseId(courseId);
+        lectureWithSummary.setTitle("운영체제 개론");
+        lectureWithSummary.setMaterialPath("os-lecture.pdf");
+        lectureWithSummary.setMaterialType("pdf");
+        lectureWithSummary.setSummary(summaryMap);
+        lectureWithSummary.setParsedText(testParsedText);
+        lectureWithSummary.setCreatedAt(LocalDateTime.now());
+        lectureWithSummary.setUpdatedAt(LocalDateTime.now());
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(lectureWithSummary));
+
+        // When & Then - 변환된 Summary가 올바르게 반환되는지 확인
+        mockMvc.perform(get("/v1/lectures/{id}", lectureId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(lectureId.toString()))
+                .andExpect(jsonPath("$.title").value("운영체제 개론"))
+                .andExpect(jsonPath("$.summary.metadata.model").value("gpt-4"))
+                .andExpect(jsonPath("$.summary.metadata.createdAt").value("2024-05-22T10:30:00Z"))
+                .andExpect(jsonPath("$.summary.overview").value("운영체제의 기본 개념과 프로세스 관리에 대해 다룹니다."))
+                .andExpect(jsonPath("$.summary.keywords", hasSize(2)))
+                .andExpect(jsonPath("$.summary.keywords[0].keyword").value("프로세스"))
+                .andExpect(jsonPath("$.summary.keywords[0].description").value("실행 중인 프로그램의 인스턴스"))
+                .andExpect(jsonPath("$.summary.keywords[0].relevance").value(0.95))
+                .andExpect(jsonPath("$.summary.keywords[0].pageRange.startPage").value(1))
+                .andExpect(jsonPath("$.summary.keywords[0].pageRange.endPage").value(3))
+                .andExpect(jsonPath("$.summary.keywords[1].keyword").value("스케줄링"))
+                .andExpect(jsonPath("$.summary.topics", hasSize(2)))
+                .andExpect(jsonPath("$.summary.topics[0].title").value("프로세스 관리"))
+                .andExpect(jsonPath("$.summary.topics[0].description").value("프로세스의 생성, 종료, 상태 변화"))
+                .andExpect(jsonPath("$.summary.topics[0].additionalDetails", hasSize(2)))
+                .andExpect(jsonPath("$.summary.topics[0].subTopics", hasSize(1)))
+                .andExpect(jsonPath("$.summary.topics[0].subTopics[0].title").value("프로세스 상태"))
+                .andExpect(jsonPath("$.summary.additionalReferences", hasSize(2)))
+                .andExpect(jsonPath("$.summary.additionalReferences[0]").value("Silberschatz, Operating System Concepts"))
+                .andExpect(jsonPath("$.summary.additionalReferences[1]").value("Tanenbaum, Modern Operating Systems"));
+
+        verify(lectureService).findLectureById(lectureId);
+    }
+
+    @Test
+    @DisplayName("Summary 변환 테스트 - 부분 데이터")
+    @WithMockUser
+    void convertMapToSummaryPartialDataTest() throws Exception {
+        // Given - 일부 필드만 있는 Summary 데이터
+        Map<String, Object> partialSummaryMap = createPartialSummaryMap();
+        
+        LectureOutput lectureWithPartialSummary = new LectureOutput();
+        lectureWithPartialSummary.setId(lectureId);
+        lectureWithPartialSummary.setUserId(userId);
+        lectureWithPartialSummary.setCourseId(courseId);
+        lectureWithPartialSummary.setTitle("데이터베이스 기초");
+        lectureWithPartialSummary.setMaterialPath("db-lecture.pdf");
+        lectureWithPartialSummary.setMaterialType("pdf");
+        lectureWithPartialSummary.setSummary(partialSummaryMap);
+        lectureWithPartialSummary.setParsedText(testParsedText);
+        lectureWithPartialSummary.setCreatedAt(LocalDateTime.now());
+        lectureWithPartialSummary.setUpdatedAt(LocalDateTime.now());
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(lectureWithPartialSummary));
+
+        // When & Then - 부분 데이터도 올바르게 변환되는지 확인
+        mockMvc.perform(get("/v1/lectures/{id}", lectureId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.overview").value("데이터베이스의 기본 개념"))
+                .andExpect(jsonPath("$.summary.keywords", hasSize(1)))
+                .andExpect(jsonPath("$.summary.topics", hasSize(0))) // 빈 배열
+                .andExpect(jsonPath("$.summary.additionalReferences", hasSize(0))); // 빈 배열
+
+        verify(lectureService).findLectureById(lectureId);
+    }
+
+    @Test
+    @DisplayName("Summary 변환 테스트 - null Summary")
+    @WithMockUser
+    void convertMapToSummaryNullTest() throws Exception {
+        // Given - Summary가 null인 경우
+        LectureOutput lectureWithNullSummary = new LectureOutput();
+        lectureWithNullSummary.setId(lectureId);
+        lectureWithNullSummary.setUserId(userId);
+        lectureWithNullSummary.setCourseId(courseId);
+        lectureWithNullSummary.setTitle("아직 요약이 없는 강의");
+        lectureWithNullSummary.setMaterialPath("no-summary.pdf");
+        lectureWithNullSummary.setMaterialType("pdf");
+        lectureWithNullSummary.setSummary(null); // null Summary
+        lectureWithNullSummary.setParsedText(testParsedText);
+        lectureWithNullSummary.setCreatedAt(LocalDateTime.now());
+        lectureWithNullSummary.setUpdatedAt(LocalDateTime.now());
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(lectureWithNullSummary));
+
+        // When & Then - null Summary가 올바르게 처리되는지 확인
+        mockMvc.perform(get("/v1/lectures/{id}", lectureId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary").isEmpty()); // null이므로 빈 값
+
+        verify(lectureService).findLectureById(lectureId);
+    }
+
+    @Test
+    @DisplayName("Summary 변환 테스트 - 잘못된 데이터 타입")
+    @WithMockUser
+    void convertMapToSummaryInvalidDataTest() throws Exception {
+        // Given - 잘못된 타입의 데이터가 포함된 Summary
+        Map<String, Object> invalidSummaryMap = createInvalidSummaryMap();
+        
+        LectureOutput lectureWithInvalidSummary = new LectureOutput();
+        lectureWithInvalidSummary.setId(lectureId);
+        lectureWithInvalidSummary.setUserId(userId);
+        lectureWithInvalidSummary.setCourseId(courseId);
+        lectureWithInvalidSummary.setTitle("잘못된 데이터 타입 테스트");
+        lectureWithInvalidSummary.setMaterialPath("invalid-data.pdf");
+        lectureWithInvalidSummary.setMaterialType("pdf");
+        lectureWithInvalidSummary.setSummary(invalidSummaryMap);
+        lectureWithInvalidSummary.setParsedText(testParsedText);
+        lectureWithInvalidSummary.setCreatedAt(LocalDateTime.now());
+        lectureWithInvalidSummary.setUpdatedAt(LocalDateTime.now());
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(lectureWithInvalidSummary));
+
+        // When & Then - 잘못된 데이터가 있어도 오류 없이 처리되는지 확인
+        mockMvc.perform(get("/v1/lectures/{id}", lectureId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary").isEmpty()); // 변환 실패 시 null 반환
+
+        verify(lectureService).findLectureById(lectureId);
+    }
+
+    // ===== 테스트 헬퍼 메서드들 =====
+
+    /**
+     * 완전한 Summary 데이터 맵 생성
+     */
+    private Map<String, Object> createCompleteSummaryMap() {
+        Map<String, Object> summaryMap = new HashMap<>();
+        
+        // Metadata
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("model", "gpt-4");
+        metadata.put("created_at", "2024-05-22T10:30:00Z");
+        summaryMap.put("metadata", metadata);
+        
+        // Overview
+        summaryMap.put("overview", "운영체제의 기본 개념과 프로세스 관리에 대해 다룹니다.");
+        
+        // Keywords
+        List<Map<String, Object>> keywords = new ArrayList<>();
+        
+        Map<String, Object> keyword1 = new HashMap<>();
+        keyword1.put("keyword", "프로세스");
+        keyword1.put("description", "실행 중인 프로그램의 인스턴스");
+        keyword1.put("relevance", 0.95);
+        Map<String, Object> pageRange1 = new HashMap<>();
+        pageRange1.put("start_page", 1);
+        pageRange1.put("end_page", 3);
+        keyword1.put("page_range", pageRange1);
+        keywords.add(keyword1);
+        
+        Map<String, Object> keyword2 = new HashMap<>();
+        keyword2.put("keyword", "스케줄링");
+        keyword2.put("description", "CPU 시간 할당 알고리즘");
+        keyword2.put("relevance", 0.88);
+        Map<String, Object> pageRange2 = new HashMap<>();
+        pageRange2.put("start_page", 4);
+        pageRange2.put("end_page", 6);
+        keyword2.put("page_range", pageRange2);
+        keywords.add(keyword2);
+        
+        summaryMap.put("keywords", keywords);
+        
+        // Topics
+        List<Map<String, Object>> topics = new ArrayList<>();
+        
+        Map<String, Object> topic1 = new HashMap<>();
+        topic1.put("title", "프로세스 관리");
+        topic1.put("description", "프로세스의 생성, 종료, 상태 변화");
+        Map<String, Object> topicPageRange1 = new HashMap<>();
+        topicPageRange1.put("start_page", 1);
+        topicPageRange1.put("end_page", 5);
+        topic1.put("page_range", topicPageRange1);
+        topic1.put("additional_details", List.of("프로세스 제어 블록", "컨텍스트 스위칭"));
+        
+        // Sub-topics
+        List<Map<String, Object>> subTopics = new ArrayList<>();
+        Map<String, Object> subTopic1 = new HashMap<>();
+        subTopic1.put("title", "프로세스 상태");
+        subTopic1.put("description", "Ready, Running, Waiting 상태");
+        Map<String, Object> subTopicPageRange = new HashMap<>();
+        subTopicPageRange.put("start_page", 2);
+        subTopicPageRange.put("end_page", 3);
+        subTopic1.put("page_range", subTopicPageRange);
+        subTopic1.put("additional_details", List.of());
+        subTopic1.put("sub_topics", List.of());
+        subTopics.add(subTopic1);
+        
+        topic1.put("sub_topics", subTopics);
+        topics.add(topic1);
+        
+        Map<String, Object> topic2 = new HashMap<>();
+        topic2.put("title", "메모리 관리");
+        topic2.put("description", "가상 메모리와 페이징");
+        Map<String, Object> topicPageRange2 = new HashMap<>();
+        topicPageRange2.put("start_page", 6);
+        topicPageRange2.put("end_page", 10);
+        topic2.put("page_range", topicPageRange2);
+        topic2.put("additional_details", List.of());
+        topic2.put("sub_topics", List.of());
+        topics.add(topic2);
+        
+        summaryMap.put("topics", topics);
+        
+        // Additional References
+        summaryMap.put("additional_references", List.of(
+                "Silberschatz, Operating System Concepts",
+                "Tanenbaum, Modern Operating Systems"
+        ));
+        
+        return summaryMap;
+    }
+
+    /**
+     * 부분 Summary 데이터 맵 생성
+     */
+    private Map<String, Object> createPartialSummaryMap() {
+        Map<String, Object> summaryMap = new HashMap<>();
+        
+        summaryMap.put("overview", "데이터베이스의 기본 개념");
+        
+        // Keywords만 하나 있음
+        List<Map<String, Object>> keywords = new ArrayList<>();
+        Map<String, Object> keyword = new HashMap<>();
+        keyword.put("keyword", "SQL");
+        keyword.put("description", "구조화된 질의 언어");
+        keyword.put("relevance", 0.9);
+        Map<String, Object> pageRange = new HashMap<>();
+        pageRange.put("start_page", 1);
+        pageRange.put("end_page", 2);
+        keyword.put("page_range", pageRange);
+        keywords.add(keyword);
+        summaryMap.put("keywords", keywords);
+        
+        // topics와 additional_references는 빈 배열
+        summaryMap.put("topics", List.of());
+        summaryMap.put("additional_references", List.of());
+        
+        return summaryMap;
+    }
+
+    /**
+     * 잘못된 타입의 데이터가 포함된 Summary 맵 생성
+     */
+    private Map<String, Object> createInvalidSummaryMap() {
+        Map<String, Object> summaryMap = new HashMap<>();
+        
+        // 잘못된 타입들
+        summaryMap.put("metadata", "잘못된 문자열"); // Map이어야 하는데 String
+        summaryMap.put("overview", 12345); // String이어야 하는데 Integer
+        summaryMap.put("keywords", "잘못된 키워드"); // List여야 하는데 String
+        summaryMap.put("topics", null); // null
+        
+        return summaryMap;
     }
 }
