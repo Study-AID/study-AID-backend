@@ -62,25 +62,6 @@ class OpenAIClient:
             logger.error(f"Error loading prompt template: {e}")
             raise
 
-    # TODO(mj): pass the langauge user selected.
-    def generate_summary(self, formatted_content, prompt_path, language="한국어"):
-        """Generate a summary for lecture content. For backward compatibility."""
-        try:
-            # Create a single chunk with the entire content
-            chunk = {
-                "chunk_id": 0,
-                "total_chunks": 1,
-                "start_page": formatted_content[0]["page"] if formatted_content else 1,
-                "end_page": formatted_content[-1]["page"] if formatted_content else 1,
-                "formatted_content": formatted_content
-            }
-
-            # Use the chunk-based method for consistency
-            return self.generate_chunk_summary(chunk, prompt_path, language)
-        except Exception as e:
-            logger.error(f"Error generating summary: {e}")
-            raise
-
     @retry(
         wait=wait_random_exponential(min=10, max=60),
         stop=stop_after_attempt(2),
