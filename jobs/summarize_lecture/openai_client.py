@@ -65,7 +65,7 @@ class OpenAIClient:
     @retry(
         wait=wait_random_exponential(min=10, max=60),
         stop=stop_after_attempt(2),
-        retry_if=retry_if_exception_type((RateLimitError, TimeoutError, ConnectionError))
+        retry=retry_if_exception_type((RateLimitError, TimeoutError, ConnectionError))
     )
     def _complete_with_backoff(self, **kwargs):
         """Make an OpenAI API request with exponential backoff retry logic."""
