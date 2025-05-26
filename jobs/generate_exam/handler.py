@@ -288,7 +288,7 @@ def send_exam_email(receiver_email, user_name, exam_title, exam_id):
     
         <p>
           요청하신 모의시험 '<strong>{exam_title}</strong>' 생성이
-          완료되었습니다.<br/>아래 버튼을 눌러 모의시험을 풀이해보세요.
+          완료되었습니다.<br/>아래 버튼을 눌러 모의시험을 풀어보세요!
         </p>
     
         <p>
