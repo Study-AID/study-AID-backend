@@ -1,20 +1,30 @@
-import boto3
 import json
 import logging
 import os
-import psycopg2
-import psycopg2.extras
 import traceback
 import uuid
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+
+import boto3
+import psycopg2
+import psycopg2.extras
 
 from openai_client import OpenAIClient
 from parsed_text_models import ParsedText
+from pdf_chunker import PDFChunker
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize clients
+s3_endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
+s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
+
+# Constants and configurations
+# PDF chunking configuration
+DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
+MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '2'))
 
 # Database configuration
 DB_CONFIG = {
@@ -103,32 +113,8 @@ def get_lecture_info(lecture_id):
             conn.close()
 
 
-def process_parsed_text(parsed_text_json: str) -> str:
-    """Process parsed_text JSON into a text string for quiz generation"""
-    try:
-        # Either parse the JSON string or use it directly if it's already a dict
-        if isinstance(parsed_text_json, str):
-            parsed_text_data = json.loads(parsed_text_json)
-        else:
-            parsed_text_data = parsed_text_json
-
-        # Validate the parsed_text data against our model
-        parsed_text = ParsedText.model_validate(parsed_text_data)
-
-        # Combine all page texts into a single string
-        combined_text = ""
-        for page in parsed_text.pages:
-            combined_text += f"\n\n--- Page {page.page_number} ---\n\n"
-            combined_text += page.text
-
-        return combined_text
-    except Exception as e:
-        logger.error(f"Error processing parsed_text: {e}")
-        raise
-
-
-def get_lecture_content(lecture_id):
-    """Get lecture content from parsed_text from the lecture record"""
+def get_lecture_parsed_text(lecture_id) -> ParsedText:
+    """Get lecture content as ParsedText object from the lecture record"""
     try:
         # Get lecture information from the database
         lecture_info = get_lecture_info(lecture_id)
@@ -136,45 +122,73 @@ def get_lecture_content(lecture_id):
         # Check if we have parsed_text in the lecture info
         if lecture_info.get('parsed_text'):
             logger.info(f"Using parsed_text from database for lecture_id: {lecture_info['id']}")
-            return process_parsed_text(lecture_info['parsed_text'])
 
-        # If no parsed_text, get the content from the original file
+            # Parse the JSON string or use it directly if it's already a dict
+            if isinstance(lecture_info['parsed_text'], str):
+                parsed_text_data = json.loads(lecture_info['parsed_text'])
+            else:
+                parsed_text_data = lecture_info['parsed_text']
+
+            # Validate and return ParsedText object
+            return ParsedText.model_validate(parsed_text_data)
+
+        # If no parsed_text, extract from original file
         s3_key = lecture_info.get('material_path')
         if not s3_key:
             raise ValueError(f"No material path found for lecture: {lecture_info['id']}")
 
-        # Download from S3 - we need to handle the S3 bucket (this would need to be configured)
-        s3_bucket = os.environ.get('S3_BUCKET', 'study-aid-materials')  # Use environment variable or default
+        # Download from S3
+        s3_bucket = os.environ.get('S3_BUCKET', 'study-aid-materials')
         local_file_path = f"/tmp/{os.path.basename(s3_key)}"
 
-        # Download from S3
-        logger.info(f"Downloading file from s3://{s3_bucket}/{s3_key} to {local_file_path}")
-        s3_client.download_file(s3_bucket, s3_key, local_file_path)
+<< << << < HEAD
+== == == =
+<< << << < Updated
+upstream
+if s3_endpoint_url:
+    logger.info(f"Using S3 endpoint URL: {s3_endpoint_url}")
 
-        # Extract text from PDF
-        content = extract_text_from_pdf(local_file_path)
+>> >> >> > 02
+933
+a1(refactor(jobs / quiz): add
+v2
+prompt and support
+parallel
+processing)
+# Download from S3
+== == == =
+>> >> >> > Stashed
+changes
+logger.info(f"Downloading file from s3://{s3_bucket}/{s3_key} to {local_file_path}")
+s3_client.download_file(s3_bucket, s3_key, local_file_path)
 
-        # Clean up
-        os.remove(local_file_path)
+# Extract text from PDF and create ParsedText object
+parsed_text = extract_parsed_text_from_pdf(local_file_path)
 
-        return content
+# Clean up
+os.remove(local_file_path)
 
-    except Exception as e:
-        logger.error(f"Error getting lecture content: {e}")
-        raise
+return parsed_text
+
+except Exception as e:
+logger.error(f"Error getting lecture parsed text: {e}")
+raise
 
 
-def extract_text_from_pdf(file_path):
-    """Extract text content from PDF file"""
+def extract_parsed_text_from_pdf(file_path) -> ParsedText:
+    """Extract text content from PDF file and return ParsedText schema"""
     try:
         import fitz  # PyMuPDF
+        from parsed_text_models import ParsedPage
 
-        text = ""
+        pages = []
         with fitz.open(file_path) as doc:
-            for page in doc:
-                text += page.get_text()
+            for page_num, page in enumerate(doc, start=1):
+                page_text = page.get_text()
+                pages.append(ParsedPage(page_number=page_num, text=page_text))
 
-        return text
+        parsed_text = ParsedText(total_pages=len(pages), pages=pages)
+        return parsed_text
     except Exception as e:
         logger.error(f"Error extracting text from PDF: {e}")
         raise
@@ -363,6 +377,7 @@ def lambda_handler(event, context):
             lecture_id = message.get('lecture_id')
             quiz_title = message.get('title')
             quiz_id = message.get('quiz_id')  # Get the quiz_id for update
+            language = message.get('language', '한국어')  # Default to Korean if not specified
 
             # Get question counts by type with default values
             question_counts = {
@@ -385,13 +400,30 @@ def lambda_handler(event, context):
                 logger.error("Missing required quiz_id in message")
                 continue
 
-            # Get lecture content from the parsed_text field in the lecture table
-            lecture_content = get_lecture_content(lecture_id)
+            # Get chunk size from message or use default
+            chunk_size = message.get('chunk_size', DEFAULT_CHUNK_SIZE)
+            logger.info(
+                f"Using chunk size: {chunk_size} for lecture_id: {lecture_id}")
 
-            # Generate quiz using OpenAI
+            # Get lecture content as ParsedText object
+            parsed_text = get_lecture_parsed_text(lecture_id)
+            logger.info(f"Retrieved parsed text with {parsed_text.total_pages} pages")
+
+            # Initialize components
+            pdf_chunker = PDFChunker(default_chunk_size=chunk_size)
             openai_client = OpenAIClient()
             prompt_path = get_prompt_path()
-            quiz_data = openai_client.generate_quiz(lecture_content, question_counts, prompt_path)
+
+            # Split PDF into chunks
+            chunks = pdf_chunker.split_parsed_text(parsed_text, chunk_size)
+            chunk_details = ", ".join([f"{c['start_page']}-{c['end_page']}" for c in chunks])
+            logger.info(f"Split PDF into {len(chunks)} chunks: [{chunk_details}]")
+
+            # Process chunks in parallel and get merged quiz
+            quiz_response = openai_client.process_chunks_in_parallel(chunks, question_counts, prompt_path, language)
+
+            # Convert to dict for database storage
+            quiz_data = quiz_response.model_dump()
 
             # Update quiz in database
             update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, quiz_title)
@@ -406,6 +438,9 @@ def lambda_handler(event, context):
                 "multiple_choice_count": question_counts['multiple_choice_count'],
                 "short_answer_count": question_counts['short_answer_count'],
                 "essay_count": question_counts['essay_count'],
+                "chunk_count": len(chunks),
+                "chunk_sizes": [chunk["end_page"] - chunk["start_page"] + 1 for chunk in chunks],
+                "total_questions": len(quiz_data.get('quiz_questions', []))
             }
             log_activity(course_id, user_id, 'update', 'quiz', activity_details)
 
