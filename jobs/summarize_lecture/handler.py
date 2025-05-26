@@ -232,7 +232,7 @@ def send_summary_email(receiver_email, user_name, lecture_title, lecture_id):
     
         <p>
           요청하신 강의 '<strong>{lecture_title}</strong>'의 요약본 생성이
-          완료되었습니다.<br/>아래 버튼을 눌러 요약본을 확인해보세요.
+          완료되었습니다.<br/>아래 버튼을 눌러 요약본을 확인해보세요!
         </p>
     
         <p>
@@ -245,7 +245,7 @@ def send_summary_email(receiver_email, user_name, lecture_title, lecture_id):
               border-radius: 5px;
               font-weight: bold;
             ">
-            강의노트 요약 바로가기
+            강의노트 요약 보러가기
           </a>
         </p>
     
@@ -308,8 +308,11 @@ def lambda_handler(event, context):
 
             # Extract information from the message
             user_id = message.get('user_id')
+            user_email = message.get("user_email")
+            user_name = message.get("user_name")
             course_id = message.get('course_id')
             lecture_id = message.get('lecture_id')
+            lecture_title = message.get("lecture_title")
             s3_bucket = message.get('s3_bucket')
             s3_key = message.get('s3_key')
 
@@ -351,10 +354,6 @@ def lambda_handler(event, context):
             update_lecture_summary(lecture_id, summary)
 
             # Send email to user with summary link
-            user_email = message.get("user_email")
-            user_name = message.get("user_name")
-            lecture_title = message.get("lecture_title")
-
             if user_email and user_name and lecture_title:
                 send_summary_email(user_email, user_name, lecture_title, lecture_id)
             else:
