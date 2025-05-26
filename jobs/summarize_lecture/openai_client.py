@@ -40,7 +40,7 @@ class OpenAIClient:
         self.model = os.environ.get("OPENAI_MODEL", "gpt-4o")
 
         # Maximum number of concurrent API calls
-        self.max_concurrent = int(os.environ.get("MAX_CONCURRENT_CHUNKS", "1"))  # 기본값을 1로 낮춤
+        self.max_concurrent = int(os.environ.get("MAX_CONCURRENT_CHUNKS", "2"))  # 기본값을 1로 낮춤
 
         # Prompt cache to avoid redundant loading
         self._prompt_cache = {}
