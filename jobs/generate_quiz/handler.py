@@ -347,7 +347,7 @@ def send_quiz_email(receiver_email, user_name, lecture_title, lecture_id, quiz_t
     
         <p>
           요청하신 강의 '{lecture_title}'의 퀴즈 '<strong>{quiz_title}</strong>' 생성이
-          완료되었습니다.<br/>아래 버튼을 눌러 퀴즈를 풀어보세요.
+          완료되었습니다.<br/>아래 버튼을 눌러 퀴즈를 풀어보세요!
         </p>
     
         <p>
