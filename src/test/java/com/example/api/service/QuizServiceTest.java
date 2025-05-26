@@ -8,6 +8,8 @@ import com.example.api.repository.*;
 import com.example.api.service.dto.quiz.CreateQuizInput;
 import com.example.api.service.dto.quiz.QuizListOutput;
 import com.example.api.service.dto.quiz.QuizOutput;
+import com.example.api.service.dto.quiz.QuizResultListOutput;
+import com.example.api.service.dto.quiz.QuizResultOutput;
 import com.example.api.service.dto.quiz.UpdateQuizInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -68,6 +70,7 @@ public class QuizServiceTest {
     private UUID quizItemId1;
     private UUID quizItemId2;
     private UUID quizItemId3;
+    private UUID quizResultId;
 
     private User testUser;
     private Course testCourse;
@@ -77,6 +80,8 @@ public class QuizServiceTest {
     private List<QuizItem> testQuizItems;
     private QuizOutput testQuizOutput;
     private List<QuizResponse> testQuizResponses;
+    private QuizResult testQuizResult;
+    private List<QuizResult> testQuizResults;
 
     @BeforeEach
     void setUp() {
@@ -88,6 +93,7 @@ public class QuizServiceTest {
         quizItemId1 = UUID.randomUUID();
         quizItemId2 = UUID.randomUUID();
         quizItemId3 = UUID.randomUUID();
+        quizResultId = UUID.randomUUID();
 
         testUser = new User();
         testUser.setId(userId);
@@ -192,6 +198,20 @@ public class QuizServiceTest {
         shortAnswerResponse.setCreatedAt(LocalDateTime.now());
 
         testQuizResponses = Arrays.asList(trueOrFalseResponse, multipleChoiceResponse, shortAnswerResponse);
+
+        testQuizResult = new QuizResult();
+        testQuizResult.setId(quizResultId);
+        testQuizResult.setQuiz(testQuiz);
+        testQuizResult.setUser(testUser);
+        testQuizResult.setScore(85.0f);
+        testQuizResult.setMaxScore(100.0f);
+        testQuizResult.setFeedback("Good job!");
+        testQuizResult.setStartTime(LocalDateTime.now().minusHours(1));
+        testQuizResult.setEndTime(LocalDateTime.now());
+        testQuizResult.setCreatedAt(LocalDateTime.now());
+        testQuizResult.setUpdatedAt(LocalDateTime.now());
+
+        testQuizResults = List.of(testQuizResult);
     }
 
     @Test
@@ -398,5 +418,122 @@ public class QuizServiceTest {
         verify(quizResponseRepository, never()).updateQuizResponse(any(QuizResponse.class));
         verify(quizRepository, never()).updateQuiz(any(Quiz.class));
         verify(quizResultRepository, never()).createQuizResult(any(QuizResult.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 ID로 퀴즈 결과 조회")
+    void findQuizResultByQuizIdTest() {
+        // given
+        when(quizResultRepository.findByQuizId(quizId)).thenReturn(Optional.of(testQuizResult));
+
+        // when
+        Optional<QuizResultOutput> result = quizService.findQuizResultByQuizId(quizId);
+
+        // then
+        assertTrue(result.isPresent());
+        assertEquals(testQuizResult.getId(), result.get().getId());
+        assertEquals(testQuizResult.getQuiz().getId(), result.get().getQuizId());
+        assertEquals(testQuizResult.getUser().getId(), result.get().getUserId());
+        assertEquals(testQuizResult.getScore(), result.get().getScore());
+        assertEquals(testQuizResult.getMaxScore(), result.get().getMaxScore());
+        assertEquals(testQuizResult.getFeedback(), result.get().getFeedback());
+        assertEquals(testQuizResult.getStartTime(), result.get().getStartTime());
+        assertEquals(testQuizResult.getEndTime(), result.get().getEndTime());
+
+        verify(quizResultRepository, times(1)).findByQuizId(quizId);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 퀴즈 ID로 퀴즈 결과 조회")
+    void findQuizResultByQuizIdTest_NotFound() {
+        // given
+        UUID nonExistentQuizId = UUID.randomUUID();
+        when(quizResultRepository.findByQuizId(nonExistentQuizId)).thenReturn(Optional.empty());
+
+        // when
+        Optional<QuizResultOutput> result = quizService.findQuizResultByQuizId(nonExistentQuizId);
+
+        // then
+        assertFalse(result.isPresent());
+        verify(quizResultRepository, times(1)).findByQuizId(nonExistentQuizId);
+    }
+
+    @Test
+    @DisplayName("강의 ID로 퀴즈 결과 목록 조회")
+    void findQuizResultsByLectureIdTest() {
+        // given
+        when(quizResultRepository.findByLectureId(lectureId)).thenReturn(testQuizResults);
+
+        // when
+        QuizResultListOutput result = quizService.findQuizResultsByLectureId(lectureId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(1, result.getQuizResults().size());
+        
+        QuizResultOutput resultOutput = result.getQuizResults().get(0);
+        assertEquals(testQuizResult.getId(), resultOutput.getId());
+        assertEquals(testQuizResult.getQuiz().getId(), resultOutput.getQuizId());
+        assertEquals(testQuizResult.getUser().getId(), resultOutput.getUserId());
+        assertEquals(testQuizResult.getScore(), resultOutput.getScore());
+        assertEquals(testQuizResult.getMaxScore(), resultOutput.getMaxScore());
+        assertEquals(testQuizResult.getFeedback(), resultOutput.getFeedback());
+
+        verify(quizResultRepository, times(1)).findByLectureId(lectureId);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 강의 ID로 퀴즈 결과 목록 조회")
+    void findQuizResultsByLectureIdTest_EmptyList() {
+        // given
+        UUID nonExistentLectureId = UUID.randomUUID();
+        when(quizResultRepository.findByLectureId(nonExistentLectureId)).thenReturn(List.of());
+
+        // when
+        QuizResultListOutput result = quizService.findQuizResultsByLectureId(nonExistentLectureId);
+
+        // then
+        assertNotNull(result);
+        assertTrue(result.getQuizResults().isEmpty());
+        verify(quizResultRepository, times(1)).findByLectureId(nonExistentLectureId);
+    }
+
+    @Test
+    @DisplayName("여러 퀴즈 결과가 있는 강의의 퀴즈 결과 목록 조회")
+    void findQuizResultsByLectureIdTest_MultipleResults() {
+        // given
+        QuizResult anotherQuizResult = new QuizResult();
+        anotherQuizResult.setId(UUID.randomUUID());
+        anotherQuizResult.setQuiz(testQuiz);
+        anotherQuizResult.setUser(testUser);
+        anotherQuizResult.setScore(75.0f);
+        anotherQuizResult.setMaxScore(100.0f);
+        anotherQuizResult.setFeedback("Nice work!");
+        anotherQuizResult.setStartTime(LocalDateTime.now().minusHours(2));
+        anotherQuizResult.setEndTime(LocalDateTime.now().minusHours(1));
+        anotherQuizResult.setCreatedAt(LocalDateTime.now());
+        anotherQuizResult.setUpdatedAt(LocalDateTime.now());
+
+        List<QuizResult> multipleQuizResults = List.of(testQuizResult, anotherQuizResult);
+        when(quizResultRepository.findByLectureId(lectureId)).thenReturn(multipleQuizResults);
+
+        // when
+        QuizResultListOutput result = quizService.findQuizResultsByLectureId(lectureId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(2, result.getQuizResults().size());
+        
+        // 첫 번째 결과 검증
+        QuizResultOutput firstResult = result.getQuizResults().get(0);
+        assertEquals(testQuizResult.getId(), firstResult.getId());
+        assertEquals(85.0f, firstResult.getScore());
+        
+        // 두 번째 결과 검증
+        QuizResultOutput secondResult = result.getQuizResults().get(1);
+        assertEquals(anotherQuizResult.getId(), secondResult.getId());
+        assertEquals(75.0f, secondResult.getScore());
+
+        verify(quizResultRepository, times(1)).findByLectureId(lectureId);
     }
 }
