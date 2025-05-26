@@ -20,6 +20,8 @@ public class LectureOutput {
     private UUID id;
     private UUID courseId;
     private UUID userId;
+    private String userName;
+    private String userEmail;
     private String title;
     private String materialPath;
     private String materialType;
@@ -36,6 +38,8 @@ public class LectureOutput {
                 lecture.getId(),
                 lecture.getCourse().getId(),
                 lecture.getUser().getId(),
+                lecture.getUser().getName(),
+                lecture.getUser().getEmail(),
                 lecture.getTitle(),
                 lecture.getMaterialPath(),
                 lecture.getMaterialType(),
