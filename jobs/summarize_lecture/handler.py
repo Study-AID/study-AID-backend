@@ -23,10 +23,13 @@ S3_ENDPOINT_URL = os.environ.get('AWS_ENDPOINT_URL')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
 AWS_REGION = os.environ.get('AWS_REGION', 'ap-northeast-2')
+
+# TODO(jin): write default sender email and frontend domain
+# AWS SES configuration
 SES_SENDER_EMAIL=os.envrion.get('SES_SENDER_EMAIL')
 
 # Domain configuration
-FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN') # TODO(jin): write default sender email and frontend domain
+FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN')
 
 # PDF chunking configuration
 DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
@@ -211,12 +214,12 @@ def update_lecture_parsed_text(lecture_id, parsed_text):
         if conn:
             conn.close()
 
-def send_summary_email(to_email, user_name, lecture_title, lecture_id):
+def send_summary_email(receiver_email, user_name, lecture_title, lecture_id):
     # TODO(jin): write default sender email and frontend domain
     sender_email = os.environ.get('SES_SENDER_EMAIL')
     frontend_domain = os.environ.get('FRONTEND_DOMAIN')
 
-    # TODO(jin): write correct frontend domain
+    # TODO(jin): write correct url
     summary_url = f"{frontend_domain}/lectures/{lecture_id}/summary"
 
     subject = f"'[Study AID] 🕊️요약본 생성 완료: {lecture_title}"
@@ -253,7 +256,7 @@ def send_summary_email(to_email, user_name, lecture_title, lecture_id):
 
     ses_client.send_email(
         Source=sender_email,
-        Destination={'ToAddresses': [to_email]},
+        Destination={'ToAddresses': [receiver_email]},
         Message={
             'Subject': {'Data': subject, 'Charset': 'UTF-8'},
             'Body': {
