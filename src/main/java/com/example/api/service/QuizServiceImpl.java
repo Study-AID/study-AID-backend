@@ -189,4 +189,16 @@ public class QuizServiceImpl implements QuizService {
         quizResult.setEndTime(LocalDateTime.now());
         quizResultRepo.createQuizResult(quizResult);
     }
+
+    @Override
+    public Optional<QuizResultOutput> findQuizResultByQuizId(UUID quizId) {
+        Optional<QuizResult> quizResult = quizResultRepo.findByQuizId(quizId);
+        return quizResult.map(QuizResultOutput::fromEntity);
+    }
+
+    @Override
+    public QuizResultListOutput findQuizResultsByLectureId(UUID lectureId) {
+        List<QuizResult> quizResults = quizResultRepo.findByLectureId(lectureId);
+        return QuizResultListOutput.fromEntities(quizResults);
+    }
 }

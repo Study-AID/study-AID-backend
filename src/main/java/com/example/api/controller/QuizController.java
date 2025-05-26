@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.api.adapters.sqs.GenerateQuizMessage;
 import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.controller.dto.quiz.*;
+import com.example.api.entity.enums.Status;
 import com.example.api.service.LectureService;
 import com.example.api.service.QuizService;
 import com.example.api.service.dto.quiz.*;
@@ -27,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -501,5 +501,131 @@ public class QuizController extends BaseController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/{id}/result")
+    @Operation(
+            summary = "Get quiz result by quiz ID",
+            description = "Retrieve the result of a specific quiz by its ID.",
+            parameters = {
+                    @Parameter(
+                        name = "id", 
+                        description = "Quiz ID", 
+                        required = true
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200", 
+                        description = "Quiz result retrieved successfully",
+                        content = @Content(schema = @Schema(implementation = QuizResultResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "400",
+                        description = "The quiz has not been graded yet"
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this quiz"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404", 
+                        description = "Quiz result not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<QuizResultResponse> getQuizResultById(
+            @PathVariable UUID id
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // Check if the quiz exists
+            Optional<QuizOutput> quizOutput = quizService.findQuizById(id);
+            if (quizOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Check if the user is same as the quiz owner
+            if (!quizOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            // Check if the quiz has been graded
+            if (quizOutput.get().getStatus() != Status.graded) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            }
+
+            // Retrieve the quiz result
+            Optional<QuizResultOutput> quizResultOutput = quizService.findQuizResultByQuizId(id);
+            if (quizResultOutput == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok(QuizResultResponse.fromServiceDto(quizResultOutput.get()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/lecture/{lectureId}/results")
+    @Operation(
+            summary = "Get all quiz results by lecture ID",
+            description = "Retrieve all quiz results associated with a specific lecture ID.",
+            parameters = {
+                    @Parameter(
+                        name = "lectureId", 
+                        description = "Lecture ID", 
+                        required = true
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200", 
+                        description = "Quiz results retrieved successfully",
+                        content = @Content(schema = @Schema(implementation = QuizResultListResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this quiz"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404", 
+                        description = "Lecture not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<QuizResultListResponse> getQuizResultsByLecture(
+            @PathVariable UUID lectureId
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        // Check if the lecture exists
+        var lectureOutput = lectureService.findLectureById(lectureId);
+        if (lectureOutput.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Check if the user is same as the quiz owner
+        if (!lectureOutput.get().getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Retrieve quiz results associated with the lecture
+        QuizResultListOutput quizResultOutputs = quizService.findQuizResultsByLectureId(lectureId);
+
+        QuizResultListResponse quizResultResponses = QuizResultListResponse.fromServiceDto(quizResultOutputs);
+
+        return ResponseEntity.ok(quizResultResponses);
     }
 }
