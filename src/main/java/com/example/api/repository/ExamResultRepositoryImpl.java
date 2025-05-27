@@ -1,6 +1,7 @@
 package com.example.api.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import com.example.api.entity.ExamResult;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 
@@ -15,6 +17,21 @@ import jakarta.transaction.Transactional;
 public class ExamResultRepositoryImpl implements ExamResultRepositoryCustom {
     @PersistenceContext
     private EntityManager manager;
+
+    public Optional<ExamResult> findByExamId(UUID examId) {
+        try {
+            ExamResult examResult = manager.createQuery(
+                    "SELECT er FROM ExamResult er " +
+                            "WHERE er.exam.id = :examId " +
+                            "AND er.deletedAt IS NULL",
+                    ExamResult.class)
+                    .setParameter("examId", examId)
+                    .getSingleResult();
+            return Optional.of(examResult);
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
 
     public List<ExamResult> findByCourseId(UUID courseId) {
         return manager.createQuery(

@@ -173,9 +173,6 @@ public class QuizServiceImpl implements QuizService {
             // }
             quizResponseRepo.updateQuizResponse(quizResponse);
         }
-        quiz.setStatus(Status.graded);
-
-        quizRepo.updateQuiz(quiz);
 
         // 퀴즈 결과 생성 
         // TODO(yoon) : 퀴즈 결과 생성 로직을 별개의 메서드로 분리
@@ -188,6 +185,10 @@ public class QuizServiceImpl implements QuizService {
         quizResult.setStartTime(quizResponses.get(0).getCreatedAt());
         quizResult.setEndTime(LocalDateTime.now());
         quizResultRepo.createQuizResult(quizResult);
+        
+        quiz.setStatus(Status.graded);
+
+        quizRepo.updateQuiz(quiz);
     }
 
     @Override

@@ -562,7 +562,7 @@ public class QuizController extends BaseController {
 
             // Retrieve the quiz result
             Optional<QuizResultOutput> quizResultOutput = quizService.findQuizResultByQuizId(id);
-            if (quizResultOutput == null) {
+            if (quizResultOutput.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
 

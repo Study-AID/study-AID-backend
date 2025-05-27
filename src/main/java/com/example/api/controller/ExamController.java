@@ -2,6 +2,7 @@ package com.example.api.controller;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.api.adapters.sqs.GenerateExamMessage;
 import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.controller.dto.exam.*;
+import com.example.api.entity.enums.Status;
 import com.example.api.service.CourseService;
 import com.example.api.service.ExamService;
 import com.example.api.service.dto.exam.*;
@@ -24,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -476,5 +477,129 @@ public class ExamController extends BaseController {
             log.error("Error submitting exam with ID: " + id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/{id}/result")
+    @Operation(
+            summary = "Get exam result by exam ID", 
+            description = "Retrieve the result of an exam by its ID.",
+            parameters = {
+                    @Parameter(
+                        name = "id",
+                        description = "Exam ID",
+                        required = true
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200", 
+                        description = "Exam result retrieved successfully",
+                        content = @Content(schema = @Schema(implementation = ExamResultResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "400", 
+                        description = "The exam has not been graded yet"
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this quiz"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404", 
+                        description = "Exam result not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<ExamResultResponse> getExamResultById(
+            @PathVariable UUID id
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // Check if the exam exists
+            Optional<ExamOutput> examOutput = examService.findExamById(id);
+            if (examOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Check if the user has access to the exam
+            if (!examOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            // Check if the exam has been graded
+            if (examOutput.get().getStatus() != Status.graded) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // Retrieve the exam result
+            Optional<ExamResultOutput> examResultOutput = examService.findExamResultByExamId(id);
+            if (examResultOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(ExamResultResponse.fromServiceDto(examResultOutput.get()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error retrieving exam result with ID: " + id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/course/{courseId}/results")
+    @Operation(
+            summary = "Get exam results by course ID", 
+            description = "Retrieve a list of exam results associated with a specific course ID.",
+            parameters = {
+                    @Parameter(
+                        name = "courseId", 
+                        description = "ID of the course to retrieve exam results for",
+                        required = true
+                        )
+            },
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200", 
+                        description = "Exam results found", 
+                        content = @Content(schema = @Schema(implementation = ExamResultListResponse.class))),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this quiz"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404", 
+                        description = "Course not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<ExamResultListResponse> getExamResultsByCourseId(
+            @PathVariable UUID courseId
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        // Check if the course exists and if the user has access to it
+        var courseOutput = courseService.findCourseById(courseId);
+        if (courseOutput.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!courseOutput.get().getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Retrieve the exam results associated with the course
+        ExamResultListOutput examResultListOutput = examService.findExamResultsByCourseId(courseId);
+
+        ExamResultListResponse examResultListResponse = ExamResultListResponse.fromServiceDto(examResultListOutput);
+
+        return ResponseEntity.ok(examResultListResponse);
     }
 }
