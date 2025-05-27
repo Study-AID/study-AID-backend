@@ -20,6 +20,7 @@ public class ExamServiceImpl implements ExamService {
     private ExamItemRepository examItemRepo;
     private ExamResponseRepository examResponseRepo;
     private ExamResultRepository examResultRepo;
+    private LikedExamItemRepository likedExamItemRepo;
 
     @Autowired
     public void ExamService(
@@ -28,7 +29,8 @@ public class ExamServiceImpl implements ExamService {
             ExamRepository examRepo,
             ExamItemRepository examItemRepo,
             ExamResponseRepository examResponseRepo,
-            ExamResultRepository examResultRepo
+            ExamResultRepository examResultRepo,
+            LikedExamItemRepository likedExamItemRepo
     ) {
         this.userRepo = userRepo;
         this.courseRepo = courseRepo;
@@ -36,6 +38,7 @@ public class ExamServiceImpl implements ExamService {
         this.examItemRepo = examItemRepo;
         this.examResponseRepo = examResponseRepo;
         this.examResultRepo = examResultRepo;
+        this.likedExamItemRepo = likedExamItemRepo;
     }
 
     @Override
@@ -177,5 +180,44 @@ public class ExamServiceImpl implements ExamService {
         examResult.setStartTime(examResponses.get(0).getCreatedAt());
         examResult.setEndTime(LocalDateTime.now());
         examResultRepo.createExamResult(examResult);
+    }
+
+    @Override
+    @Transactional
+    public ToggleLikeExamItemOutput toggleLikeExamItem(ToggleLikeExamItemInput input) {
+        Exam exam = examRepo.getReferenceById(input.getExamId());
+        ExamItem examItem = examItemRepo.getReferenceById(input.getExamItemId());
+        User user = userRepo.getReferenceById(input.getUserId());
+
+        if (!examItem.getExam().getId().equals(input.getExamId())) {
+            throw new IllegalArgumentException("Exam item does not belong to the specified exam");
+        }
+
+        Optional<LikedExamItem> existingLikedExamItem = likedExamItemRepo.findByExamItemIdAndUserId(input.getExamItemId(), input.getUserId());
+
+        boolean isLiked;
+
+        if (existingLikedExamItem.isPresent()) {
+            // 이미 좋아요가 눌려있다면 좋아요 취소
+            likedExamItemRepo.deleteLikedExamItem(existingLikedExamItem.get().getId());
+            isLiked = false;
+        } else {
+            // 좋아요가 눌려있지 않다면 좋아요 추가
+            LikedExamItem newLikedExamItem = new LikedExamItem();
+            newLikedExamItem.setExam(exam);
+            newLikedExamItem.setExamItem(examItem);
+            newLikedExamItem.setUser(user);
+            newLikedExamItem.setCreatedAt(LocalDateTime.now());
+
+            likedExamItemRepo.createLikedExamItem(newLikedExamItem);
+            isLiked = true;
+        }
+
+        return new ToggleLikeExamItemOutput(
+                input.getExamId(),
+                input.getExamItemId(),
+                input.getUserId(),
+                isLiked
+        );
     }
 }

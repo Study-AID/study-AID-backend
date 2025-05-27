@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-public class LikedQuizItemRepositoryTest {
+public class LikedExamItemRepositoryTest {
     @Autowired
-    private LikedQuizItemRepository likedQuizItemRepository;
+    private LikedExamItemRepository likedExamItemRepository;
     
     @Autowired
     private EntityManager entityManager;
@@ -32,9 +32,9 @@ public class LikedQuizItemRepositoryTest {
     private Semester testSemester;
     private Course testCourse;
     private Lecture testLecture;
-    private Quiz testQuiz;
-    private QuizItem testQuizItem;
-    private LikedQuizItem testLikedQuizItem;
+    private Exam testExam;
+    private ExamItem testExamItem;
+    private LikedExamItem testLikedExamItem;
 
     @BeforeEach
     void setUp() {
@@ -79,104 +79,99 @@ public class LikedQuizItemRepositoryTest {
         testLecture.setSummaryStatus(SummaryStatus.not_started);
         entityManager.persist(testLecture);
 
-        testQuiz = new Quiz();
-        testQuiz.setId(UUID.randomUUID());
-        testQuiz.setLecture(testLecture);
-        testQuiz.setUser(testUser);
-        testQuiz.setTitle("Quiz 1");
-        testQuiz.setStatus(Status.not_started);
-        testQuiz.setContentsGenerateAt(LocalDateTime.now());
+        testExam = new Exam();
+        testExam.setId(UUID.randomUUID());
+        testExam.setUser(testUser);
+        testExam.setCourse(testCourse);
+        testExam.setTitle("Midterm Exam");
+        testExam.setStatus(Status.not_started);
+        entityManager.persist(testExam);
 
-        entityManager.persist(testQuiz);
+        testExamItem = new ExamItem();
+        testExamItem.setId(UUID.randomUUID());
+        testExamItem.setExam(testExam);
+        testExamItem.setUser(testUser);
+        testExamItem.setQuestion("what is the capital of France?");
+        testExamItem.setQuestionType(QuestionType.short_answer);
+        entityManager.persist(testExamItem);
 
-        testQuizItem = new QuizItem();
-        testQuizItem.setId(UUID.randomUUID());
-        testQuizItem.setQuiz(testQuiz);
-        testQuizItem.setUser(testUser);
-        testQuizItem.setQuestion("오렌지는");
-        testQuizItem.setQuestionType(QuestionType.short_answer);
-
-        entityManager.persist(testQuizItem);
-
-        testLikedQuizItem = new LikedQuizItem();
-        testLikedQuizItem.setId(UUID.randomUUID());
-        testLikedQuizItem.setQuiz(testQuiz);
-        testLikedQuizItem.setQuizItem(testQuizItem);
-        testLikedQuizItem.setUser(testUser);
+        testLikedExamItem = new LikedExamItem();
+        testLikedExamItem.setId(UUID.randomUUID());
+        testLikedExamItem.setUser(testUser);
+        testLikedExamItem.setExam(testExam);
+        testLikedExamItem.setExamItem(testExamItem);
+        testLikedExamItem.setCreatedAt(LocalDateTime.now());
 
         entityManager.flush();
         entityManager.clear();
     }
 
     @Test
-    @DisplayName("좋아요한 퀴즈 아이템 저장 및 ID로 조회 테스트")
-    void saveAndFindLikedQuizItemTest() {
-        // Given
-        likedQuizItemRepository.save(testLikedQuizItem);
+    @DisplayName("LikedExamItem 저장 및 조회 테스트")
+    void saveAndFindLikedExamItemTest() {
+        // LikedExamItem 저장
+        likedExamItemRepository.save(testLikedExamItem);
         entityManager.flush();
         entityManager.clear();
 
-        // When
-        Optional<LikedQuizItem> found = likedQuizItemRepository.findById(testLikedQuizItem.getId());
-
-        // Then
-        assertTrue(found.isPresent());
-        assertTrue(found.get().getQuiz().getId().equals(testQuiz.getId()));
-        assertTrue(found.get().getQuizItem().getId().equals(testQuizItem.getId()));
+        // ID로 LikedExamItem 조회
+        Optional<LikedExamItem> foundLikedExamItem = likedExamItemRepository.findById(testLikedExamItem.getId());
+        
+        // 조회된 LikedExamItem이 존재하는지 확인
+        assertTrue(foundLikedExamItem.isPresent());
     }
 
     @Test
-    @DisplayName("퀴즈 아이템 ID와 사용자 ID로 좋아요한 퀴즈 아이템 조회 테스트")
-    void findByQuizItemIdAndUserIdTest() {
-        // Given
-        likedQuizItemRepository.save(testLikedQuizItem);
+    @DisplayName("시험 아이템 ID와 사용자 ID로 좋아요한 시험 아이템 조회 테스트")
+    void findByExamItemIdAndUserIdTest() {
+        // LikedExamItem 저장
+        likedExamItemRepository.save(testLikedExamItem);
         entityManager.flush();
         entityManager.clear();
 
-        // When
-        Optional<LikedQuizItem> found = likedQuizItemRepository.findByQuizItemIdAndUserId(
-                testQuizItem.getId(), testUser.getId());
+        // 시험 아이템 ID와 사용자 ID로 LikedExamItem 조회
+        Optional<LikedExamItem> foundLikedExamItem = likedExamItemRepository.findByExamItemIdAndUserId(
+                testExamItem.getId(), testUser.getId());
 
-        // Then
-        assertTrue(found.isPresent());
-        assertTrue(found.get().getQuiz().getId().equals(testQuiz.getId()));
-        assertTrue(found.get().getQuizItem().getId().equals(testQuizItem.getId()));
+        // 조회된 LikedExamItem이 존재하는지 확인
+        assertTrue(foundLikedExamItem.isPresent());
     }
 
     @Test
-    @DisplayName("좋아요한 퀴즈 아이템 생성(createLikedQuizItem) 테스트")
-    void createLikedQuizItemTest() {
+    @DisplayName("좋아요한 시험 아이템 생성(createLikedQuizItem) 테스트")
+    void createLikedExamItemTest() {
         // Given
-        LikedQuizItem newLikedQuizItem = new LikedQuizItem();
-        newLikedQuizItem.setId(UUID.randomUUID());
-        newLikedQuizItem.setQuiz(testQuiz);
-        newLikedQuizItem.setQuizItem(testQuizItem);
-        newLikedQuizItem.setUser(testUser);
+        LikedExamItem newLikedExamItem = new LikedExamItem();
+        newLikedExamItem.setId(UUID.randomUUID());
+        newLikedExamItem.setUser(testUser);
+        newLikedExamItem.setExam(testExam);
+        newLikedExamItem.setExamItem(testExamItem);
+        newLikedExamItem.setCreatedAt(LocalDateTime.now());
 
         // When
-        LikedQuizItem created = likedQuizItemRepository.createLikedQuizItem(newLikedQuizItem);
+        LikedExamItem created = likedExamItemRepository.createLikedExamItem(newLikedExamItem);
         entityManager.flush();
         entityManager.clear();
 
         // Then
-        assertTrue(created.getId().equals(newLikedQuizItem.getId()));
+        assertTrue(created.getId().equals(newLikedExamItem.getId()));
     }
 
     @Test
-    @DisplayName("좋아요한 퀴즈 아이템 삭제(deleteLikedQuizItem) 테스트")
-    void deleteLikedQuizItemTest() {
+    @DisplayName("좋아요한 시험 아이템 삭제(createLikedExamItem) 테스트")
+    void deleteLikedExamItemTest() {
         // Given
-        likedQuizItemRepository.save(testLikedQuizItem);
+        likedExamItemRepository.save(testLikedExamItem);
         entityManager.flush();
         entityManager.clear();
 
         // When
-        likedQuizItemRepository.deleteLikedQuizItem(testLikedQuizItem.getId());
+        likedExamItemRepository.deleteLikedExamItem(testLikedExamItem.getId());
         entityManager.flush();
         entityManager.clear();
 
         // Then
-        Optional<LikedQuizItem> found = likedQuizItemRepository.findById(testLikedQuizItem.getId());
+        Optional<LikedExamItem> found = likedExamItemRepository.findById(testLikedExamItem.getId());
         assertTrue(found.isEmpty());
     }
 }

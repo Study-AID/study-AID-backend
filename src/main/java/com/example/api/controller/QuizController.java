@@ -576,7 +576,6 @@ public class QuizController extends BaseController {
 
             // 응답 DTO 변환
             ToggleLikeQuizItemResponse response = ToggleLikeQuizItemResponse.fromServiceDto(output);
-
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -584,5 +583,4 @@ public class QuizController extends BaseController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
 }

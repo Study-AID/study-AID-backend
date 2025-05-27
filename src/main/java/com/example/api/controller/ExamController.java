@@ -2,6 +2,7 @@ package com.example.api.controller;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -474,6 +474,83 @@ public class ExamController extends BaseController {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.error("Error submitting exam with ID: " + id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/{id}/items/{examItemId}/like")
+    @Operation(
+            summary = "Toggle like for exam item",
+            description = "Toggle like status for a specific exam item. If already liked, removes the like. If not liked, adds a like.",
+            parameters = {
+                    @Parameter(
+                        name = "id",
+                        description = "ID of the exam",
+                        required = true
+                    ),
+                    @Parameter(
+                        name = "examItemId",
+                        description = "ID of the exam item to toggle like for",
+                        required = true
+                    )
+            },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Toggle like request (empty body)",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ToggleLikeExamItemRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200",
+                        description = "Like toggled successfully",
+                        content = @Content(schema = @Schema(implementation = ToggleLikeExamItemResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this exam"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404",
+                        description = "Exam or exam item not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<ToggleLikeExamItemResponse> toggleLikeExamItem(
+            @PathVariable UUID id,
+            @PathVariable UUID examItemId,
+            @org.springframework.web.bind.annotation.RequestBody ToggleLikeExamItemRequest request
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // Check if the exam exists and if the user has access to it
+            Optional<ExamOutput> examOutput = examService.findExamById(id);
+            if (examOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (!examOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
+            input.setExamId(id);
+            input.setExamItemId(examItemId);
+            input.setUserId(userId);
+            
+            ToggleLikeExamItemOutput output = examService.toggleLikeExamItem(input);
+
+            ToggleLikeExamItemResponse response = ToggleLikeExamItemResponse.fromServiceDto(output);
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error toggling like for exam item with ID: " + examItemId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

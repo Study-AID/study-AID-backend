@@ -7,7 +7,10 @@ import com.example.api.repository.*;
 import com.example.api.service.dto.exam.CreateExamInput;
 import com.example.api.service.dto.exam.ExamListOutput;
 import com.example.api.service.dto.exam.ExamOutput;
+import com.example.api.service.dto.exam.ToggleLikeExamItemInput;
+import com.example.api.service.dto.exam.ToggleLikeExamItemOutput;
 import com.example.api.service.dto.exam.UpdateExamInput;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,6 +53,9 @@ public class ExamServiceTest {
     @Mock
     private ExamResultRepository examResultRepo;
 
+    @Mock
+    private LikedExamItemRepository likedExamItemRepo;
+
     @InjectMocks
     private ExamServiceImpl examService;
 
@@ -62,19 +68,24 @@ public class ExamServiceTest {
     @Captor
     private ArgumentCaptor<ExamResult> examResultCaptor;
 
+    @Captor
+    private ArgumentCaptor<LikedExamItem> likedExamItemCaptor;
+
     private UUID userId;
     private UUID courseId;
     private UUID examId;
     private UUID examItemId1;
     private UUID examItemId2;
     private UUID examItemId3;
+    private UUID examItemId4;
 
     private User testUser;
     private Course testCourse;
     private Exam testExam;
     private List<ExamItem> testExamItems;
-    private List<ExamResponse> testExamResponses;
     private ExamOutput testExamOutput;
+    private List<ExamResponse> testExamResponses;
+    private ExamItem testExamItem;
 
     @BeforeEach
     void setUp() {
@@ -84,6 +95,7 @@ public class ExamServiceTest {
         examItemId1 = UUID.randomUUID();
         examItemId2 = UUID.randomUUID();
         examItemId3 = UUID.randomUUID();
+        examItemId4 = UUID.randomUUID(); // like exam item
 
         testUser = new User();
         testUser.setId(userId);
@@ -171,6 +183,12 @@ public class ExamServiceTest {
         shortAnswerResponse.setCreatedAt(LocalDateTime.now());
 
         testExamResponses = Arrays.asList(trueOrFalseResponse, multipleChoiceResponse, shortAnswerResponse);
+
+        testExamItem = new ExamItem();
+        testExamItem.setId(examItemId4);
+        testExamItem.setExam(testExam);
+        testExamItem.setQuestionType(QuestionType.true_or_false);
+        testExamItem.setQuestion("Is this a liked exam item?");
     }
 
     @Test
@@ -381,5 +399,106 @@ public class ExamServiceTest {
         verify(examResponseRepo, never()).updateExamResponse(any(ExamResponse.class));
         verify(examRepo, never()).updateExam(any(Exam.class));
         verify(examResultRepo, never()).createExamResult(any(ExamResult.class));
+    }
+
+    @Test
+    @DisplayName("시험 아이템 좋아요 토글 - 좋아요 추가")
+    void toggleLikeExamItemAddTest() {
+        ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
+        input.setExamId(examId);
+        input.setExamItemId(examItemId4);
+        input.setUserId(userId);
+
+        when(examRepo.getReferenceById(examId)).thenReturn(testExam);
+        when(examItemRepo.getReferenceById(examItemId4)).thenReturn(testExamItem);
+        when(userRepo.getReferenceById(userId)).thenReturn(testUser);
+        when(likedExamItemRepo.findByExamItemIdAndUserId(examItemId4, userId)).thenReturn(Optional.empty());
+        when(likedExamItemRepo.createLikedExamItem(any(LikedExamItem.class))).thenReturn(new LikedExamItem());
+
+        ToggleLikeExamItemOutput result = examService.toggleLikeExamItem(input);
+
+        assertNotNull(result);
+        assertEquals(examId, result.getExamId());
+        assertEquals(examItemId4, result.getExamItemId());
+        assertEquals(userId, result.getUserId());
+        assertTrue(result.isLiked());
+
+        verify(examRepo, times(1)).getReferenceById(examId);
+        verify(examItemRepo, times(1)).getReferenceById(examItemId4);
+        verify(userRepo, times(1)).getReferenceById(userId);
+        verify(likedExamItemRepo, times(1)).findByExamItemIdAndUserId(examItemId4, userId);
+        verify(likedExamItemRepo, times(1)).createLikedExamItem(likedExamItemCaptor.capture());
+        verify(likedExamItemRepo, never()).deleteLikedExamItem(any(UUID.class));
+        
+        // Verify the created LikedExamItem
+        LikedExamItem capturedLikedExamItem = likedExamItemCaptor.getValue();
+        assertEquals(testExam, capturedLikedExamItem.getExam());
+        assertEquals(testExamItem, capturedLikedExamItem.getExamItem());
+        assertEquals(testUser, capturedLikedExamItem.getUser());
+    }
+
+    @Test
+    @DisplayName("시험 아이템 좋아요 토글 - 좋아요 제거")
+    void toggleLikeExamItemRemoveTest() {
+        ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
+        input.setExamId(examId);
+        input.setExamItemId(examItemId4);
+        input.setUserId(userId);
+
+        LikedExamItem existingLikedExamItem = new LikedExamItem();
+        existingLikedExamItem.setId(UUID.randomUUID());
+        existingLikedExamItem.setExam(testExam);
+        existingLikedExamItem.setExamItem(testExamItem);
+        existingLikedExamItem.setUser(testUser);
+
+        when(examRepo.getReferenceById(examId)).thenReturn(testExam);
+        when(examItemRepo.getReferenceById(examItemId4)).thenReturn(testExamItem);
+        when(userRepo.getReferenceById(userId)).thenReturn(testUser);
+        when(likedExamItemRepo.findByExamItemIdAndUserId(examItemId4, userId)).thenReturn(Optional.of(existingLikedExamItem));
+
+        ToggleLikeExamItemOutput result = examService.toggleLikeExamItem(input);
+
+        assertNotNull(result);
+        assertEquals(examId, result.getExamId());
+        assertEquals(examItemId4, result.getExamItemId());
+        assertEquals(userId, result.getUserId());
+        assertFalse(result.isLiked());
+
+        verify(examRepo, times(1)).getReferenceById(examId);
+        verify(examItemRepo, times(1)).getReferenceById(examItemId4);
+        verify(userRepo, times(1)).getReferenceById(userId);
+        verify(likedExamItemRepo, times(1)).findByExamItemIdAndUserId(examItemId4, userId);
+        verify(likedExamItemRepo, times(1)).deleteLikedExamItem(existingLikedExamItem.getId());
+    }
+
+    @Test
+    @DisplayName("시험 아이템 좋아요 토글 - 예외 처리 - 시험 아이템이 시험에 속하지 않는 경우")
+    void toggleLikeExamItemInvalidExamItemTest() {
+        ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
+        input.setExamId(examId);
+        input.setExamItemId(examItemId4); // 다른 시험 아이템 ID
+        input.setUserId(userId);
+
+        Exam anotherExam = new Exam();
+        anotherExam.setId(UUID.randomUUID());
+
+        ExamItem anotherExamItem = new ExamItem();
+        anotherExamItem.setId(UUID.randomUUID());
+        anotherExamItem.setExam(anotherExam);
+
+        when(examRepo.getReferenceById(examId)).thenReturn(testExam);
+        when(examItemRepo.getReferenceById(input.getExamItemId())).thenReturn(anotherExamItem);
+        when(userRepo.getReferenceById(userId)).thenReturn(testUser);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            examService.toggleLikeExamItem(input);
+        });
+
+        verify(examRepo, times(1)).getReferenceById(examId);
+        verify(examItemRepo, times(1)).getReferenceById(input.getExamItemId());
+        verify(userRepo, times(1)).getReferenceById(userId);
+        verify(likedExamItemRepo, never()).findByExamItemIdAndUserId(any(UUID.class), any(UUID.class));
+        verify(likedExamItemRepo, never()).createLikedExamItem(any(LikedExamItem.class));
+        verify(likedExamItemRepo, never()).deleteLikedExamItem(any(UUID.class));
     }
 }

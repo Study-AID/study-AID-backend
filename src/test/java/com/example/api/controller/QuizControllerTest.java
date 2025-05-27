@@ -5,6 +5,7 @@ import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.quiz.CreateQuizRequest;
 import com.example.api.controller.dto.quiz.SubmitQuizItem;
 import com.example.api.controller.dto.quiz.SubmitQuizRequest;
+import com.example.api.controller.dto.quiz.ToggleLikeQuizItemRequest;
 import com.example.api.controller.dto.quiz.UpdateQuizRequest;
 import com.example.api.entity.Quiz;
 import com.example.api.entity.QuizItem;
@@ -54,7 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(QuizController.class)
-@Import({TestSecurityConfig.class})
+@Import({ TestSecurityConfig.class })
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 public class QuizControllerTest {
@@ -66,7 +67,7 @@ public class QuizControllerTest {
 
     @MockBean
     private JwtProvider jwtProvider;
-    
+
     @MockBean
     private UserRepository userRepository;
 
@@ -91,7 +92,6 @@ public class QuizControllerTest {
     @MockBean
     private SQSClient sqsClient;
 
-
     private UUID userId;
     private UUID semesterId;
     private UUID courseId;
@@ -109,7 +109,8 @@ public class QuizControllerTest {
 
     @BeforeEach
     public void setUp() {
-        // TODO(yoon): use @WithMockUser or @WithSecurityContext instead of hard-coding userId
+        // TODO(yoon): use @WithMockUser or @WithSecurityContext instead of hard-coding
+        // userId
         userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
         semesterId = UUID.randomUUID();
         courseId = UUID.randomUUID();
@@ -146,8 +147,7 @@ public class QuizControllerTest {
 
         testQuizItems = List.of(
                 new QuizItem(),
-                new QuizItem()
-        );
+                new QuizItem());
         testQuizItems.get(0).setId(UUID.randomUUID());
         testQuizOutput.setQuizItems(testQuizItems);
 
@@ -158,14 +158,15 @@ public class QuizControllerTest {
         testQuizResponseListOutput.getQuizResponseOutputs().get(0).setUserId(userId);
         testQuizResponseListOutput.getQuizResponseOutputs().get(0).setQuizItemId(testQuizItems.get(0).getId());
     }
-    
+
     @Test
     @DisplayName("강의별 퀴즈 목록 조회")
     @WithMockUser
     void getQuizzesByLecture() throws Exception {
         // given
         when(lectureService.findLectureById(lectureId)).thenReturn(Optional.of(testLectureOutput));
-        when(quizService.findQuizzesByLectureId(lectureId)).thenReturn(new QuizListOutput(List.of(testQuizOutput)));
+        when(quizService.findQuizzesByLectureId(lectureId))
+                .thenReturn(new QuizListOutput(List.of(testQuizOutput)));
 
         // when, then
         mockMvc.perform(get("/v1/quizzes/lecture/{lectureId}", lectureId))
@@ -222,8 +223,8 @@ public class QuizControllerTest {
 
         // when, then
         mockMvc.perform(post("/v1/quizzes")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createQuizRequest)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createQuizRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(quizId.toString())))
                 .andExpect(jsonPath("$.lectureId", is(lectureId.toString())))
@@ -250,8 +251,8 @@ public class QuizControllerTest {
 
         // when, then
         mockMvc.perform(put("/v1/quizzes/{id}", quizId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateQuizRequest)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateQuizRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(quizId.toString())))
                 .andExpect(jsonPath("$.lectureId", is(lectureId.toString())))
@@ -259,10 +260,8 @@ public class QuizControllerTest {
                 .andExpect(jsonPath("$.title", is("Quiz 1")));
 
         verify(quizService, times(1)).findQuizById(quizId);
-        verify(quizService, times(1)).updateQuiz(argThat(input -> 
-                input.getId().equals(quizId)    
-                && input.getTitle().equals("Updated Quiz Title")
-        ));
+        verify(quizService, times(1)).updateQuiz(argThat(input -> input.getId().equals(quizId)
+                && input.getTitle().equals("Updated Quiz Title")));
     }
 
     @Test
@@ -295,34 +294,37 @@ public class QuizControllerTest {
         testQuizResponse1.setQuiz(testQuiz);
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
-        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
-        
-        
+        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any()))
+                .thenReturn(testQuizResponseListOutput);
+
         submitQuizRequest.setSubmitQuizItems(List.of(
                 new SubmitQuizItem(),
-                new SubmitQuizItem()
-        ));
+                new SubmitQuizItem()));
         submitQuizRequest.getSubmitQuizItems().get(0).setQuizItemId(testQuizItems.get(0).getId());
         submitQuizRequest.getSubmitQuizItems().get(0).setQuestionType(QuestionType.true_or_false);
         submitQuizRequest.getSubmitQuizItems().get(0).setSelectedBool(true);
         submitQuizRequest.getSubmitQuizItems().get(1).setQuizItemId(testQuizItems.get(1).getId());
         submitQuizRequest.getSubmitQuizItems().get(1).setQuestionType(QuestionType.multiple_choice);
-        submitQuizRequest.getSubmitQuizItems().get(1).setSelectedIndices(new Integer[]{0, 1});
+        submitQuizRequest.getSubmitQuizItems().get(1).setSelectedIndices(new Integer[] { 0, 1 });
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
-        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
+        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any()))
+                .thenReturn(testQuizResponseListOutput);
 
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/submit", quizId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(submitQuizRequest)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(submitQuizRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.submitQuizResponses[0].id", is(testQuizResponseListOutput.getQuizResponseOutputs().get(0).getId().toString())))
+                .andExpect(jsonPath("$.submitQuizResponses[0].id",
+                        is(testQuizResponseListOutput.getQuizResponseOutputs().get(0).getId()
+                                .toString())))
                 .andExpect(jsonPath("$.submitQuizResponses[0].quizId", is(quizId.toString())))
                 .andExpect(jsonPath("$.submitQuizResponses[0].userId", is(userId.toString())))
-                .andExpect(jsonPath("$.submitQuizResponses[0].quizItemId", is(testQuizItems.get(0).getId().toString())));
+                .andExpect(jsonPath("$.submitQuizResponses[0].quizItemId",
+                        is(testQuizItems.get(0).getId().toString())));
     }
-    
+
     @Test
     @DisplayName("유효하지 않은 요청으로 퀴즈 생성")
     @WithMockUser
@@ -340,15 +342,15 @@ public class QuizControllerTest {
 
         // when, then
         mockMvc.perform(post("/v1/quizzes")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createQuizRequest)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createQuizRequest)))
                 .andExpect(status().isBadRequest());
 
         verify(lectureService, times(1)).findLectureById(lectureId);
         verify(quizService, never()).createQuiz(any(CreateQuizInput.class));
         verify(sqsClient, never()).sendGenerateQuizMessage(any());
     }
-    
+
     @Test
     @DisplayName("존재하지 않는 강의로 퀴즈 생성")
     @WithMockUser
@@ -366,12 +368,114 @@ public class QuizControllerTest {
 
         // when, then
         mockMvc.perform(post("/v1/quizzes")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createQuizRequest)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createQuizRequest)))
                 .andExpect(status().isNotFound());
 
         verify(lectureService, times(1)).findLectureById(lectureId);
         verify(quizService, never()).createQuiz(any(CreateQuizInput.class));
         verify(sqsClient, never()).sendGenerateQuizMessage(any());
     }
-        }
+
+    @Test
+    @DisplayName("퀴즈 문제 좋아요 토글 - 좋아요 추가")
+    @WithMockUser
+    void toggleLikeQuizItem_AddLike() throws Exception {
+        // given
+        UUID quizItemId = UUID.randomUUID();
+        ToggleLikeQuizItemRequest request = new ToggleLikeQuizItemRequest();
+
+        ToggleLikeQuizItemOutput output = new ToggleLikeQuizItemOutput(
+                quizId, quizItemId, userId, true);
+
+        when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
+        when(quizService.toggleLikeQuizItem(any(ToggleLikeQuizItemInput.class))).thenReturn(output);
+
+        // when, then
+        mockMvc.perform(post("/v1/quizzes/{id}/items/{quizItemId}/like", quizId, quizItemId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quizId", is(quizId.toString())))
+                .andExpect(jsonPath("$.quizItemId", is(quizItemId.toString())))
+                .andExpect(jsonPath("$.userId", is(userId.toString())))
+                .andExpect(jsonPath("$.liked", is(true)));
+
+        verify(quizService, times(1)).findQuizById(quizId);
+        verify(quizService, times(1)).toggleLikeQuizItem(argThat(input -> input.getQuizId().equals(quizId) &&
+                input.getQuizItemId().equals(quizItemId) &&
+                input.getUserId().equals(userId)));
+    }
+
+    @Test
+    @DisplayName("퀴즈 문제 좋아요 토글 - 좋아요 제거")
+    @WithMockUser
+    void toggleLikeQuizItem_RemoveLike() throws Exception {
+        // given
+        UUID quizItemId = UUID.randomUUID();
+        ToggleLikeQuizItemRequest request = new ToggleLikeQuizItemRequest();
+
+        ToggleLikeQuizItemOutput output = new ToggleLikeQuizItemOutput(
+                quizId, quizItemId, userId, false);
+
+        when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
+        when(quizService.toggleLikeQuizItem(any(ToggleLikeQuizItemInput.class))).thenReturn(output);
+
+        // when, then
+        mockMvc.perform(post("/v1/quizzes/{id}/items/{quizItemId}/like", quizId, quizItemId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quizId", is(quizId.toString())))
+                .andExpect(jsonPath("$.quizItemId", is(quizItemId.toString())))
+                .andExpect(jsonPath("$.userId", is(userId.toString())))
+                .andExpect(jsonPath("$.liked", is(false)));
+
+        verify(quizService, times(1)).findQuizById(quizId);
+        verify(quizService, times(1)).toggleLikeQuizItem(any(ToggleLikeQuizItemInput.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 문제 좋아요 토글 - 퀴즈 찾을 수 없음")
+    @WithMockUser
+    void toggleLikeQuizItem_QuizNotFound() throws Exception {
+        // given
+        UUID quizItemId = UUID.randomUUID();
+        ToggleLikeQuizItemRequest request = new ToggleLikeQuizItemRequest();
+
+        when(quizService.findQuizById(quizId)).thenReturn(Optional.empty());
+
+        // when, then
+        mockMvc.perform(post("/v1/quizzes/{id}/items/{quizItemId}/like", quizId, quizItemId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+
+        verify(quizService, times(1)).findQuizById(quizId);
+        verify(quizService, never()).toggleLikeQuizItem(any(ToggleLikeQuizItemInput.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 문제 좋아요 토글 - 권한 없음")
+    @WithMockUser
+    void toggleLikeQuizItem_Forbidden() throws Exception {
+        // given
+        UUID quizItemId = UUID.randomUUID();
+        UUID anotherUserId = UUID.randomUUID();
+        ToggleLikeQuizItemRequest request = new ToggleLikeQuizItemRequest();
+
+        // 다른 사용자의 퀴즈로 설정
+        testQuizOutput.setUserId(anotherUserId);
+
+        when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
+
+        // when, then
+        mockMvc.perform(post("/v1/quizzes/{id}/items/{quizItemId}/like", quizId, quizItemId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(quizService, times(1)).findQuizById(quizId);
+        verify(quizService, never()).toggleLikeQuizItem(any(ToggleLikeQuizItemInput.class));
+    }
+}

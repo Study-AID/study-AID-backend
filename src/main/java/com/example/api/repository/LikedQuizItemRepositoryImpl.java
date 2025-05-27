@@ -21,22 +21,6 @@ public class LikedQuizItemRepositoryImpl implements LikedQuizItemRepositoryCusto
     private EntityManager manager;
 
     @Override
-    public Optional<LikedQuizItem> findByQuizItemId(UUID quizItemId) {
-        try {
-            LikedQuizItem likedQuizItem = manager.createQuery(
-                    "SELECT l FROM LikedQuizItem l " +
-                            "WHERE l.quizItem.id = :quizItemId ",
-                    LikedQuizItem.class)
-                    .setParameter("quizItemId", quizItemId)
-                    .getSingleResult();
-            return Optional.of(likedQuizItem);
-        } catch (Exception e) {
-            logger.error("Error finding liked quiz item by quiz item ID: {}", quizItemId, e);
-            return Optional.empty();
-        }
-    }
-
-    @Override
     public Optional<LikedQuizItem> findByQuizItemIdAndUserId(UUID quizItemId, UUID userId) {
         try {
             LikedQuizItem likedQuizItem = manager.createQuery(

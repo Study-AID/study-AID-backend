@@ -6,8 +6,6 @@ import java.util.UUID;
 import com.example.api.entity.LikedQuizItem;
 
 public interface LikedQuizItemRepositoryCustom {
-    Optional<LikedQuizItem> findByQuizItemId(UUID quizItemId);
-    
     Optional<LikedQuizItem> findByQuizItemIdAndUserId(UUID quizItemId, UUID userId);
 
     LikedQuizItem createLikedQuizItem(LikedQuizItem likedQuizItem);

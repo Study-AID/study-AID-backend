@@ -12,6 +12,8 @@ import com.example.api.service.dto.exam.CreateExamResponseInput;
 import com.example.api.service.dto.exam.ExamListOutput;
 import com.example.api.service.dto.exam.ExamOutput;
 import com.example.api.service.dto.exam.ExamResponseListOutput;
+import com.example.api.service.dto.exam.ToggleLikeExamItemInput;
+import com.example.api.service.dto.exam.ToggleLikeExamItemOutput;
 import com.example.api.service.dto.exam.UpdateExamInput;
 
 @Service
@@ -34,4 +36,7 @@ public interface ExamService {
 
     @Transactional
     void gradeExam(UUID examId);
+
+    @Transactional
+    ToggleLikeExamItemOutput toggleLikeExamItem(ToggleLikeExamItemInput input);
 }

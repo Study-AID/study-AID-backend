@@ -224,6 +224,7 @@ public class QuizServiceImpl implements QuizService {
             newLikedQuizItem.setQuiz(quiz);
             newLikedQuizItem.setQuizItem(quizItem);
             newLikedQuizItem.setUser(user);
+            newLikedQuizItem.setCreatedAt(LocalDateTime.now());
             
             likedQuizItemRepo.createLikedQuizItem(newLikedQuizItem);
             isLiked = true;
