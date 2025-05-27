@@ -37,12 +37,29 @@ public class LikedQuizItemRepositoryImpl implements LikedQuizItemRepositoryCusto
     }
 
     @Override
+    public Optional<LikedQuizItem> findByQuizItemIdAndUserId(UUID quizItemId, UUID userId) {
+        try {
+            LikedQuizItem likedQuizItem = manager.createQuery(
+                    "SELECT l FROM LikedQuizItem l " +
+                            "WHERE l.quizItem.id = :quizItemId " +
+                            "AND l.user.id = :userId",
+                    LikedQuizItem.class)
+                    .setParameter("quizItemId", quizItemId)
+                    .setParameter("userId", userId)
+                    .getSingleResult();
+            return Optional.of(likedQuizItem);
+        } catch (Exception e) {
+            logger.debug("No liked quiz item found for quizItemId: {} and userId: {}", quizItemId, userId);
+            return Optional.empty();
+        }
+    }
+
+    @Override
     @Transactional
     public LikedQuizItem createLikedQuizItem(LikedQuizItem likedQuizItem) {
         if (isDuplicated(likedQuizItem.getQuizItem().getId(), likedQuizItem.getUser().getId())) {
             throw new IllegalArgumentException(
-                    "Liked quiz item with the same quiz item and user already exists"
-            );
+                    "Liked quiz item with the same quiz item and user already exists");
         }
         manager.persist(likedQuizItem);
         return likedQuizItem;

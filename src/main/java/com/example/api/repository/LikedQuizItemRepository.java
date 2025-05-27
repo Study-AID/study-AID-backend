@@ -9,6 +9,8 @@ import java.util.UUID;
 public interface LikedQuizItemRepository extends JpaRepository<LikedQuizItem, UUID> {
     Optional<LikedQuizItem> findByQuizItemId(UUID quizItemId);
     
+    Optional<LikedQuizItem> findByQuizItemIdAndUserId(UUID quizItemId, UUID userId);
+
     LikedQuizItem createLikedQuizItem(LikedQuizItem likedQuizItem);
 
     void deleteLikedQuizItem(UUID likedQuizItemId);

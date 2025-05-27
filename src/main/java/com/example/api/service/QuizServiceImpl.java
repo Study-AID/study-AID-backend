@@ -21,6 +21,7 @@ public class QuizServiceImpl implements QuizService {
 
     private QuizResponseRepository quizResponseRepo;
     private QuizResultRepository quizResultRepo;
+    private LikedQuizItemRepository likedQuizItemRepo;
 
     @Autowired
     public void QuizService(
@@ -28,13 +29,17 @@ public class QuizServiceImpl implements QuizService {
             QuizRepository quizRepo,
             QuizItemRepository quizItemRepo,
             LectureRepository lectureRepo,
-            QuizResponseRepository quizResponseRepo
+            QuizResponseRepository quizResponseRepo,
+            QuizResultRepository quizResultRepo,
+            LikedQuizItemRepository likedQuizItemRepo
     ) {
         this.userRepo = userRepo;
         this.quizRepo = quizRepo;
         this.quizItemRepo = quizItemRepo;
         this.lectureRepo = lectureRepo;
         this.quizResponseRepo = quizResponseRepo;
+        this.quizResultRepo = quizResultRepo;
+        this.likedQuizItemRepo = likedQuizItemRepo;
     }
 
     @Override
@@ -188,5 +193,47 @@ public class QuizServiceImpl implements QuizService {
         quizResult.setStartTime(quizResponses.get(0).getCreatedAt());
         quizResult.setEndTime(LocalDateTime.now());
         quizResultRepo.createQuizResult(quizResult);
+    }
+
+    @Override
+    @Transactional
+    public ToggleLikeQuizItemOutput toggleLikeQuizItem(ToggleLikeQuizItemInput input) {
+        // 퀴즈 존재 확인
+        Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
+        QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
+        User user = userRepo.getReferenceById(input.getUserId());
+
+        // 퀴즈 문제가 해당 퀴즈에 속하는지 확인
+        if (!quizItem.getQuiz().getId().equals(input.getQuizId())) {
+            throw new IllegalArgumentException("Quiz item does not belong to the specified quiz");
+        }
+
+        // 기존 좋아요 확인
+        Optional<LikedQuizItem> existingLikedQuizItem = likedQuizItemRepo.findByQuizItemIdAndUserId(
+                input.getQuizItemId(), input.getUserId());
+
+        boolean isLiked;
+        
+        if (existingLikedQuizItem.isPresent()) {
+            // 좋아요가 이미 존재하면 삭제 (좋아요 취소)
+            likedQuizItemRepo.deleteLikedQuizItem(existingLikedQuizItem.get().getId());
+            isLiked = false;
+        } else {
+            // 좋아요가 존재하지 않으면 생성 (좋아요 추가)
+            LikedQuizItem newLikedQuizItem = new LikedQuizItem();
+            newLikedQuizItem.setQuiz(quiz);
+            newLikedQuizItem.setQuizItem(quizItem);
+            newLikedQuizItem.setUser(user);
+            
+            likedQuizItemRepo.createLikedQuizItem(newLikedQuizItem);
+            isLiked = true;
+        }
+
+        return new ToggleLikeQuizItemOutput(
+                input.getQuizId(),
+                input.getQuizItemId(),
+                input.getUserId(),
+                isLiked
+        );
     }
 }

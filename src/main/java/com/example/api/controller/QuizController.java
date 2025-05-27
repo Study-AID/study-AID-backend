@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -502,4 +501,88 @@ public class QuizController extends BaseController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PostMapping("/{id}/items/{quizItemId}/like")
+    @Operation(
+            summary = "Toggle like for quiz item",
+            description = "Toggle like status for a specific quiz item. If already liked, removes the like. If not liked, adds a like.",
+            parameters = {
+                    @Parameter(
+                        name = "id", 
+                        description = "Quiz ID", 
+                        required = true
+                    ),
+                    @Parameter(
+                        name = "quizItemId", 
+                        description = "Quiz Item ID", 
+                        required = true
+                    )
+            },
+            requestBody = @RequestBody(
+                    description = "Toggle like request (empty body)",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ToggleLikeQuizItemRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200", 
+                        description = "Like status toggled successfully",
+                        content = @Content(schema = @Schema(implementation = ToggleLikeQuizItemResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "400",
+                        description = "Invalid request parameters"
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this quiz"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404", 
+                        description = "Quiz or Quiz Item not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<ToggleLikeQuizItemResponse> toggleLikeQuizItem(
+            @PathVariable UUID id,
+            @PathVariable UUID quizItemId,
+            @org.springframework.web.bind.annotation.RequestBody ToggleLikeQuizItemRequest request
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // 퀴즈 존재 여부 확인
+            Optional<QuizOutput> quizOutput = quizService.findQuizById(id);
+            if (quizOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // 사용자가 퀴즈 소유자인지 확인
+            if (!quizOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            // 좋아요 토글 서비스 호출
+            ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
+            input.setQuizId(id);
+            input.setQuizItemId(quizItemId);
+            input.setUserId(userId);
+
+            ToggleLikeQuizItemOutput output = quizService.toggleLikeQuizItem(input);
+
+            // 응답 DTO 변환
+            ToggleLikeQuizItemResponse response = ToggleLikeQuizItemResponse.fromServiceDto(output);
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 }
