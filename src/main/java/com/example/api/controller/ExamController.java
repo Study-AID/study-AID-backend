@@ -580,7 +580,7 @@ public class ExamController extends BaseController {
                     )
             }
     )
-    public ResponseEntity<ExamResultListResponse> getExamResultsByCourseId(
+    public ResponseEntity<ExamResultListResponse> getExamResultsByCourse(
             @PathVariable UUID courseId
     ) {
         UUID userId = getAuthenticatedUserId();
