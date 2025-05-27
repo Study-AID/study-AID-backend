@@ -1,6 +1,5 @@
 package com.example.api.controller;
 
-import com.example.api.controller.dto.qna.CreateQnaChatRequest;
 import com.example.api.controller.dto.qna.QnaChatMessageRequest;
 import com.example.api.external.dto.langchain.ReferenceResponse;
 import com.example.api.repository.UserRepository;
@@ -80,7 +79,7 @@ class QnaChatControllerTest {
         );
 
         // chatId 추가
-        when(qnaChatService.readQnaChat(any(ReadQnaChatInput.class)))
+        when(qnaChatService.getMessages(any(ReadQnaChatInput.class)))
                 .thenReturn(new ReadQnaChatOutput(CHAT_ID, messages));
 
         // When & Then

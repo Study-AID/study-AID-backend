@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,8 +20,14 @@ public class ReadQnaChatResponse {
     @AllArgsConstructor
     public static class MessageItem {
         @NotNull
+        private UUID messageId;
+        @NotNull
         private String role;
         @NotNull
         private String content;
+        @NotNull
+        private LocalDateTime createdAt;
+        @NotNull
+        private boolean liked;
     }
 }

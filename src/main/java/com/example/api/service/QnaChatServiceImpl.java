@@ -8,20 +8,18 @@ import com.example.api.entity.enums.MessageRole;
 import com.example.api.exception.BadRequestException;
 import com.example.api.exception.InternalServerErrorException;
 import com.example.api.exception.NotFoundException;
-import com.example.api.exception.UnauthorizedException;
 import com.example.api.external.LangchainClient;
 import com.example.api.entity.QnaChat;
 import com.example.api.entity.QnaChatMessage;
+import com.example.api.entity.LikedQnaAnswer;
 import com.example.api.entity.User;
 import com.example.api.external.dto.langchain.EmbeddingCheckResponse;
 import com.example.api.external.dto.langchain.MessageContextResponse;
 import com.example.api.external.dto.langchain.ReferenceResponse;
-import com.example.api.repository.LectureRepository;
-import com.example.api.repository.QnaChatMessageRepository;
-import com.example.api.repository.QnaChatRepository;
-import com.example.api.repository.UserRepository;
+import com.example.api.repository.*;
 import com.example.api.service.dto.qna.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +42,7 @@ public class QnaChatServiceImpl implements QnaChatService {
     private final LectureRepository lectureRepository;
     private final QnaChatRepository qnaChatRepository;
     private final QnaChatMessageRepository qnaChatMessageRepository;
+    private final LikedQnaAnswerRepository likedQnaAnswerRepository;
     private final LangchainClient langchainClient;
     private final QnaQuestionRecommendService qnaQuestionRecommendService;
     private final LLMAdapter llmAdapter;
@@ -83,18 +82,29 @@ public class QnaChatServiceImpl implements QnaChatService {
         chat.setLecture(lecture);
 
         chat = qnaChatRepository.save(chat);
-        return new CreateQnaChatOutput(chat.getId());
+        return new CreateQnaChatOutput(chat.getId(), chat.getCreatedAt());
+    }
+
+    @Override
+    public GetQnaChatIdOutput getQnaChatId(GetQnaChatIdInput input) {
+        User user = userRepository.findById(input.getUserId())
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+
+        QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
+                .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
+
+        return new GetQnaChatIdOutput(chat.getId());
     }
 
     @Override
     public QnaChatMessageOutput ask(QnaChatMessageInput input) {
         long startTime = System.currentTimeMillis();
-        log.info("[QnaChatService] ask 메소드 시작: chatId={}, userId={}", input.getChatId(), input.getUserId());
-        QnaChat chat = qnaChatRepository.findById(input.getChatId())
+        log.info("[QnaChatService] ask 메소드 시작: lectureId={}, userId={}", input.getLectureId(), input.getUserId());
+
+        User user = userRepository.findById(input.getUserId())
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+        QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
-        if (!chat.getUser().getId().equals(input.getUserId())) {
-            throw new UnauthorizedException("해당 채팅방에 대한 접근 권한이 없습니다");
-        }
         UUID lectureId = chat.getLecture().getId();
         log.info("[Performance] 채팅방 조회 완료: 소요시간={}ms", System.currentTimeMillis() - startTime);
 
@@ -129,10 +139,11 @@ public class QnaChatServiceImpl implements QnaChatService {
         long saveQuestionStartTime = System.currentTimeMillis();
         QnaChatMessage userMsg = new QnaChatMessage();
         userMsg.setQnaChat(chat);
+        userMsg.setUser(user);
         userMsg.setUser(new User(input.getUserId()));
         userMsg.setRole(MessageRole.USER);
         userMsg.setContent(input.getQuestion());
-        qnaChatMessageRepository.save(userMsg);
+        userMsg = qnaChatMessageRepository.save(userMsg);
         log.info("[Performance] 사용자 질문 DB에 저장 완료: 소요시간={}ms", System.currentTimeMillis() - saveQuestionStartTime);
 
         // 강의자료 출처 검색(Langchain): 질문에 해당하는 강의자료 출처 검색
@@ -144,15 +155,13 @@ public class QnaChatServiceImpl implements QnaChatService {
             referenceChunks = new ArrayList<>();
         }
         log.info("[Performance] 강의자료 레퍼런스 검색 완료: 검색된 청크 수={}, 소요시간={}ms", referenceChunks.size(), System.currentTimeMillis() - referenceSearchStartTime);
-
-        // 텍스트 추출
         List<String> referenceTexts = referenceChunks.stream()
                 .map(ReferenceResponse.ReferenceChunkResponse::getText)
                 .toList();
 
         // 대화 맥락 관리(Langchain): 이전에 저장되어있던 대화 맥락 가져오기
         long contextFetchStartTime = System.currentTimeMillis();
-        MessageContextResponse responseBefore = langchainClient.getMessageContext(input.getChatId());
+        MessageContextResponse responseBefore = langchainClient.getMessageContext(chat.getId());
         List<ChatMessage> messageContextBefore = responseBefore.getLangchainChatContext();
         log.info("[Performance] 대화 맥락 가져오기 완료: 메시지 수={}, 소요시간={}ms", messageContextBefore.size(), System.currentTimeMillis() - contextFetchStartTime);
 
@@ -167,11 +176,14 @@ public class QnaChatServiceImpl implements QnaChatService {
         } catch (Exception e) {
             log.error("[Performance] GPT 호출 오류: 소요시간={}ms, 오류={}", System.currentTimeMillis() - llmCallStartTime, e.getMessage(), e);
             return new QnaChatMessageOutput(
+                    UUID.randomUUID(),
                     ASSISTANT,
                     "죄송합니다, GPT 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
                     messageContextBefore,
                     referenceChunks,
-                    Collections.emptyList()
+                    Collections.emptyList(),
+                    java.time.LocalDateTime.now(),
+                    false
             );
         }
         log.debug("[QnaChatService] GPT 응답 내용 일부: {}", answer != null ? answer.substring(0, Math.min(50, answer.length())) : "null");
@@ -180,10 +192,10 @@ public class QnaChatServiceImpl implements QnaChatService {
         long saveAnswerStartTime = System.currentTimeMillis();
         QnaChatMessage botMsg = new QnaChatMessage();
         botMsg.setQnaChat(chat);
-        botMsg.setUser(new User(input.getUserId()));
+        botMsg.setUser(user);
         botMsg.setRole(MessageRole.ASSISTANT);
         botMsg.setContent(answer);
-        qnaChatMessageRepository.save(botMsg);
+        botMsg = qnaChatMessageRepository.save(botMsg);
         log.info("[Performance] AI 답변 DB에 저장 완료: 소요시간={}ms", System.currentTimeMillis() - saveAnswerStartTime);
 
         // 대화 맥락 관리(Langchain): 사용자 질문, AI 답변 한꺼번에 전달하여 새로운 대화로 맥락에 저장
@@ -193,11 +205,11 @@ public class QnaChatServiceImpl implements QnaChatService {
         newMessages.add(new ChatMessage(ASSISTANT, answer));
 
         MessageContextResponse responseAfter = langchainClient.appendMessages(
-                input.getChatId(),
+                chat.getId(),
                 newMessages
         );
         List<ChatMessage> messageContextAfter = responseAfter.getLangchainChatContext();
-        log.info("[Performance] Langchain에 대화 맥락 업데이트 완료: chatId={}, messageCount={}, 소요시간={}ms", input.getChatId(), messageContextAfter.size(), System.currentTimeMillis() - contextUpdateStartTime);
+        log.info("[Performance] Langchain에 대화 맥락 업데이트 완료: chatId={}, messageCount={}, 소요시간={}ms", chat.getId(), messageContextAfter.size(), System.currentTimeMillis() - contextUpdateStartTime);
 
         // LLM 호출(Spring): 추천 질문 생성
         long recommendStartTime = System.currentTimeMillis();
@@ -206,30 +218,97 @@ public class QnaChatServiceImpl implements QnaChatService {
 
         // 추천 질문까지 포함된 AI 최종 답변 반환
         return new QnaChatMessageOutput(
+                botMsg.getId(),
                 ASSISTANT,
                 answer,
                 messageContextAfter,
                 referenceChunks,
-                recommendedQuestions
+                recommendedQuestions,
+                botMsg.getCreatedAt(),
+                false
         );
     }
 
     @Override
-    public ReadQnaChatOutput readQnaChat(ReadQnaChatInput input) {
-        QnaChat chat = qnaChatRepository.findById(input.getChatId())
+    public ReadQnaChatOutput getMessages(ReadQnaChatInput input) {
+        QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
-        if (!chat.getUser().getId().equals(input.getUserId())) {
-            throw new UnauthorizedException("해당 채팅방에 대한 접근 권한이 없습니다");
-        }
 
         // TODO(jin): add pagination
         List<ReadQnaChatOutput.MessageItem> messages = qnaChatMessageRepository.findByQnaChatId(chat.getId()).stream()
-                .map(m -> new ReadQnaChatOutput.MessageItem(
-                        m.getRole().getValue(),
-                        m.getContent()
-                ))
+                .map(m -> {
+                    boolean isLiked = false;
+                    if (m.getRole() == MessageRole.ASSISTANT) {
+                        isLiked = likedQnaAnswerRepository.existsByQnaChatIdAndQnaChatMessageIdAndUserId(
+                                chat.getId(), m.getId(), input.getUserId());
+                    }
+                    return new ReadQnaChatOutput.MessageItem(
+                            m.getId(),
+                            m.getRole().getValue(),
+                            m.getContent(),
+                            m.getCreatedAt(),
+                            isLiked
+                    );
+                })
                 .toList();
 
         return new ReadQnaChatOutput(chat.getId(), messages);
+    }
+
+    @Override
+    public ReadQnaChatOutput getLikedMessages(GetLikedMessagesInput input) { //변경: 새 메서드
+        QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
+                .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
+
+        List<ReadQnaChatOutput.MessageItem> messages = likedQnaAnswerRepository
+                .findByQnaChatIdAndUserId(chat.getId(), input.getUserId()).stream()
+                .map(liked -> {
+                    QnaChatMessage message = liked.getQnaChatMessage();
+                    return new ReadQnaChatOutput.MessageItem(
+                            message.getId(),
+                            message.getRole().getValue(),
+                            message.getContent(),
+                            message.getCreatedAt(),
+                            true
+                    );
+                })
+                .toList();
+
+        return new ReadQnaChatOutput(chat.getId(), messages);
+    }
+
+    @Override
+    public void likeMessage(LikeMessageInput input) {
+        User user = userRepository.findById(input.getUserId())
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+        QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
+                .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
+        QnaChatMessage message = qnaChatMessageRepository.findById(input.getMessageId())
+                .orElseThrow(() -> new NotFoundException("메시지를 찾을 수 없습니다"));
+        if (message.getRole() == MessageRole.USER) {
+            throw new BadRequestException("사용자 메시지는 좋아요할 수 없습니다");
+        }
+
+        // 이미 좋아요했다면 무시
+        if (likedQnaAnswerRepository.existsByQnaChatIdAndQnaChatMessageIdAndUserId(
+                chat.getId(), input.getMessageId(), input.getUserId())) {
+            return;
+        }
+
+        LikedQnaAnswer like = new LikedQnaAnswer();
+        like.setQnaChat(chat);
+        like.setQnaChatMessage(message);
+        like.setUser(user);
+        likedQnaAnswerRepository.save(like);
+    }
+
+    @Override
+    @Transactional
+    public void unlikeMessage(UnlikeMessageInput input) {
+        QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
+                .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
+
+        likedQnaAnswerRepository.deleteByQnaChatIdAndQnaChatMessageIdAndUserId(
+                chat.getId(), input.getMessageId(), input.getUserId());
     }
 }

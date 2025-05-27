@@ -16,6 +16,8 @@ import java.util.UUID;
         name = "liked_qna_answers",
         schema = "app",
         indexes = {
+                @Index(name = "idx_liked_qna_answers_chat_user", columnList = "qna_chat_id, user_id"),
+                @Index(name = "idx_liked_qna_answers_chat_msg_user", columnList = "qna_chat_id, message_id, user_id"),
                 @Index(name = "idx_liked_qna_answers_qna_chat_created_at", columnList = "qna_chat_id, created_at")
         }
 )

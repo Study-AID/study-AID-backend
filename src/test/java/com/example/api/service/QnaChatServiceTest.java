@@ -107,7 +107,7 @@ public class QnaChatServiceTest {
 
     @Test
     @DisplayName("채팅 내용 조회 성공 테스트")
-    public void readQnaChatSuccessTest() {
+    public void getMessagesSuccessTest() {
         when(qnaChatRepository.findById(TEST_CHAT_ID)).thenReturn(Optional.of(testQnaChat));
 
         List<QnaChatMessage> messages = new ArrayList<>();
@@ -125,7 +125,7 @@ public class QnaChatServiceTest {
         when(qnaChatMessageRepository.findByQnaChatId(TEST_CHAT_ID)).thenReturn(messages);
 
         ReadQnaChatInput input = new ReadQnaChatInput(TEST_CHAT_ID, TEST_USER_ID);
-        ReadQnaChatOutput output = qnaChatService.readQnaChat(input);
+        ReadQnaChatOutput output = qnaChatService.getMessages(input);
 
         assertNotNull(output);
         assertEquals(2, output.getMessages().size());
@@ -137,7 +137,7 @@ public class QnaChatServiceTest {
 
     @Test
     @DisplayName("채팅 내용 조회 실패 테스트 - 권한 없음")
-    public void readQnaChatFailUnauthorizedTest() {
+    public void getMessagesFailUnauthorizedTest() {
         UUID otherUserId = UUID.randomUUID();
         User otherUser = new User(otherUserId);
         QnaChat otherChat = new QnaChat();
@@ -147,7 +147,7 @@ public class QnaChatServiceTest {
         when(qnaChatRepository.findById(TEST_CHAT_ID)).thenReturn(Optional.of(otherChat));
         ReadQnaChatInput input = new ReadQnaChatInput(TEST_CHAT_ID, TEST_USER_ID);
 
-        assertThrows(UnauthorizedException.class, () -> qnaChatService.readQnaChat(input));
+        assertThrows(UnauthorizedException.class, () -> qnaChatService.getMessages(input));
     }
 
     @Test

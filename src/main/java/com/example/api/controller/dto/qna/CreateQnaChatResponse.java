@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -11,4 +12,6 @@ import java.util.UUID;
 public class CreateQnaChatResponse {
     @NotNull
     private UUID chatId;
+    @NotNull
+    private LocalDateTime createdAt;
 }
