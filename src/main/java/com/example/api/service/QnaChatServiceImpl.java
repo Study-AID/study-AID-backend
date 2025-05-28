@@ -261,7 +261,7 @@ public class QnaChatServiceImpl implements QnaChatService {
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
 
         List<ReadQnaChatOutput.MessageItem> messages = likedQnaAnswerRepository
-                .findByQnaChatIdAndUserId(chat.getId(), input.getUserId()).stream()
+                .findByQnaChatIdAndUserIdWithMessage(chat.getId(), input.getUserId()).stream()
                 .map(liked -> {
                     QnaChatMessage message = liked.getQnaChatMessage();
                     return new ReadQnaChatOutput.MessageItem(
@@ -308,7 +308,6 @@ public class QnaChatServiceImpl implements QnaChatService {
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
 
-        likedQnaAnswerRepository.deleteByQnaChatIdAndQnaChatMessageIdAndUserId(
-                chat.getId(), input.getMessageId(), input.getUserId());
+        likedQnaAnswerRepository.deleteByQnaChatIdAndQnaChatMessageIdAndUserId(chat.getId(), input.getMessageId(), input.getUserId());
     }
 }
