@@ -45,8 +45,12 @@ system: |
   - The output must match the user’s specified language.
   - If `language` is Korean:
     - All text must be written in fluent Korean.
-    - Ensure that the assistant’s Korean output uses the honorific/formal speech level (존댓말)
-
+    - For every technical concept:
+      - Append the English academic term in parentheses in both the `title` and `keyword` fields.
+      - Also include the English term once in the first sentence of the `description`, if the 
+        concept is introduced there.
+    - Do not omit the English term for brevity or fluency. Its presence is essential for 
+      understanding and searchability.
   Follow this JSON format exactly:
 
   ```json
