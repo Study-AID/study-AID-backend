@@ -2,13 +2,12 @@ import concurrent.futures
 import json
 import logging
 import os
-import random
-import time
-import yaml
 from datetime import datetime
-from openai import OpenAI
+from typing import List
+
+import yaml
+from openai import OpenAI, RateLimitError
 from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception_type
-from typing import List, Dict, Any, Optional
 
 from summary_models import Summary
 
@@ -36,12 +35,12 @@ class OpenAIClient:
         self.client = OpenAI(
             api_key=self.api_key,
             timeout=300.0,  # 5분 타임아웃
-            max_retries=0,   # 재시도 비활성화
+            max_retries=0,
         )
         self.model = os.environ.get("OPENAI_MODEL", "gpt-4o")
 
         # Maximum number of concurrent API calls
-        self.max_concurrent = int(os.environ.get("MAX_CONCURRENT_CHUNKS", "1"))  # 기본값을 1로 낮춤
+        self.max_concurrent = int(os.environ.get("MAX_CONCURRENT_CHUNKS", "2"))
 
         # Prompt cache to avoid redundant loading
         self._prompt_cache = {}
@@ -63,38 +62,11 @@ class OpenAIClient:
             logger.error(f"Error loading prompt template: {e}")
             raise
 
-    # TODO(mj): pass the langauge user selected.
-    def generate_summary(self, formatted_content, prompt_path, language="한국어"):
-        """Generate a summary for lecture content. For backward compatibility."""
-        try:
-            # Create a single chunk with the entire content
-            chunk = {
-                "chunk_id": 0,
-                "total_chunks": 1,
-                "start_page": formatted_content[0]["page"] if formatted_content else 1,
-                "end_page": formatted_content[-1]["page"] if formatted_content else 1,
-                "formatted_content": formatted_content
-            }
-
-            # Use the chunk-based method for consistency
-            return self.generate_chunk_summary(chunk, prompt_path, language)
-        except Exception as e:
-            logger.error(f"Error generating summary: {e}")
-            raise
-
-    def _add_jitter_delay(self, chunk_id=0, total_chunks=1):
-        """Add random jitter delay before API request to prevent thundering herd"""
-        if total_chunks > 1:  # 병렬 처리일 때만 적용
-            # 청크 ID에 따라 기본 딜레이 + 랜덤 jitter
-            base_delay = chunk_id * 0.5  # 각 청크마다 0.5초씩 차이
-            jitter = random.uniform(0, 2.0)  # 0-2초 랜덤 딜레이
-            total_delay = base_delay + jitter
-
-            logger.info(f"Adding jitter delay of {total_delay:.2f}s for chunk {chunk_id + 1}/{total_chunks}")
-            time.sleep(total_delay)
-
-    @retry(wait=wait_random_exponential(min=5, max=60), stop=stop_after_attempt(2),
-           retry=retry_if_exception_type((TimeoutError, ConnectionError)))
+    @retry(
+        wait=wait_random_exponential(min=10, max=60),
+        stop=stop_after_attempt(2),
+        retry=retry_if_exception_type((RateLimitError, TimeoutError, ConnectionError))
+    )
     def _complete_with_backoff(self, **kwargs):
         """Make an OpenAI API request with exponential backoff retry logic."""
         try:
@@ -105,8 +77,8 @@ class OpenAIClient:
         except Exception as e:
             logger.warning(f"OpenAI API request failed: {type(e).__name__}: {str(e)}")
             # 재시도 가능한 예외인지 확인
-            if isinstance(e, (TimeoutError, ConnectionError)):
-                logger.warning("Will retry due to timeout/connection error")
+            if isinstance(e, (RateLimitError, TimeoutError, ConnectionError)):
+                logger.warning("Will retry due to rate limit/timeout/connection error")
                 raise
             else:
                 logger.error("Non-retryable error, failing immediately")
@@ -128,9 +100,6 @@ class OpenAIClient:
 
             # Log chunk processing start
             logger.info(f"Processing chunk {chunk_id + 1}/{total_chunks} (pages {start_page}-{end_page})")
-
-            # Add jitter delay for parallel processing
-            self._add_jitter_delay(chunk_id, total_chunks)
 
             # Format the user message with the lecture content
             user_message = template["user"].format(

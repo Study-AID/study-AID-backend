@@ -10,15 +10,11 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 from openai_client import OpenAIClient
-from parsed_text_models import ParsedPage, ParsedText
+from parsed_text_models import ParsedText
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Initialize clients
-s3_endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
-s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 # Database configuration
 DB_CONFIG = {
@@ -28,6 +24,8 @@ DB_CONFIG = {
     'database': os.environ.get('DB_NAME'),
     'port': int(os.environ.get('DB_PORT'))
 }
+
+s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 
 def get_db_connection():
@@ -88,7 +86,7 @@ def get_lecture_info(lecture_id):
                     FROM app.lectures l
                              JOIN app.courses c ON l.course_id = c.id
                     WHERE l.id = %s
-                      AND l.deleted_at IS NULL 
+                      AND l.deleted_at IS NULL
                     """
             cursor.execute(query, (lecture_id,))
             lecture = cursor.fetchone()
@@ -134,7 +132,7 @@ def get_lecture_content(lecture_id):
     try:
         # Get lecture information from the database
         lecture_info = get_lecture_info(lecture_id)
-        
+
         # Check if we have parsed_text in the lecture info
         if lecture_info.get('parsed_text'):
             logger.info(f"Using parsed_text from database for lecture_id: {lecture_info['id']}")
@@ -148,9 +146,6 @@ def get_lecture_content(lecture_id):
         # Download from S3 - we need to handle the S3 bucket (this would need to be configured)
         s3_bucket = os.environ.get('S3_BUCKET', 'study-aid-materials')  # Use environment variable or default
         local_file_path = f"/tmp/{os.path.basename(s3_key)}"
-
-        if s3_endpoint_url:
-            logger.info(f"Using S3 endpoint URL: {s3_endpoint_url}")
 
         # Download from S3
         logger.info(f"Downloading file from s3://{s3_bucket}/{s3_key} to {local_file_path}")
@@ -190,7 +185,7 @@ def update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, title=None):
     conn = None
     value_params = []  # Initialize value_params at function level
     query = ""  # Initialize query at function level
-    
+
     try:
         conn = get_db_connection()
 
@@ -203,7 +198,7 @@ def update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, title=None):
             query = """
                     SELECT id
                     FROM app.quizzes
-                    WHERE id = %s 
+                    WHERE id = %s
                     """
             cursor.execute(query, (quiz_id,))
             existing_quiz = cursor.fetchone()
@@ -219,7 +214,7 @@ def update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, title=None):
                         status                = %s,
                         contents_generated_at = NOW(),
                         updated_at            = NOW()
-                    WHERE id = %s 
+                    WHERE id = %s
                     """
             cursor.execute(query, (title, 'not_started', quiz_id))
 
@@ -227,7 +222,7 @@ def update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, title=None):
             query = """
                     DELETE
                     FROM app.quiz_items
-                    WHERE quiz_id = %s 
+                    WHERE quiz_id = %s
                     """
             cursor.execute(query, (quiz_id,))
 
