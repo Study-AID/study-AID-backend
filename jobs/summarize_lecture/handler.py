@@ -17,13 +17,6 @@ from pdf_chunker import PDFChunker
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Constants and configurations
-# AWS S3 configuration
-S3_ENDPOINT_URL = os.environ.get('AWS_ENDPOINT_URL')
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
-AWS_REGION = os.environ.get('AWS_REGION', 'ap-northeast-2')
-
 # PDF chunking configuration
 DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
 

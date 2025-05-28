@@ -17,10 +17,6 @@ from pdf_chunker import PDFChunker
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize clients
-s3_endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
-s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
-
 # Constants and configurations
 # PDF chunking configuration
 DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
@@ -141,38 +137,20 @@ def get_lecture_parsed_text(lecture_id) -> ParsedText:
         s3_bucket = os.environ.get('S3_BUCKET', 'study-aid-materials')
         local_file_path = f"/tmp/{os.path.basename(s3_key)}"
 
-<< << << < HEAD
-== == == =
-<< << << < Updated
-upstream
-if s3_endpoint_url:
-    logger.info(f"Using S3 endpoint URL: {s3_endpoint_url}")
+        logger.info(f"Downloading file from s3://{s3_bucket}/{s3_key} to {local_file_path}")
+        s3_client.download_file(s3_bucket, s3_key, local_file_path)
 
->> >> >> > 02
-933
-a1(refactor(jobs / quiz): add
-v2
-prompt and support
-parallel
-processing)
-# Download from S3
-== == == =
->> >> >> > Stashed
-changes
-logger.info(f"Downloading file from s3://{s3_bucket}/{s3_key} to {local_file_path}")
-s3_client.download_file(s3_bucket, s3_key, local_file_path)
+        # Extract text from PDF and create ParsedText object
+        parsed_text = extract_parsed_text_from_pdf(local_file_path)
 
-# Extract text from PDF and create ParsedText object
-parsed_text = extract_parsed_text_from_pdf(local_file_path)
+        # Clean up
+        os.remove(local_file_path)
 
-# Clean up
-os.remove(local_file_path)
+        return parsed_text
 
-return parsed_text
-
-except Exception as e:
-logger.error(f"Error getting lecture parsed text: {e}")
-raise
+    except Exception as e:
+        logger.error(f"Error getting lecture parsed text: {e}")
+        raise
 
 
 def extract_parsed_text_from_pdf(file_path) -> ParsedText:
