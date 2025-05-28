@@ -254,9 +254,9 @@ public class QnaChatServiceImpl implements QnaChatService {
 
         return new ReadQnaChatOutput(chat.getId(), messages);
     }
-
+    
     @Override
-    public ReadQnaChatOutput getLikedMessages(GetLikedMessagesInput input) { //변경: 새 메서드
+    public ReadQnaChatOutput getLikedMessages(GetLikedMessagesInput input) { 
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
 
@@ -278,36 +278,43 @@ public class QnaChatServiceImpl implements QnaChatService {
     }
 
     @Override
-    public void likeMessage(LikeMessageInput input) {
+    @Transactional
+    public ToggleLikeMessageOutput toggleLikeMessage(ToggleLikeMessageInput input) {
+        log.info("[QnaChatService] toggleLikeMessage 시작: lectureId={}, messageId={}, userId={}",
+                input.getLectureId(), input.getMessageId(), input.getUserId());
+
         User user = userRepository.findById(input.getUserId())
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
         QnaChatMessage message = qnaChatMessageRepository.findById(input.getMessageId())
                 .orElseThrow(() -> new NotFoundException("메시지를 찾을 수 없습니다"));
+
         if (message.getRole() == MessageRole.USER) {
             throw new BadRequestException("사용자 메시지는 좋아요할 수 없습니다");
         }
 
-        // 이미 좋아요했다면 무시
-        if (likedQnaAnswerRepository.existsByQnaChatIdAndQnaChatMessageIdAndUserId(
-                chat.getId(), input.getMessageId(), input.getUserId())) {
-            return;
+        // 기존 좋아요 상태 확인
+        boolean isCurrentlyLiked = likedQnaAnswerRepository.existsByQnaChatIdAndQnaChatMessageIdAndUserId(
+                chat.getId(), input.getMessageId(), input.getUserId());
+
+        if (isCurrentlyLiked) {
+            likedQnaAnswerRepository.deleteByQnaChatIdAndQnaChatMessageIdAndUserId(
+                    chat.getId(), input.getMessageId(), input.getUserId());
+            log.info("[QnaChatService] 좋아요 제거 완료: chatId={}, messageId={}, userId={}",
+                    chat.getId(), input.getMessageId(), input.getUserId());
+
+            return new ToggleLikeMessageOutput(false, "REMOVED");
+        } else {
+            LikedQnaAnswer like = new LikedQnaAnswer();
+            like.setQnaChat(chat);
+            like.setQnaChatMessage(message);
+            like.setUser(user);
+            likedQnaAnswerRepository.save(like);
+            log.info("[QnaChatService] 좋아요 추가 완료: chatId={}, messageId={}, userId={}",
+                    chat.getId(), input.getMessageId(), input.getUserId());
+
+            return new ToggleLikeMessageOutput(true, "ADDED");
         }
-
-        LikedQnaAnswer like = new LikedQnaAnswer();
-        like.setQnaChat(chat);
-        like.setQnaChatMessage(message);
-        like.setUser(user);
-        likedQnaAnswerRepository.save(like);
-    }
-
-    @Override
-    @Transactional
-    public void unlikeMessage(UnlikeMessageInput input) {
-        QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
-                .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
-
-        likedQnaAnswerRepository.deleteByQnaChatIdAndQnaChatMessageIdAndUserId(chat.getId(), input.getMessageId(), input.getUserId());
     }
 }

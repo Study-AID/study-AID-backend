@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class LikeMessageInput {
+public class ToggleLikeMessageInput {
     private UUID lectureId;
     private UUID messageId;
     private UUID userId;

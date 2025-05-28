@@ -38,13 +38,13 @@ public class LikedQnaAnswerRepositoryTest {
         UUID userUuid = UUID.randomUUID();
         User user = new User();
         user.setId(userUuid);
-        //user.setSchool(school);
+        user.setSchool(school);
         user.setName("Test User");
         user.setEmail("test@example.com");
         user.setAuthType(AuthType.email);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
-        entityManager.persist(user); // user 엔티티 저장
+        entityManager.persist(user);
 
         UUID semesterUuid = UUID.randomUUID();
         Semester semester = new Semester();
@@ -91,7 +91,7 @@ public class LikedQnaAnswerRepositoryTest {
         qnaChatMessage.setId(qnaChatMessageUuid);
         qnaChatMessage.setQnaChat(qnaChat);
         qnaChatMessage.setUser(user);
-        qnaChatMessage.setContent("이것은 메시지인가요, 메세지인가요.");
+        qnaChatMessage.setContent("운영체제가 뭐야?");
 
         entityManager.persist(qnaChatMessage);
 

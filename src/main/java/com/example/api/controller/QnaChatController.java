@@ -127,9 +127,25 @@ public class QnaChatController {
                                     examples = {
                                             @ExampleObject(
                                                     name = "example",
-                                                    value = "{\"chatId\": \"550e8400-e29b-41d4-a716-446655440000\", \"messages\": " +
-                                                            "[{\"role\": \"user\", \"content\": \"재귀 함수란 무엇인가요?\"}, " +
-                                                            "{\"role\": \"assistant\", \"content\": \"재귀 함수는 자기 자신을 호출하는 함수를 의미합니다. 함수 내부에서 자신을 다시 호출하는 방식으로 동작하며, 복잡한 문제를 간단하게 해결할 수 있는 프로그래밍 기법입니다.\"}]}"
+                                                    value = "{" +
+                                                            "\"chatId\": \"550e8400-e29b-41d4-a716-446655440000\", " +
+                                                            "\"messages\": [" +
+                                                            "{" +
+                                                            "\"messageId\": \"msg-550e8400-e29b-41d4-a716-446655440001\", " +
+                                                            "\"role\": \"user\", " +
+                                                            "\"content\": \"재귀 함수란 무엇인가요?\", " +
+                                                            "\"createdAt\": \"2025-05-28T04:15:00Z\", " +
+                                                            "\"liked\": false" +
+                                                            "}, " +
+                                                            "{" +
+                                                            "\"messageId\": \"msg-550e8400-e29b-41d4-a716-446655440002\", " +
+                                                            "\"role\": \"assistant\", " +
+                                                            "\"content\": \"재귀 함수는 자기 자신을 호출하는 함수를 의미합니다. 함수 내부에서 자신을 다시 호출하는 방식으로 동작하며, 복잡한 문제를 간단하게 해결할 수 있는 프로그래밍 기법입니다.\", " +
+                                                            "\"createdAt\": \"2025-05-28T04:15:30Z\", " +
+                                                            "\"liked\": true" +
+                                                            "}" +
+                                                            "]" +
+                                                            "}"
                                             )
                                     })
                     ),
@@ -191,7 +207,7 @@ public class QnaChatController {
             }
     )
     @GetMapping("/messages/liked")
-    public ResponseEntity<ReadQnaChatResponse> getLikedMessages(@PathVariable UUID lectureId) { //변경
+    public ResponseEntity<ReadQnaChatResponse> getLikedMessages(@PathVariable UUID lectureId) {
         UUID userId = getUserId();
         GetLikedMessagesInput input = new GetLikedMessagesInput(lectureId, userId);
         ReadQnaChatOutput output = qnaChatService.getLikedMessages(input);
@@ -225,12 +241,19 @@ public class QnaChatController {
                                     examples = {
                                             @ExampleObject(
                                                     name = "example",
-                                                    value = "{\"role\": \"assistant\", " +
+                                                    value = "{" +
+                                                            "\"messageId\": \"msg-550e8400-e29b-41d4-a716-446655440003\", " +
+                                                            "\"role\": \"assistant\", " +
                                                             "\"content\": \"📝자료에 따르면, 재귀 함수는 자기 자신을 호출하는 함수를 의미합니다. 함수 내부에서 자신을 다시 호출하는 방식으로 동작하며, 복잡한 문제를 간단하게 해결할 수 있는 프로그래밍 기법입니다. 🤖제가 알기로는 재귀 함수는 종료 조건이 반드시 필요하며, 그렇지 않으면 무한 루프에 빠질 수 있습니다.\", " +
                                                             "\"references\": [" +
                                                             "{\"text\": \"재귀 함수(recursion)는 컴퓨터 과학에서 자기 자신을 호출하는 함수 또는 알고리즘을 말합니다. 이는 복잡한 문제를 더 작고 관리하기 쉬운 부분 문제로 나누어 해결하는 방법입니다.\", \"page\": 42}, " +
-                                                            "{\"text\": \"재귀 함수는 기저 사례(base case)가 필요합니다. 기저 사례는 재귀 호출을 멈추는 조건입니다.\", \"page\": 43}], " +
-                                                            "\"recommendedQuestions\": [\"재귀 함수의 장단점은 무엇인가요?\", \"재귀 함수와 반복문의 차이점은 무엇인가요?\", \"재귀 함수에서 기저 사례(base case)란 무엇인가요?\"]}"
+                                                            "{\"text\": \"재귀 함수는 기저 사례(base case)가 필요합니다. 기저 사례는 재귀 호출을 멈추는 조건입니다.\", \"page\": 43}" +
+                                                            "{\"text\": \"재귀 함수는 함수 호출 스택을 사용합니다.\", \"page\": 20}" +
+                                                            "], " +
+                                                            "\"recommendedQuestions\": [\"재귀 함수의 장단점은 무엇인가요?\", \"재귀 함수와 반복문의 차이점은 무엇인가요?\", \"재귀 함수에서 기저 사례(base case)란 무엇인가요?\"], " +
+                                                            "\"createdAt\": \"2025-05-28T04:15:30Z\", " +
+                                                            "\"liked\": false" +
+                                                            "}"
                                             )
                                     })
                     ),
@@ -289,42 +312,62 @@ public class QnaChatController {
     }
 
     @Operation(
-            summary = "채팅 메시지 좋아요하기",
-            description = "AI 응답 메시지에 좋아요를 추가합니다.",
+            summary = "채팅 메시지 좋아요 토글",
+            description = "AI 응답 메시지의 좋아요를 토글합니다. 좋아요가 있으면 제거하고, 없으면 추가합니다.",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "좋아요 추가 성공"),
-                    @ApiResponse(responseCode = "404", description = "메시지를 찾을 수 없음"),
-                    @ApiResponse(responseCode = "400", description = "사용자 메시지는 좋아요할 수 없음")
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "좋아요 토글 성공",
+                            content = @Content(
+                                    schema = @Schema(implementation = ToggleLikeMessageResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "좋아요 추가",
+                                                    description = "좋아요가 추가된 경우",
+                                                    value = "{\"liked\": true, \"action\": \"ADDED\"}"
+                                            ),
+                                            @ExampleObject(
+                                                    name = "좋아요 제거",
+                                                    description = "좋아요가 제거된 경우",
+                                                    value = "{\"liked\": false, \"action\": \"REMOVED\"}"
+                                            )
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "잘못된 요청 (사용자 메시지는 좋아요할 수 없음)",
+                            content = @Content(examples = {
+                                    @ExampleObject(
+                                            name = "example",
+                                            value = "{\"message\": \"사용자 메시지는 좋아요할 수 없습니다\", \"code\": \"BAD_REQUEST\", \"timestamp\": \"2025-05-28T04:10:00Z\"}"
+                                    )
+                            })
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "메시지 또는 채팅방을 찾을 수 없음",
+                            content = @Content(examples = {
+                                    @ExampleObject(
+                                            name = "example",
+                                            value = "{\"message\": \"메시지를 찾을 수 없습니다\", \"code\": \"NOT_FOUND\", \"timestamp\": \"2025-05-28T04:10:00Z\"}"
+                                    )
+                            })
+                    )
             }
     )
     @PostMapping("/messages/{messageId}/likes")
-    public ResponseEntity<Void> likeMessage(
+    public ResponseEntity<ToggleLikeMessageResponse> toggleLikeMessage(
             @PathVariable UUID lectureId,
             @PathVariable UUID messageId) {
         UUID userId = getUserId();
-        LikeMessageInput input = new LikeMessageInput(lectureId, messageId, userId);
-        qnaChatService.likeMessage(input);
+        ToggleLikeMessageInput input = new ToggleLikeMessageInput(lectureId, messageId, userId);
+        ToggleLikeMessageOutput output = qnaChatService.toggleLikeMessage(input);
 
-        return ResponseEntity.ok().build();
-    }
-
-    @Operation(
-            summary = "채팅 메시지 좋아요 취소",
-            description = "AI 응답 메시지의 좋아요를 취소합니다.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "좋아요 취소 성공"),
-                    @ApiResponse(responseCode = "404", description = "메시지를 찾을 수 없음")
-            }
-    )
-    @DeleteMapping("/messages/{messageId}/likes")
-    public ResponseEntity<Void> unlikeMessage(
-            @PathVariable UUID lectureId,
-            @PathVariable UUID messageId) {
-
-        UUID userId = getUserId();
-        UnlikeMessageInput input = new UnlikeMessageInput(lectureId, messageId, userId);
-        qnaChatService.unlikeMessage(input);
-
-        return ResponseEntity.ok().build();
+        ToggleLikeMessageResponse response = new ToggleLikeMessageResponse(
+                output.isLiked(),
+                output.getAction()
+        );
+        return ResponseEntity.ok(response);
     }
 }

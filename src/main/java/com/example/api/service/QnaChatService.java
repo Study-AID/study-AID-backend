@@ -9,6 +9,5 @@ public interface QnaChatService {
     GetQnaChatIdOutput getQnaChatId(GetQnaChatIdInput input);
 
     ReadQnaChatOutput getLikedMessages(GetLikedMessagesInput input);
-    void likeMessage(LikeMessageInput input);
-    void unlikeMessage(UnlikeMessageInput input); 
+    ToggleLikeMessageOutput toggleLikeMessage(ToggleLikeMessageInput input);
 }
