@@ -16,7 +16,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 캐시/로그 줄이기
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV TRANSFORMERS_CACHE=/tmp
 ENV HF_HOME=/tmp/huggingface
 ENV HF_HUB_DISABLE_SYMLINKS_WARNING=1
 
@@ -36,6 +35,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 # 나머지 패키지 설치
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
+
+# Hugging Face 모델 미리 다운로드
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-m3')"
 
 # 소스 코드 복사
 COPY . .
