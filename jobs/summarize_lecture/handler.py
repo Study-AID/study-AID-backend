@@ -1,13 +1,13 @@
-import boto3
 import json
 import logging
 import os
-import psycopg2
-import psycopg2.extras
 import traceback
 import uuid
+
+import boto3
+import psycopg2
+import psycopg2.extras
 from botocore.exceptions import ClientError
-from datetime import datetime
 
 from openai_client import OpenAIClient
 from parsed_text_models import ParsedText, ParsedPage
@@ -26,7 +26,6 @@ AWS_REGION = os.environ.get('AWS_REGION', 'ap-northeast-2')
 
 # PDF chunking configuration
 DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
-MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '2'))
 
 # Database configuration
 DB_CONFIG = {
@@ -37,8 +36,6 @@ DB_CONFIG = {
     'port': int(os.environ.get('DB_PORT'))
 }
 
-# Initialize clients
-# test.py와 정확히 동일한 방식으로 생성
 s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 
@@ -92,15 +89,15 @@ def download_file_from_s3(bucket, key, local_path):
     """Download a file from S3 to a local path"""
     try:
         logger.info(f"Downloading file from s3://{bucket}/{key} to {local_path}")
-        
+
         # 다운로드 진행
         s3_client.download_file(bucket, key, local_path)
-        
+
         # 다운로드 확인
         if os.path.exists(local_path):
             file_size = os.path.getsize(local_path)
             logger.info(f"Downloaded file successfully to {local_path}, size: {file_size} bytes")
-        
+
         return local_path
     except ClientError as e:
         error_code = getattr(e, 'response', {}).get('Error', {}).get('Code', 'Unknown')
@@ -309,7 +306,6 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'body': json.dumps('Lecture summarization completed successfully')
         }
-
     except Exception as e:
         logger.error(f"Error in lambda_handler: {e}")
         logger.error(traceback.format_exc())
