@@ -30,4 +30,8 @@ public interface QuizService {
     
     @Transactional
     void gradeQuiz(UUID quizId);
+
+    Optional<QuizResultOutput> findQuizResultByQuizId(UUID quizId);
+
+    QuizResultListOutput findQuizResultsByLectureId(UUID lectureId);
 }

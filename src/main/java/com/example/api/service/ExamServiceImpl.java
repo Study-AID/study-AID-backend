@@ -163,8 +163,6 @@ public class ExamServiceImpl implements ExamService {
 
             examResponseRepo.updateExamResponse(examResponse);
         }
-        exam.setStatus(Status.graded);
-        examRepo.updateExam(exam);
 
         // 시험 결과 생성 
         // TODO(yoon) : 시험 결과 생성 로직을 별개의 메서드로 분리
@@ -177,5 +175,20 @@ public class ExamServiceImpl implements ExamService {
         examResult.setStartTime(examResponses.get(0).getCreatedAt());
         examResult.setEndTime(LocalDateTime.now());
         examResultRepo.createExamResult(examResult);
+        
+        exam.setStatus(Status.graded);
+        
+        examRepo.updateExam(exam);
+    }
+
+    @Override
+    public Optional<ExamResultOutput> findExamResultByExamId(UUID examId) {
+        Optional<ExamResult> examResult = examResultRepo.findByExamId(examId);
+        return examResult.map(ExamResultOutput::fromEntity);
+    }
+    
+    @Override
+    public ExamResultListOutput findExamResultsByCourseId(UUID courseId) {
+        return ExamResultListOutput.fromEntities(examResultRepo.findByCourseId(courseId));
     }
 }
