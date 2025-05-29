@@ -1,6 +1,5 @@
 package com.example.api.entity;
 
-import com.example.api.entity.enums.AuthType;
 import com.example.api.entity.enums.MessageRole;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -41,6 +40,9 @@ public class QnaChatMessage {
     @Column(name = "content")
     private String content;
 
+    @Column(name = "is_liked", nullable = false)
+    private Boolean isLiked;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -51,6 +53,9 @@ public class QnaChatMessage {
     public void prePersist() {
         if (id == null) {
             id = UUID.randomUUID();
+        }
+        if (isLiked == null) {
+            isLiked = false;
         }
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
