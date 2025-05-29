@@ -502,7 +502,64 @@ public class QuizController extends BaseController {
         }
     }
 
-    @PostMapping("/{id}/items/{quizItemId}/like")
+    @GetMapping("/lecture/{lectureId}/items/liked")
+    @Operation(
+            summary = "Get liked quiz items by lecture ID",
+            description = "Retrieve all liked quiz items associated with a specific lecture ID.",
+            parameters = {
+                    @Parameter(
+                        name = "lectureId", 
+                        description = "Lecture ID", 
+                        required = true
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200", 
+                        description = "Liked quiz items retrieved successfully",
+                        content = @Content(schema = @Schema(implementation = QuizItemListResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this quiz"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404", 
+                        description = "Lecture not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<QuizItemListResponse> getLikedQuizItemsByLecture(
+            @PathVariable UUID lectureId
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        // Check if the lecture exists
+        var lectureOutput = lectureService.findLectureById(lectureId);
+        if (lectureOutput.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Check if the user is same as the quiz owner
+        if (!lectureOutput.get().getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Retrieve liked quiz items associated with the lecture
+        QuizItemListOutput quizItemListOutput = quizService.findLikedQuizItemByLectureId(lectureId);
+
+        List<QuizItemResponse> quizItemListResponse = quizItemListOutput.getQuizItems().stream()
+                .map(quizItem -> QuizItemResponse.fromServiceDto(quizItem))
+                .toList();
+
+        return ResponseEntity.ok(new QuizItemListResponse(quizItemListResponse));
+    }
+
+    @PostMapping("/{id}/items/{quizItemId}/toggle-like")
     @Operation(
             summary = "Toggle like for quiz item",
             description = "Toggle like status for a specific quiz item. If already liked, removes the like. If not liked, adds a like.",

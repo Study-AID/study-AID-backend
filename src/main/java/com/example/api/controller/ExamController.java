@@ -478,7 +478,7 @@ public class ExamController extends BaseController {
         }
     }
 
-    @PostMapping("/{id}/items/{examItemId}/like")
+    @PostMapping("/{id}/items/{examItemId}/toggle-like")
     @Operation(
             summary = "Toggle like for exam item",
             description = "Toggle like status for a specific exam item. If already liked, removes the like. If not liked, adds a like.",

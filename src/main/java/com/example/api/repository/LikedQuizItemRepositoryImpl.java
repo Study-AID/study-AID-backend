@@ -1,5 +1,6 @@
 package com.example.api.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,21 +22,29 @@ public class LikedQuizItemRepositoryImpl implements LikedQuizItemRepositoryCusto
     private EntityManager manager;
 
     @Override
-    public Optional<LikedQuizItem> findByQuizItemIdAndUserId(UUID quizItemId, UUID userId) {
+    public Optional<LikedQuizItem> findByQuizItemId(UUID quizItemId) {
         try {
             LikedQuizItem likedQuizItem = manager.createQuery(
                     "SELECT l FROM LikedQuizItem l " +
-                            "WHERE l.quizItem.id = :quizItemId " +
-                            "AND l.user.id = :userId",
+                            "WHERE l.quizItem.id = :quizItemId ",
                     LikedQuizItem.class)
                     .setParameter("quizItemId", quizItemId)
-                    .setParameter("userId", userId)
                     .getSingleResult();
             return Optional.of(likedQuizItem);
         } catch (Exception e) {
-            logger.debug("No liked quiz item found for quizItemId: {} and userId: {}", quizItemId, userId);
+            logger.debug("No liked quiz item found for quizItemId: {}", quizItemId);
             return Optional.empty();
         }
+    }
+
+    @Override
+    public List<LikedQuizItem> findByLectureId(UUID lectureId) {
+        return manager.createQuery(
+                "SELECT l FROM LikedQuizItem l " +
+                        "WHERE l.quizItem.lecture.id = :lectureId ",
+                LikedQuizItem.class)
+                .setParameter("lectureId", lectureId)
+                .getResultList();
     }
 
     @Override

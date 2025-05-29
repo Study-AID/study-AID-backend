@@ -31,6 +31,8 @@ public interface QuizService {
     @Transactional
     void gradeQuiz(UUID quizId);
 
+    QuizItemListOutput findLikedQuizItemByLectureId(UUID lectureId);
+
     @Transactional
     ToggleLikeQuizItemOutput toggleLikeQuizItem(ToggleLikeQuizItemInput input);
 }

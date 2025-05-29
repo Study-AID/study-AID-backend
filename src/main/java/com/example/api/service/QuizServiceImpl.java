@@ -196,6 +196,19 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    public QuizItemListOutput findLikedQuizItemByLectureId(UUID lectureId) {
+        List<LikedQuizItem> likedQuizItems = likedQuizItemRepo.findByLectureId(lectureId);
+        List<QuizItemOutput> quizItemOutputs = new ArrayList<>();
+
+        for (LikedQuizItem likedQuizItem : likedQuizItems) {
+            QuizItem quizItem = likedQuizItem.getQuizItem();
+            quizItemOutputs.add(QuizItemOutput.fromEntity(quizItem));
+        }
+
+        return new QuizItemListOutput(quizItemOutputs);
+    }
+
+    @Override
     @Transactional
     public ToggleLikeQuizItemOutput toggleLikeQuizItem(ToggleLikeQuizItemInput input) {
         // 퀴즈 존재 확인
@@ -209,8 +222,8 @@ public class QuizServiceImpl implements QuizService {
         }
 
         // 기존 좋아요 확인
-        Optional<LikedQuizItem> existingLikedQuizItem = likedQuizItemRepo.findByQuizItemIdAndUserId(
-                input.getQuizItemId(), input.getUserId());
+        Optional<LikedQuizItem> existingLikedQuizItem = likedQuizItemRepo.findByQuizItemId(
+                input.getQuizItemId());
 
         boolean isLiked;
         
