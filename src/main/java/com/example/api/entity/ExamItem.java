@@ -64,6 +64,9 @@ public class ExamItem {
     @Column(name = "points")
     private Float points;
 
+    @Column(name = "is_liked", nullable = false)
+    private Boolean isLiked;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -84,6 +87,9 @@ public class ExamItem {
         }
         if (points == null) {
             points = (float) 10;
+        }
+        if (isLiked == null) {
+            isLiked = false;
         }
         if (createdAt == null) {
             createdAt = now;
