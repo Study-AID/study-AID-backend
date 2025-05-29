@@ -149,6 +149,55 @@ public class LectureController extends BaseController {
         }
     }
 
+    @GetMapping("/{id}/preview")
+    @Operation(
+            summary = "Get a lecture preview by ID",
+            description = "Retrieves a lecture preview with keywords by its ID",
+            parameters = {
+                    @Parameter(
+                            name = "id",
+                            description = "ID of the lecture to retrieve preview for",
+                            required = true
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully retrieved lecture preview",
+                            content = @Content(schema = @Schema(implementation = LecturePreviewResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "User does not have access to this lecture"
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Lecture not found"
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<LecturePreviewResponse> getLecturePreviewById(@PathVariable UUID id) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // Check if the lecture exists
+            Optional<LectureOutput> lectureOutput = lectureService.findLectureById(id);
+            if (lectureOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!lectureOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            return ResponseEntity.ok(LecturePreviewResponse.fromServiceDto(lectureOutput.get(), storageConfig));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     private String determineMaterialType(MultipartFile file) {
         String contentType = file.getContentType();
         String filename = file.getOriginalFilename();

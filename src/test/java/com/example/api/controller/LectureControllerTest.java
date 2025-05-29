@@ -35,12 +35,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
@@ -421,7 +416,7 @@ class LectureControllerTest {
     void convertMapToSummaryCompleteDataTest() throws Exception {
         // Given - Python에서 생성될 수 있는 완전한 Summary 데이터 구조
         Map<String, Object> summaryMap = createCompleteSummaryMap();
-        
+
         LectureOutput lectureWithSummary = new LectureOutput();
         lectureWithSummary.setId(lectureId);
         lectureWithSummary.setUserId(userId);
@@ -471,7 +466,7 @@ class LectureControllerTest {
     void convertMapToSummaryPartialDataTest() throws Exception {
         // Given - 일부 필드만 있는 Summary 데이터
         Map<String, Object> partialSummaryMap = createPartialSummaryMap();
-        
+
         LectureOutput lectureWithPartialSummary = new LectureOutput();
         lectureWithPartialSummary.setId(lectureId);
         lectureWithPartialSummary.setUserId(userId);
@@ -532,7 +527,7 @@ class LectureControllerTest {
     void convertMapToSummaryInvalidDataTest() throws Exception {
         // Given - 잘못된 타입의 데이터가 포함된 Summary
         Map<String, Object> invalidSummaryMap = createInvalidSummaryMap();
-        
+
         LectureOutput lectureWithInvalidSummary = new LectureOutput();
         lectureWithInvalidSummary.setId(lectureId);
         lectureWithInvalidSummary.setUserId(userId);
@@ -563,19 +558,19 @@ class LectureControllerTest {
      */
     private Map<String, Object> createCompleteSummaryMap() {
         Map<String, Object> summaryMap = new HashMap<>();
-        
+
         // Metadata
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("model", "gpt-4");
         metadata.put("created_at", "2024-05-22T10:30:00Z");
         summaryMap.put("metadata", metadata);
-        
+
         // Overview
         summaryMap.put("overview", "운영체제의 기본 개념과 프로세스 관리에 대해 다룹니다.");
-        
+
         // Keywords
         List<Map<String, Object>> keywords = new ArrayList<>();
-        
+
         Map<String, Object> keyword1 = new HashMap<>();
         keyword1.put("keyword", "프로세스");
         keyword1.put("description", "실행 중인 프로그램의 인스턴스");
@@ -585,7 +580,7 @@ class LectureControllerTest {
         pageRange1.put("end_page", 3);
         keyword1.put("page_range", pageRange1);
         keywords.add(keyword1);
-        
+
         Map<String, Object> keyword2 = new HashMap<>();
         keyword2.put("keyword", "스케줄링");
         keyword2.put("description", "CPU 시간 할당 알고리즘");
@@ -595,12 +590,12 @@ class LectureControllerTest {
         pageRange2.put("end_page", 6);
         keyword2.put("page_range", pageRange2);
         keywords.add(keyword2);
-        
+
         summaryMap.put("keywords", keywords);
-        
+
         // Topics
         List<Map<String, Object>> topics = new ArrayList<>();
-        
+
         Map<String, Object> topic1 = new HashMap<>();
         topic1.put("title", "프로세스 관리");
         topic1.put("description", "프로세스의 생성, 종료, 상태 변화");
@@ -609,7 +604,7 @@ class LectureControllerTest {
         topicPageRange1.put("end_page", 5);
         topic1.put("page_range", topicPageRange1);
         topic1.put("additional_details", List.of("프로세스 제어 블록", "컨텍스트 스위칭"));
-        
+
         // Sub-topics
         List<Map<String, Object>> subTopics = new ArrayList<>();
         Map<String, Object> subTopic1 = new HashMap<>();
@@ -622,10 +617,10 @@ class LectureControllerTest {
         subTopic1.put("additional_details", List.of());
         subTopic1.put("sub_topics", List.of());
         subTopics.add(subTopic1);
-        
+
         topic1.put("sub_topics", subTopics);
         topics.add(topic1);
-        
+
         Map<String, Object> topic2 = new HashMap<>();
         topic2.put("title", "메모리 관리");
         topic2.put("description", "가상 메모리와 페이징");
@@ -636,15 +631,15 @@ class LectureControllerTest {
         topic2.put("additional_details", List.of());
         topic2.put("sub_topics", List.of());
         topics.add(topic2);
-        
+
         summaryMap.put("topics", topics);
-        
+
         // Additional References
         summaryMap.put("additional_references", List.of(
                 "Silberschatz, Operating System Concepts",
                 "Tanenbaum, Modern Operating Systems"
         ));
-        
+
         return summaryMap;
     }
 
@@ -653,9 +648,9 @@ class LectureControllerTest {
      */
     private Map<String, Object> createPartialSummaryMap() {
         Map<String, Object> summaryMap = new HashMap<>();
-        
+
         summaryMap.put("overview", "데이터베이스의 기본 개념");
-        
+
         // Keywords만 하나 있음
         List<Map<String, Object>> keywords = new ArrayList<>();
         Map<String, Object> keyword = new HashMap<>();
@@ -668,11 +663,11 @@ class LectureControllerTest {
         keyword.put("page_range", pageRange);
         keywords.add(keyword);
         summaryMap.put("keywords", keywords);
-        
+
         // topics와 additional_references는 빈 배열
         summaryMap.put("topics", List.of());
         summaryMap.put("additional_references", List.of());
-        
+
         return summaryMap;
     }
 
@@ -681,13 +676,176 @@ class LectureControllerTest {
      */
     private Map<String, Object> createInvalidSummaryMap() {
         Map<String, Object> summaryMap = new HashMap<>();
-        
+
         // 잘못된 타입들
         summaryMap.put("metadata", "잘못된 문자열"); // Map이어야 하는데 String
         summaryMap.put("overview", 12345); // String이어야 하는데 Integer
         summaryMap.put("keywords", "잘못된 키워드"); // List여야 하는데 String
         summaryMap.put("topics", null); // null
-        
+
         return summaryMap;
+    }
+
+    @Test
+    @DisplayName("강의 미리보기 조회 테스트 - 키워드 포함")
+    @WithMockUser
+    void getLecturePreviewByIdTest() throws Exception {
+        // Given - 키워드가 포함된 Summary 데이터
+        Map<String, Object> summaryMap = createCompleteSummaryMap();
+
+        LectureOutput lectureWithSummary = new LectureOutput();
+        lectureWithSummary.setId(lectureId);
+        lectureWithSummary.setUserId(userId);
+        lectureWithSummary.setCourseId(courseId);
+        lectureWithSummary.setTitle("운영체제 개론");
+        lectureWithSummary.setMaterialPath("os-lecture.pdf");
+        lectureWithSummary.setMaterialType("pdf");
+        lectureWithSummary.setSummary(summaryMap);
+        lectureWithSummary.setParsedText(testParsedText);
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(lectureWithSummary));
+
+        // When & Then - Preview API가 키워드를 포함해서 반환하는지 확인
+        mockMvc.perform(get("/v1/lectures/{id}/preview", lectureId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(lectureId.toString()))
+                .andExpect(jsonPath("$.title").value("운영체제 개론"))
+                .andExpect(jsonPath("$.keywords", hasSize(2)))
+                .andExpect(jsonPath("$.keywords[0].keyword").value("프로세스"))
+                .andExpect(jsonPath("$.keywords[0].description").value("실행 중인 프로그램의 인스턴스"))
+                .andExpect(jsonPath("$.keywords[0].relevance").value(0.95))
+                .andExpect(jsonPath("$.keywords[0].pageRange.startPage").value(1))
+                .andExpect(jsonPath("$.keywords[0].pageRange.endPage").value(3))
+                .andExpect(jsonPath("$.keywords[1].keyword").value("스케줄링"))
+                .andExpect(jsonPath("$.keywords[1].description").value("CPU 시간 할당 알고리즘"))
+                .andExpect(jsonPath("$.keywords[1].relevance").value(0.88));
+
+        verify(lectureService).findLectureById(lectureId);
+    }
+
+    @Test
+    @DisplayName("강의 미리보기 조회 테스트 - 키워드 없음")
+    @WithMockUser
+    void getLecturePreviewByIdNoKeywordsTest() throws Exception {
+        // Given - 키워드가 없는 Summary 데이터
+        Map<String, Object> summaryMap = new HashMap<>();
+        summaryMap.put("overview", "키워드가 없는 강의");
+        summaryMap.put("keywords", List.of()); // 빈 키워드 리스트
+
+        LectureOutput lectureWithoutKeywords = new LectureOutput();
+        lectureWithoutKeywords.setId(lectureId);
+        lectureWithoutKeywords.setUserId(userId);
+        lectureWithoutKeywords.setCourseId(courseId);
+        lectureWithoutKeywords.setTitle("키워드 없는 강의");
+        lectureWithoutKeywords.setSummary(summaryMap);
+        lectureWithoutKeywords.setCreatedAt(LocalDateTime.now());
+        lectureWithoutKeywords.setUpdatedAt(LocalDateTime.now());
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(lectureWithoutKeywords));
+
+        // When & Then - 키워드가 빈 배열로 반환되는지 확인
+        mockMvc.perform(get("/v1/lectures/{id}/preview", lectureId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(lectureId.toString()))
+                .andExpect(jsonPath("$.title").value("키워드 없는 강의"))
+                .andExpect(jsonPath("$.keywords", hasSize(0))); // 빈 배열
+
+        verify(lectureService).findLectureById(lectureId);
+    }
+
+    @Test
+    @DisplayName("강의 미리보기 조회 테스트 - Summary 없음")
+    @WithMockUser
+    void getLecturePreviewByIdNoSummaryTest() throws Exception {
+        // Given - Summary가 null인 강의
+        LectureOutput lectureWithoutSummary = new LectureOutput();
+        lectureWithoutSummary.setId(lectureId);
+        lectureWithoutSummary.setUserId(userId);
+        lectureWithoutSummary.setCourseId(courseId);
+        lectureWithoutSummary.setTitle("요약이 없는 강의");
+        lectureWithoutSummary.setSummary(null); // null summary
+        lectureWithoutSummary.setCreatedAt(LocalDateTime.now());
+        lectureWithoutSummary.setUpdatedAt(LocalDateTime.now());
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(lectureWithoutSummary));
+
+        // When & Then - Summary가 없어도 정상 처리되는지 확인
+        mockMvc.perform(get("/v1/lectures/{id}/preview", lectureId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(lectureId.toString()))
+                .andExpect(jsonPath("$.title").value("요약이 없는 강의"))
+                .andExpect(jsonPath("$.keywords", hasSize(0))); // 빈 배열
+
+        verify(lectureService).findLectureById(lectureId);
+    }
+
+    @Test
+    @DisplayName("강의 미리보기 조회 실패 테스트 - 존재하지 않는 강의")
+    @WithMockUser
+    void getLecturePreviewByIdNotFoundTest() throws Exception {
+        // Given
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.empty());
+
+        // When & Then
+        mockMvc.perform(get("/v1/lectures/{id}/preview", lectureId))
+                .andExpect(status().isNotFound());
+
+        verify(lectureService).findLectureById(lectureId);
+    }
+
+    @Test
+    @DisplayName("강의 미리보기 조회 실패 테스트 - 다른 사용자의 강의")
+    @WithMockUser
+    void getLecturePreviewByIdForbiddenTest() throws Exception {
+        // Given
+        UUID otherUserId = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
+        LectureOutput forbiddenLectureOutput = new LectureOutput();
+        forbiddenLectureOutput.setId(lectureId);
+        forbiddenLectureOutput.setUserId(otherUserId); // 다른 사용자의 강의
+        forbiddenLectureOutput.setCourseId(courseId);
+        forbiddenLectureOutput.setTitle("권한이 없는 강의");
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(forbiddenLectureOutput));
+
+        // When & Then
+        mockMvc.perform(get("/v1/lectures/{id}/preview", lectureId))
+                .andExpect(status().isForbidden());
+
+        verify(lectureService).findLectureById(lectureId);
+    }
+
+    @Test
+    @DisplayName("강의 미리보기 조회 테스트 - 잘못된 키워드 데이터 처리")
+    @WithMockUser
+    void getLecturePreviewByIdInvalidKeywordDataTest() throws Exception {
+        // Given - 잘못된 키워드 데이터
+        Map<String, Object> summaryMap = new HashMap<>();
+        summaryMap.put("keywords", "잘못된 키워드 데이터"); // List가 아닌 String
+
+        LectureOutput lectureWithInvalidKeywords = new LectureOutput();
+        lectureWithInvalidKeywords.setId(lectureId);
+        lectureWithInvalidKeywords.setUserId(userId);
+        lectureWithInvalidKeywords.setCourseId(courseId);
+        lectureWithInvalidKeywords.setTitle("잘못된 키워드 데이터 테스트");
+        lectureWithInvalidKeywords.setSummary(summaryMap);
+        lectureWithInvalidKeywords.setCreatedAt(LocalDateTime.now());
+        lectureWithInvalidKeywords.setUpdatedAt(LocalDateTime.now());
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(lectureWithInvalidKeywords));
+
+        // When & Then - 잘못된 데이터가 있어도 오류 없이 처리되는지 확인
+        mockMvc.perform(get("/v1/lectures/{id}/preview", lectureId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(lectureId.toString()))
+                .andExpect(jsonPath("$.title").value("잘못된 키워드 데이터 테스트"))
+                .andExpect(jsonPath("$.keywords", hasSize(0))); // 변환 실패 시 빈 배열
+
+        verify(lectureService).findLectureById(lectureId);
     }
 }
