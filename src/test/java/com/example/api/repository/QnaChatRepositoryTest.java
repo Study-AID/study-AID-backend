@@ -38,13 +38,13 @@ public class QnaChatRepositoryTest {
         UUID userUuid = UUID.randomUUID();
         User user = new User();
         user.setId(userUuid);
-        //user.setSchool(school);
+        user.setSchool(school);
         user.setName("Test User");
         user.setEmail("test@example.com");
         user.setAuthType(AuthType.email);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
-        entityManager.persist(user); // user 엔티티 저장
+        entityManager.persist(user);
 
         UUID semesterUuid = UUID.randomUUID();
         Semester semester = new Semester();

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Setter
@@ -11,4 +12,5 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CreateQnaChatOutput {
     private UUID chatId;
+    private LocalDateTime createdAt;
 }

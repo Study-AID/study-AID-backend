@@ -44,7 +44,7 @@ public class QnaChatMessageRepositoryTest {
         user.setAuthType(AuthType.email);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
-        entityManager.persist(user); // user 엔티티 저장
+        entityManager.persist(user);
 
         UUID semesterUuid = UUID.randomUUID();
         Semester semester = new Semester();
@@ -91,8 +91,7 @@ public class QnaChatMessageRepositoryTest {
         qnaChatMessage.setId(qnaChatMessageUuid);
         qnaChatMessage.setQnaChat(qnaChat);
         qnaChatMessage.setUser(user);
-        qnaChatMessage.setContent("이것은 메시지인가요, 메세지인가요.");
-
+        qnaChatMessage.setContent("운영체제가 뭐야?");
 
         qnaChatMessageRepository.save(qnaChatMessage);
         Optional<QnaChatMessage> found = qnaChatMessageRepository.findById(qnaChatMessageUuid);
