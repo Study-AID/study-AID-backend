@@ -17,11 +17,6 @@ psycopg2.extras.register_uuid()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Constants and configurations
-# AWS S3 configuration
-s3_endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
-s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
-
 # Database configuration
 DB_CONFIG = {
     'host': os.environ.get('DB_HOST'),
@@ -30,6 +25,8 @@ DB_CONFIG = {
     'database': os.environ.get('DB_NAME'),
     'port': int(os.environ.get('DB_PORT'))
 }
+
+s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 
 def get_db_connection():
@@ -121,9 +118,6 @@ def get_lecture_content(lecture_info):
         # Download from S3
         s3_bucket = os.environ.get('S3_BUCKET', 'study-aid-materials')  # Use environment variable or default
         local_file_path = f"/tmp/{os.path.basename(s3_key)}"
-
-        if s3_endpoint_url:
-            logger.info(f"Using S3 endpoint URL: {s3_endpoint_url}")
 
         # Download from S3
         logger.info(f"Downloading file from s3://{s3_bucket}/{s3_key} to {local_file_path}")
