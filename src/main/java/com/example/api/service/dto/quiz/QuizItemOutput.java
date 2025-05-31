@@ -26,6 +26,7 @@ public class QuizItemOutput {
     private String textAnswer;
     private Integer displayOrder;
     private Float points;
+    private Boolean isLiked;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -43,6 +44,7 @@ public class QuizItemOutput {
                 quizItem.getTextAnswer(),
                 quizItem.getDisplayOrder(),
                 quizItem.getPoints(),
+                quizItem.getIsLiked(),
                 quizItem.getCreatedAt(),
                 quizItem.getUpdatedAt()
         );

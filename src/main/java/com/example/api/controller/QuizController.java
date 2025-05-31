@@ -584,7 +584,7 @@ public class QuizController extends BaseController {
                     @ApiResponse(
                         responseCode = "200", 
                         description = "Like status toggled successfully",
-                        content = @Content(schema = @Schema(implementation = ToggleLikeQuizItemResponse.class))
+                        content = @Content(schema = @Schema(implementation = QuizItemResponse.class))
                     ),
                     @ApiResponse(
                         responseCode = "400",
@@ -604,7 +604,7 @@ public class QuizController extends BaseController {
                     )
             }
     )
-    public ResponseEntity<ToggleLikeQuizItemResponse> toggleLikeQuizItem(
+    public ResponseEntity<QuizItemResponse> toggleLikeQuizItem(
             @PathVariable UUID id,
             @PathVariable UUID quizItemId,
             @org.springframework.web.bind.annotation.RequestBody ToggleLikeQuizItemRequest request
@@ -629,10 +629,10 @@ public class QuizController extends BaseController {
             input.setQuizItemId(quizItemId);
             input.setUserId(userId);
 
-            ToggleLikeQuizItemOutput output = quizService.toggleLikeQuizItem(input);
+            QuizItemOutput output = quizService.toggleLikeQuizItem(input);
 
             // 응답 DTO 변환
-            ToggleLikeQuizItemResponse response = ToggleLikeQuizItemResponse.fromServiceDto(output);
+            QuizItemResponse response = QuizItemResponse.fromServiceDto(output);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();

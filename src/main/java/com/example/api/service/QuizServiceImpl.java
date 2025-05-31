@@ -21,7 +21,6 @@ public class QuizServiceImpl implements QuizService {
 
     private QuizResponseRepository quizResponseRepo;
     private QuizResultRepository quizResultRepo;
-    private LikedQuizItemRepository likedQuizItemRepo;
 
     @Autowired
     public void QuizService(
@@ -30,8 +29,7 @@ public class QuizServiceImpl implements QuizService {
             QuizItemRepository quizItemRepo,
             LectureRepository lectureRepo,
             QuizResponseRepository quizResponseRepo,
-            QuizResultRepository quizResultRepo,
-            LikedQuizItemRepository likedQuizItemRepo
+            QuizResultRepository quizResultRepo
     ) {
         this.userRepo = userRepo;
         this.quizRepo = quizRepo;
@@ -39,7 +37,6 @@ public class QuizServiceImpl implements QuizService {
         this.lectureRepo = lectureRepo;
         this.quizResponseRepo = quizResponseRepo;
         this.quizResultRepo = quizResultRepo;
-        this.likedQuizItemRepo = likedQuizItemRepo;
     }
 
     @Override
@@ -197,57 +194,61 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public QuizItemListOutput findLikedQuizItemByLectureId(UUID lectureId) {
-        List<LikedQuizItem> likedQuizItems = likedQuizItemRepo.findByLectureId(lectureId);
-        List<QuizItemOutput> quizItemOutputs = new ArrayList<>();
-
-        for (LikedQuizItem likedQuizItem : likedQuizItems) {
-            QuizItem quizItem = likedQuizItem.getQuizItem();
-            quizItemOutputs.add(QuizItemOutput.fromEntity(quizItem));
+        List<Quiz> quizzes = quizRepo.findByLectureId(lectureId);
+        if (quizzes.isEmpty()) {
+            return new QuizItemListOutput(new ArrayList<>());
         }
 
+        List<UUID> quizIds = quizzes.stream().map(Quiz::getId).toList();
+
+        List<QuizItemOutput> quizItemOutputs = new ArrayList<>();
+        for (UUID quizId : quizIds) {
+            List<QuizItem> quizItems = quizItemRepo.findByQuizId(quizId);
+            if (quizItems.isEmpty()) {
+                continue;
+            }
+            for (QuizItem quizItem : quizItems) {
+                if (quizItem.getIsLiked() != null && quizItem.getIsLiked()) {
+                    // 좋아요가 있는 퀴즈 아이템만 추가
+                    QuizItemOutput quizItemOutput = QuizItemOutput.fromEntity(quizItem);
+                    quizItemOutputs.add(quizItemOutput);
+                }
+            }
+        }
+        
         return new QuizItemListOutput(quizItemOutputs);
     }
 
     @Override
     @Transactional
-    public ToggleLikeQuizItemOutput toggleLikeQuizItem(ToggleLikeQuizItemInput input) {
+    public QuizItemOutput toggleLikeQuizItem(ToggleLikeQuizItemInput input) {
         // 퀴즈 존재 확인
-        Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
         QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
-        User user = userRepo.getReferenceById(input.getUserId());
 
         // 퀴즈 문제가 해당 퀴즈에 속하는지 확인
         if (!quizItem.getQuiz().getId().equals(input.getQuizId())) {
             throw new IllegalArgumentException("Quiz item does not belong to the specified quiz");
         }
 
-        // 기존 좋아요 확인
-        Optional<LikedQuizItem> existingLikedQuizItem = likedQuizItemRepo.findByQuizItemId(
-                input.getQuizItemId());
-
-        boolean isLiked;
+        // 좋아요 토글을 위한 기존 좋아요 조회
+        Optional<QuizItem> existingQuizItem = quizItemRepo.findById(input.getQuizItemId());
+        if (existingQuizItem.isEmpty()) {
+            throw new IllegalArgumentException("Quiz item not found");
+        }
         
-        if (existingLikedQuizItem.isPresent()) {
-            // 좋아요가 이미 존재하면 삭제 (좋아요 취소)
-            likedQuizItemRepo.deleteLikedQuizItem(existingLikedQuizItem.get().getId());
-            isLiked = false;
+        if (existingQuizItem.get().getIsLiked() != null && existingQuizItem.get().getIsLiked()) {
+            // 이미 좋아요가 눌려져 있다면 좋아요 취소
+            existingQuizItem.get().setIsLiked(false);
         } else {
-            // 좋아요가 존재하지 않으면 생성 (좋아요 추가)
-            LikedQuizItem newLikedQuizItem = new LikedQuizItem();
-            newLikedQuizItem.setQuiz(quiz);
-            newLikedQuizItem.setQuizItem(quizItem);
-            newLikedQuizItem.setUser(user);
-            newLikedQuizItem.setCreatedAt(LocalDateTime.now());
-            
-            likedQuizItemRepo.createLikedQuizItem(newLikedQuizItem);
-            isLiked = true;
+            // 좋아요가 눌려져 있지 않다면 좋아요 추가
+            existingQuizItem.get().setIsLiked(true);
         }
 
-        return new ToggleLikeQuizItemOutput(
-                input.getQuizId(),
-                input.getQuizItemId(),
-                input.getUserId(),
-                isLiked
-        );
+        // 퀴즈 아이템의 좋아요 상태를 업데이트
+        QuizItem updatedQuizItem = quizItemRepo.updateQuizItem(existingQuizItem.get());
+        if (updatedQuizItem == null) {
+            throw new RuntimeException("Failed to update quiz item like status");
+        }
+        return QuizItemOutput.fromEntity(updatedQuizItem);
     }
 }

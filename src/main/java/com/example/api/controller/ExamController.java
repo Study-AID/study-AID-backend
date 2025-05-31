@@ -478,6 +478,62 @@ public class ExamController extends BaseController {
         }
     }
 
+    @GetMapping("/course/{courseId}/items/liked")
+    @Operation(
+            summary = "Get liked exam items by course ID",
+            description = "Retrieve a list of liked exam items associated with a specific course ID.",
+            parameters = {
+                    @Parameter(
+                        name = "courseId",
+                        description = "ID of the course to retrieve liked exam items for",
+                        required = true
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200",
+                        description = "Liked exam items found",
+                        content = @Content(schema = @Schema(implementation = ExamItemListResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this course"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404",
+                        description = "Course not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<ExamItemListResponse> getLikedExamItemsByCourseId(
+            @PathVariable UUID courseId
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        // Check if the course exists and if the user has access to it
+        var courseOutput = courseService.findCourseById(courseId);
+        if (courseOutput.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!courseOutput.get().getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Retrieve the liked exam items associated with the course
+        ExamItemListOutput examItemListOutput = examService.findLikedExamItemByCourseId(courseId);
+
+        List<ExamItemResponse> likedExamItems = examItemListOutput.getExamItems().stream()
+                .map(ExamItemResponse::fromServiceDto)
+                .toList();
+
+        return ResponseEntity.ok(new ExamItemListResponse(likedExamItems));
+    }
+
     @PostMapping("/{id}/items/{examItemId}/toggle-like")
     @Operation(
             summary = "Toggle like for exam item",
@@ -519,7 +575,7 @@ public class ExamController extends BaseController {
                     )
             }
     )
-    public ResponseEntity<ToggleLikeExamItemResponse> toggleLikeExamItem(
+    public ResponseEntity<ExamItemResponse> toggleLikeExamItem(
             @PathVariable UUID id,
             @PathVariable UUID examItemId,
             @org.springframework.web.bind.annotation.RequestBody ToggleLikeExamItemRequest request
@@ -542,9 +598,9 @@ public class ExamController extends BaseController {
             input.setExamItemId(examItemId);
             input.setUserId(userId);
             
-            ToggleLikeExamItemOutput output = examService.toggleLikeExamItem(input);
+            ExamItemOutput output = examService.toggleLikeExamItem(input);
 
-            ToggleLikeExamItemResponse response = ToggleLikeExamItemResponse.fromServiceDto(output);
+            ExamItemResponse response = ExamItemResponse.fromServiceDto(output);
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {

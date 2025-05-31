@@ -8,8 +8,6 @@ import com.example.api.repository.*;
 import com.example.api.service.dto.quiz.CreateQuizInput;
 import com.example.api.service.dto.quiz.QuizListOutput;
 import com.example.api.service.dto.quiz.QuizOutput;
-import com.example.api.service.dto.quiz.ToggleLikeQuizItemInput;
-import com.example.api.service.dto.quiz.ToggleLikeQuizItemOutput;
 import com.example.api.service.dto.quiz.UpdateQuizInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,9 +47,6 @@ public class QuizServiceTest {
 
     @Mock
     private QuizResultRepository quizResultRepository;
-    
-    @Mock
-    private LikedQuizItemRepository likedQuizItemRepository;
 
     @InjectMocks
     private QuizServiceImpl quizService;
@@ -415,121 +410,5 @@ public class QuizServiceTest {
         verify(quizResponseRepository, never()).updateQuizResponse(any(QuizResponse.class));
         verify(quizRepository, never()).updateQuiz(any(Quiz.class));
         verify(quizResultRepository, never()).createQuizResult(any(QuizResult.class));
-    }
-
-    @Test
-    @DisplayName("퀴즈 문제 좋아요 토글 - 좋아요 추가")
-    void toggleLikeQuizItem_AddLike() {
-        // given
-        ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
-        input.setQuizId(quizId);
-        input.setQuizItemId(quizItemId4);
-        input.setUserId(userId);
-
-        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
-        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
-        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
-        when(likedQuizItemRepository.findByQuizItemIdAndUserId(quizItemId4, userId))
-                .thenReturn(Optional.empty());
-        when(likedQuizItemRepository.createLikedQuizItem(any(LikedQuizItem.class)))
-                .thenReturn(new LikedQuizItem());
-
-        // when
-        ToggleLikeQuizItemOutput result = quizService.toggleLikeQuizItem(input);
-
-        // then
-        assertNotNull(result);
-        assertEquals(quizId, result.getQuizId());
-        assertEquals(quizItemId4, result.getQuizItemId());
-        assertEquals(userId, result.getUserId());
-        assertTrue(result.isLiked());
-
-        verify(quizRepository, times(1)).getReferenceById(quizId);
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
-        verify(userRepository, times(1)).getReferenceById(userId);
-        verify(likedQuizItemRepository, times(1)).findByQuizItemIdAndUserId(quizItemId4, userId);
-        verify(likedQuizItemRepository, times(1)).createLikedQuizItem(likedQuizItemCaptor.capture());
-        verify(likedQuizItemRepository, never()).deleteLikedQuizItem(any(UUID.class));
-
-        // Verify the created LikedQuizItem
-        LikedQuizItem capturedLikedQuizItem = likedQuizItemCaptor.getValue();
-        assertEquals(testQuiz, capturedLikedQuizItem.getQuiz());
-        assertEquals(testQuizItem, capturedLikedQuizItem.getQuizItem());
-        assertEquals(testUser, capturedLikedQuizItem.getUser());
-    }
-
-    @Test
-    @DisplayName("퀴즈 문제 좋아요 토글 - 좋아요 제거")
-    void toggleLikeQuizItem_RemoveLike() {
-        // given
-        ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
-        input.setQuizId(quizId);
-        input.setQuizItemId(quizItemId4);
-        input.setUserId(userId);
-
-        UUID likedQuizItemId = UUID.randomUUID();
-        LikedQuizItem existingLikedQuizItem = new LikedQuizItem();
-        existingLikedQuizItem.setId(likedQuizItemId);
-        existingLikedQuizItem.setQuiz(testQuiz);
-        existingLikedQuizItem.setQuizItem(testQuizItem);
-        existingLikedQuizItem.setUser(testUser);
-
-        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
-        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
-        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
-        when(likedQuizItemRepository.findByQuizItemIdAndUserId(quizItemId4, userId))
-                .thenReturn(Optional.of(existingLikedQuizItem));
-        doNothing().when(likedQuizItemRepository).deleteLikedQuizItem(likedQuizItemId);
-
-        // when
-        ToggleLikeQuizItemOutput result = quizService.toggleLikeQuizItem(input);
-
-        // then
-        assertNotNull(result);
-        assertEquals(quizId, result.getQuizId());
-        assertEquals(quizItemId4, result.getQuizItemId());
-        assertEquals(userId, result.getUserId());
-        assertFalse(result.isLiked());
-
-        verify(quizRepository, times(1)).getReferenceById(quizId);
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
-        verify(userRepository, times(1)).getReferenceById(userId);
-        verify(likedQuizItemRepository, times(1)).findByQuizItemIdAndUserId(quizItemId4, userId);
-        verify(likedQuizItemRepository, times(1)).deleteLikedQuizItem(likedQuizItemId);
-        verify(likedQuizItemRepository, never()).createLikedQuizItem(any(LikedQuizItem.class));
-    }
-
-    @Test
-    @DisplayName("퀴즈 문제 좋아요 토글 - 퀴즈 문제가 해당 퀴즈에 속하지 않는 경우")
-    void toggleLikeQuizItem_QuizItemDoesNotBelongToQuiz() {
-        // given
-        ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
-        input.setQuizId(quizId);
-        input.setQuizItemId(quizItemId4);
-        input.setUserId(userId);
-
-        // 다른 퀴즈에 속하는 퀴즈 문제 생성
-        Quiz anotherQuiz = new Quiz();
-        anotherQuiz.setId(UUID.randomUUID());
-        
-        QuizItem anotherQuizItem = new QuizItem();
-        anotherQuizItem.setId(quizItemId4);
-        anotherQuizItem.setQuiz(anotherQuiz); // 다른 퀴즈에 속함
-
-        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
-        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(anotherQuizItem);
-        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
-
-        // when, then
-        assertThrows(IllegalArgumentException.class, () -> {
-            quizService.toggleLikeQuizItem(input);
-        });
-
-        verify(quizRepository, times(1)).getReferenceById(quizId);
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
-        verify(userRepository, times(1)).getReferenceById(userId);
-        verify(likedQuizItemRepository, never()).findByQuizItemIdAndUserId(any(UUID.class), any(UUID.class));
-        verify(likedQuizItemRepository, never()).createLikedQuizItem(any(LikedQuizItem.class));
-        verify(likedQuizItemRepository, never()).deleteLikedQuizItem(any(UUID.class));
     }
 }

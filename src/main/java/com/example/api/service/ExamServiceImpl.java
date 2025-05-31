@@ -20,7 +20,6 @@ public class ExamServiceImpl implements ExamService {
     private ExamItemRepository examItemRepo;
     private ExamResponseRepository examResponseRepo;
     private ExamResultRepository examResultRepo;
-    private LikedExamItemRepository likedExamItemRepo;
 
     @Autowired
     public void ExamService(
@@ -29,8 +28,7 @@ public class ExamServiceImpl implements ExamService {
             ExamRepository examRepo,
             ExamItemRepository examItemRepo,
             ExamResponseRepository examResponseRepo,
-            ExamResultRepository examResultRepo,
-            LikedExamItemRepository likedExamItemRepo
+            ExamResultRepository examResultRepo
     ) {
         this.userRepo = userRepo;
         this.courseRepo = courseRepo;
@@ -38,7 +36,6 @@ public class ExamServiceImpl implements ExamService {
         this.examItemRepo = examItemRepo;
         this.examResponseRepo = examResponseRepo;
         this.examResultRepo = examResultRepo;
-        this.likedExamItemRepo = likedExamItemRepo;
     }
 
     @Override
@@ -183,41 +180,59 @@ public class ExamServiceImpl implements ExamService {
     }
 
     @Override
+    public ExamItemListOutput findLikedExamItemByCourseId(UUID courseId) {
+        List<Exam> exams = examRepo.findByCourseId(courseId);
+        if (exams.isEmpty()) {
+            return new ExamItemListOutput(Collections.emptyList());
+        }
+
+        List<UUID> examIds = exams.stream()
+                .map(Exam::getId)
+                .toList();
+
+        List<ExamItemOutput> examItemOutputs = new ArrayList<>();
+        for (UUID examId : examIds) {
+            List<ExamItem> examItems = examItemRepo.findByExamId(examId);
+            if (examItems.isEmpty()) {
+                continue;
+            }
+            for (ExamItem examItem : examItems) {
+                if (examItem.getIsLiked() != null && examItem.getIsLiked()) {
+                    ExamItemOutput examItemOutput = ExamItemOutput.fromEntity(examItem);
+                    examItemOutputs.add(examItemOutput);
+                }
+            }
+        }
+
+        return new ExamItemListOutput(examItemOutputs);
+    }
+
+    @Override
     @Transactional
-    public ToggleLikeExamItemOutput toggleLikeExamItem(ToggleLikeExamItemInput input) {
-        Exam exam = examRepo.getReferenceById(input.getExamId());
+    public ExamItemOutput toggleLikeExamItem(ToggleLikeExamItemInput input) {
         ExamItem examItem = examItemRepo.getReferenceById(input.getExamItemId());
-        User user = userRepo.getReferenceById(input.getUserId());
 
         if (!examItem.getExam().getId().equals(input.getExamId())) {
             throw new IllegalArgumentException("Exam item does not belong to the specified exam");
         }
 
-        Optional<LikedExamItem> existingLikedExamItem = likedExamItemRepo.findByExamItemIdAndUserId(input.getExamItemId(), input.getUserId());
-
-        boolean isLiked;
-
-        if (existingLikedExamItem.isPresent()) {
-            // 이미 좋아요가 눌려있다면 좋아요 취소
-            likedExamItemRepo.deleteLikedExamItem(existingLikedExamItem.get().getId());
-            isLiked = false;
-        } else {
-            // 좋아요가 눌려있지 않다면 좋아요 추가
-            LikedExamItem newLikedExamItem = new LikedExamItem();
-            newLikedExamItem.setExam(exam);
-            newLikedExamItem.setExamItem(examItem);
-            newLikedExamItem.setUser(user);
-            newLikedExamItem.setCreatedAt(LocalDateTime.now());
-
-            likedExamItemRepo.createLikedExamItem(newLikedExamItem);
-            isLiked = true;
+        Optional<ExamItem> existingExamItem = examItemRepo.findById(input.getExamItemId());
+        if (existingExamItem.isEmpty()) {
+            throw new NoSuchElementException("Exam item not found");
         }
 
-        return new ToggleLikeExamItemOutput(
-                input.getExamId(),
-                input.getExamItemId(),
-                input.getUserId(),
-                isLiked
-        );
+        if (existingExamItem.get().getIsLiked() != null && existingExamItem.get().getIsLiked()) {
+            // 이미 좋아요가 눌려져 있다면 좋아요 취소
+            existingExamItem.get().setIsLiked(false);
+        } else {
+            // 좋아요가 눌려져 있지 않다면 좋아요 추가
+            existingExamItem.get().setIsLiked(true);
+        }
+
+        ExamItem updatedExamItem = examItemRepo.updateExamItem(existingExamItem.get());
+        if (updatedExamItem == null) {
+            throw new RuntimeException("Failed to update exam item like status");
+        }
+        return ExamItemOutput.fromEntity(updatedExamItem);
     }
 }

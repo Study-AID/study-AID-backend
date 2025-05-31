@@ -1,10 +1,8 @@
-package com.example.api.controller.dto.quiz;
+package com.example.api.controller.dto.exam;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
-import com.example.api.entity.enums.QuestionType;
-import com.example.api.service.dto.quiz.QuizItemOutput;
+import com.example.api.service.dto.exam.ExamItemOutput;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -14,42 +12,42 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Quiz Item response DTO")
-public class QuizItemResponse {
-    @Schema(description = "Quiz Item ID")
-    private UUID id;
+@Schema(description = "Exam Item response DTO")
+public class ExamItemResponse {
+    @Schema(description = "Exam Item ID")
+    private String id;
 
-    @Schema(description = "Quiz ID")
-    private UUID quizId;
+    @Schema(description = "Exam ID")
+    private String examId;
 
     @Schema(description = "User ID")
-    private UUID userId;
+    private String userId;
 
     @Schema(description = "Question text")
     private String question;
 
     @Schema(description = "Question type")
-    private QuestionType questionType;
+    private String questionType;
 
     @Schema(description = "Explanation for the question")
     private String explanation;
 
     @Schema(description = "Is the answer true?")
     private Boolean isTrueAnswer;
-    
+
     @Schema(description = "Choices for the question")
     private String[] choices;
-    
+
     @Schema(description = "Indices of the correct answers")
     private Integer[] answerIndices;
-    
+
     @Schema(description = "Text answer for the question")
     private String textAnswer;
-    
+
     @Schema(description = "Display order of the question")
     private Integer displayOrder;
-    
-    @Schema(description = "points for the question")
+
+    @Schema(description = "Points for the question")
     private Float points;
 
     @Schema(description = "Is the question liked by the user")
@@ -61,23 +59,23 @@ public class QuizItemResponse {
     @Schema(description = "Last update time of the question")
     private LocalDateTime updatedAt;
 
-    public static QuizItemResponse fromServiceDto(QuizItemOutput quizItem) {
-        return new QuizItemResponse(
-                quizItem.getId(),
-                quizItem.getQuizId(),
-                quizItem.getUserId(),
-                quizItem.getQuestion(),
-                quizItem.getQuestionType(),
-                quizItem.getExplanation(),
-                quizItem.getIsTrueAnswer(),
-                quizItem.getChoices(),
-                quizItem.getAnswerIndices(),
-                quizItem.getTextAnswer(),
-                quizItem.getDisplayOrder(),
-                quizItem.getPoints(),
-                quizItem.getIsLiked(),
-                quizItem.getCreatedAt(),
-                quizItem.getUpdatedAt()
+    public static ExamItemResponse fromServiceDto(ExamItemOutput examItem) {
+        return new ExamItemResponse(
+                examItem.getId().toString(),
+                examItem.getExamId().toString(),
+                examItem.getUserId().toString(),
+                examItem.getQuestion(),
+                examItem.getQuestionType().name(),
+                examItem.getExplanation(),
+                examItem.getIsTrueAnswer(),
+                examItem.getChoices(),
+                examItem.getAnswerIndices(),
+                examItem.getTextAnswer(),
+                examItem.getDisplayOrder(),
+                examItem.getPoints(),
+                examItem.getIsLiked(),
+                examItem.getCreatedAt(),
+                examItem.getUpdatedAt()
         );
     }
 }
