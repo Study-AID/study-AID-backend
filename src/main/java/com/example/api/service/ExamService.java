@@ -9,9 +9,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.api.service.dto.exam.CreateExamInput;
 import com.example.api.service.dto.exam.CreateExamResponseInput;
+import com.example.api.service.dto.exam.ExamItemListOutput;
+import com.example.api.service.dto.exam.ExamItemOutput;
 import com.example.api.service.dto.exam.ExamListOutput;
 import com.example.api.service.dto.exam.ExamOutput;
 import com.example.api.service.dto.exam.ExamResponseListOutput;
+import com.example.api.service.dto.exam.ToggleLikeExamItemInput;
 import com.example.api.service.dto.exam.UpdateExamInput;
 
 @Service
@@ -34,4 +37,9 @@ public interface ExamService {
 
     @Transactional
     void gradeExam(UUID examId);
+
+    ExamItemListOutput findLikedExamItemByCourseId(UUID courseId);
+
+    @Transactional
+    ExamItemOutput toggleLikeExamItem(ToggleLikeExamItemInput input);
 }

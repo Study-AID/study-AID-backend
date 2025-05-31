@@ -30,4 +30,9 @@ public interface QuizService {
     
     @Transactional
     void gradeQuiz(UUID quizId);
+
+    QuizItemListOutput findLikedQuizItemByLectureId(UUID lectureId);
+
+    @Transactional
+    QuizItemOutput toggleLikeQuizItem(ToggleLikeQuizItemInput input);
 }

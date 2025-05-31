@@ -1,15 +1,12 @@
 package com.example.api.repository;
 
-import com.example.api.entity.QuizItem;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.example.api.entity.QuizItem;
 
-
-public interface QuizItemRepository extends JpaRepository<QuizItem, UUID>, QuizItemRepositoryCustom {
+public interface QuizItemRepositoryCustom {
     Optional<QuizItem> findById(UUID id);
 
     List<QuizItem> findByQuizId(UUID quizId);
