@@ -2,6 +2,7 @@ package com.example.api.service.dto.exam;
 
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.example.api.entity.ExamItem;
 import com.example.api.entity.enums.QuestionType;
@@ -14,9 +15,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExamItemOutput {
-    private String id;
-    private String examId;
-    private String userId;
+    private UUID id;
+    private UUID examId;
+    private UUID userId;
     private String question;
     private QuestionType questionType;
     private String explanation;
@@ -32,9 +33,9 @@ public class ExamItemOutput {
 
     public static ExamItemOutput fromEntity(ExamItem examItem) {
         return new ExamItemOutput(
-                examItem.getId().toString(),
-                examItem.getExam().getId().toString(),
-                examItem.getUser().getId().toString(),
+                examItem.getId(),
+                examItem.getExam().getId(),
+                examItem.getUser().getId(),
                 examItem.getQuestion(),
                 examItem.getQuestionType(),
                 examItem.getExplanation(),

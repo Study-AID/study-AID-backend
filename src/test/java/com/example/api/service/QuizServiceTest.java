@@ -6,8 +6,11 @@ import com.example.api.entity.enums.Status;
 import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.*;
 import com.example.api.service.dto.quiz.CreateQuizInput;
+import com.example.api.service.dto.quiz.QuizItemListOutput;
+import com.example.api.service.dto.quiz.QuizItemOutput;
 import com.example.api.service.dto.quiz.QuizListOutput;
 import com.example.api.service.dto.quiz.QuizOutput;
+import com.example.api.service.dto.quiz.ToggleLikeQuizItemInput;
 import com.example.api.service.dto.quiz.UpdateQuizInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +28,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,6 +77,10 @@ public class QuizServiceTest {
     private UUID quizItemId3;
     private UUID quizItemId4;
 
+    private UUID likedQuizItemId1;
+    private UUID likedQuizItemId2;
+    private UUID anotherQuizId;
+
     private User testUser;
     private Course testCourse;
     private Semester testSemester;
@@ -82,6 +90,11 @@ public class QuizServiceTest {
     private QuizOutput testQuizOutput;
     private List<QuizResponse> testQuizResponses;
     private QuizItem testQuizItem;
+    
+    private Quiz anotherQuiz;
+    private QuizItem likedQuizItem1;
+    private QuizItem likedQuizItem2;
+    private QuizItem notLikedQuizItem;
 
     @BeforeEach
     void setUp() {
@@ -94,6 +107,7 @@ public class QuizServiceTest {
         quizItemId2 = UUID.randomUUID();
         quizItemId3 = UUID.randomUUID();
         quizItemId4 = UUID.randomUUID(); // liked quiz item
+        
 
         testUser = new User();
         testUser.setId(userId);
@@ -204,6 +218,45 @@ public class QuizServiceTest {
         testQuizItem.setQuiz(testQuiz);
         testQuizItem.setQuestionType(QuestionType.multiple_choice);
         testQuizItem.setQuestion("Test Question");
+
+        likedQuizItemId1 = UUID.randomUUID();
+        likedQuizItemId2 = UUID.randomUUID();
+        anotherQuizId = UUID.randomUUID();
+
+        anotherQuiz = new Quiz();
+        anotherQuiz.setId(anotherQuizId);
+        anotherQuiz.setUser(testUser);
+        anotherQuiz.setLecture(testLecture);
+        anotherQuiz.setTitle("Another Quiz");
+        anotherQuiz.setStatus(Status.not_started);
+
+        likedQuizItem1 = new QuizItem();
+        likedQuizItem1.setId(likedQuizItemId1);
+        likedQuizItem1.setQuiz(testQuiz);
+        likedQuizItem1.setUser(testUser);
+        likedQuizItem1.setQuestion("What is inheritance?");
+        likedQuizItem1.setQuestionType(QuestionType.short_answer);
+        likedQuizItem1.setIsLiked(true);
+
+        likedQuizItem2 = new QuizItem();
+        likedQuizItem2.setId(likedQuizItemId2);
+        likedQuizItem2.setQuiz(anotherQuiz);
+        likedQuizItem2.setUser(testUser);
+        likedQuizItem2.setQuestion("Is Java object-oriented?");
+        likedQuizItem2.setQuestionType(QuestionType.true_or_false);
+        likedQuizItem2.setIsLiked(true);
+
+        notLikedQuizItem = new QuizItem();
+        notLikedQuizItem.setId(UUID.randomUUID());
+        notLikedQuizItem.setQuiz(testQuiz);
+        notLikedQuizItem.setUser(testUser);
+        notLikedQuizItem.setQuestion("What is abstraction?");
+        notLikedQuizItem.setQuestionType(QuestionType.short_answer);
+        notLikedQuizItem.setIsLiked(false);
+
+        // testQuizItem 초기화도 setUp()에서 처리
+        testQuizItem.setUser(testUser);
+        testQuizItem.setIsLiked(false); // 기본값을 false로 설정
     }
 
     @Test
@@ -411,4 +464,216 @@ public class QuizServiceTest {
         verify(quizRepository, never()).updateQuiz(any(Quiz.class));
         verify(quizResultRepository, never()).createQuizResult(any(QuizResult.class));
     }
+
+    @Test
+    @DisplayName("강의별 좋아요한 퀴즈 문제 조회 - 좋아요한 문제가 있는 경우")
+    void findLikedQuizItemByLectureId_WithLikedItems() {
+        // given
+        when(quizRepository.findByLectureId(lectureId)).thenReturn(Arrays.asList(testQuiz, anotherQuiz));
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(Arrays.asList(likedQuizItem1, notLikedQuizItem));
+        when(quizItemRepository.findByQuizId(anotherQuizId)).thenReturn(Arrays.asList(likedQuizItem2));
+
+        // when
+        QuizItemListOutput result = quizService.findLikedQuizItemByLectureId(lectureId);
+
+        // then
+        assertEquals(2, result.getQuizItems().size());
+        
+        QuizItemOutput firstLikedItem = result.getQuizItems().get(0);
+        assertEquals(likedQuizItemId1, firstLikedItem.getId());
+        assertEquals("What is inheritance?", firstLikedItem.getQuestion());
+        assertEquals(QuestionType.short_answer, firstLikedItem.getQuestionType());
+        assertEquals(Boolean.TRUE, firstLikedItem.getIsLiked());
+
+        QuizItemOutput secondLikedItem = result.getQuizItems().get(1);
+        assertEquals(likedQuizItemId2, secondLikedItem.getId());
+        assertEquals("Is Java object-oriented?", secondLikedItem.getQuestion());
+        assertEquals(QuestionType.true_or_false, secondLikedItem.getQuestionType());
+        assertEquals(Boolean.TRUE, secondLikedItem.getIsLiked());
+
+        verify(quizRepository, times(1)).findByLectureId(lectureId);
+        verify(quizItemRepository, times(1)).findByQuizId(quizId);
+        verify(quizItemRepository, times(1)).findByQuizId(anotherQuizId);
+    }
+
+    @Test
+    @DisplayName("강의별 좋아요한 퀴즈 문제 조회 - 퀴즈가 없는 경우")
+    void findLikedQuizItemByLectureId_NoQuizzes() {
+        // given
+        when(quizRepository.findByLectureId(lectureId)).thenReturn(Arrays.asList());
+
+        // when
+        QuizItemListOutput result = quizService.findLikedQuizItemByLectureId(lectureId);
+
+        // then
+        assertEquals(0, result.getQuizItems().size());
+        verify(quizRepository, times(1)).findByLectureId(lectureId);
+        verify(quizItemRepository, never()).findByQuizId(any(UUID.class));
+    }
+
+    @Test
+    @DisplayName("강의별 좋아요한 퀴즈 문제 조회 - 좋아요한 문제가 없는 경우")
+    void findLikedQuizItemByLectureId_NoLikedItems() {
+        // given
+        when(quizRepository.findByLectureId(lectureId)).thenReturn(Arrays.asList(testQuiz));
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(Arrays.asList(notLikedQuizItem));
+
+        // when
+        QuizItemListOutput result = quizService.findLikedQuizItemByLectureId(lectureId);
+
+        // then
+        assertEquals(0, result.getQuizItems().size());
+        verify(quizRepository, times(1)).findByLectureId(lectureId);
+        verify(quizItemRepository, times(1)).findByQuizId(quizId);
+    }
+
+    @Test
+    @DisplayName("퀴즈 문제 좋아요 토글 - 좋아요 추가 (false -> true)")
+    void toggleLikeQuizItem_AddLike() {
+        // given
+        ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
+        input.setQuizId(quizId);
+        input.setQuizItemId(quizItemId4);
+        input.setUserId(userId);
+
+        // testQuizItem의 현재 상태는 setUp()에서 false로 설정됨
+        
+        QuizItem updatedQuizItem = new QuizItem();
+        updatedQuizItem.setId(quizItemId4);
+        updatedQuizItem.setQuiz(testQuiz);
+        updatedQuizItem.setUser(testUser);
+        updatedQuizItem.setQuestion("Test Question");
+        updatedQuizItem.setQuestionType(QuestionType.multiple_choice);
+        updatedQuizItem.setIsLiked(true); // false에서 true로 변경
+
+        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
+        when(quizItemRepository.findById(quizItemId4)).thenReturn(Optional.of(testQuizItem));
+        when(quizItemRepository.updateQuizItem(any(QuizItem.class))).thenReturn(updatedQuizItem);
+
+        // when
+        QuizItemOutput result = quizService.toggleLikeQuizItem(input);
+
+        // then
+        assertEquals(quizItemId4, result.getId());
+        assertEquals(quizId, result.getQuizId());
+        assertEquals(userId, result.getUserId());
+        assertEquals("Test Question", result.getQuestion());
+        assertEquals(QuestionType.multiple_choice, result.getQuestionType());
+        assertEquals(Boolean.TRUE, result.getIsLiked());
+
+        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
+        verify(quizItemRepository, times(1)).findById(quizItemId4);
+        verify(quizItemRepository, times(1)).updateQuizItem(argThat(item -> 
+                item.getId().equals(quizItemId4) && Boolean.TRUE.equals(item.getIsLiked())));
+    }
+
+    @Test
+    @DisplayName("퀴즈 문제 좋아요 토글 - 좋아요 제거 (true -> false)")
+    void toggleLikeQuizItem_RemoveLike() {
+        // given
+        ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
+        input.setQuizId(quizId);
+        input.setQuizItemId(quizItemId4);
+        input.setUserId(userId);
+
+        testQuizItem.setIsLiked(true); // 현재 좋아요 상태를 true로 설정
+        
+        QuizItem updatedQuizItem = new QuizItem();
+        updatedQuizItem.setId(quizItemId4);
+        updatedQuizItem.setQuiz(testQuiz);
+        updatedQuizItem.setUser(testUser);
+        updatedQuizItem.setQuestion("Test Question");
+        updatedQuizItem.setQuestionType(QuestionType.multiple_choice);
+        updatedQuizItem.setIsLiked(false); // true에서 false로 변경
+
+        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
+        when(quizItemRepository.findById(quizItemId4)).thenReturn(Optional.of(testQuizItem));
+        when(quizItemRepository.updateQuizItem(any(QuizItem.class))).thenReturn(updatedQuizItem);
+
+        // when
+        QuizItemOutput result = quizService.toggleLikeQuizItem(input);
+
+        // then
+        assertEquals(quizItemId4, result.getId());
+        assertEquals(quizId, result.getQuizId());
+        assertEquals(userId, result.getUserId());
+        assertEquals("Test Question", result.getQuestion());
+        assertEquals(QuestionType.multiple_choice, result.getQuestionType());
+        assertEquals(Boolean.FALSE, result.getIsLiked());
+
+        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
+        verify(quizItemRepository, times(1)).findById(quizItemId4);
+        verify(quizItemRepository, times(1)).updateQuizItem(argThat(item -> 
+                item.getId().equals(quizItemId4) && Boolean.FALSE.equals(item.getIsLiked())));
+    }
+
+    @Test
+    @DisplayName("퀴즈 문제 좋아요 토글 - 퀴즈 문제가 해당 퀴즈에 속하지 않는 경우 예외 발생")
+    void toggleLikeQuizItem_QuizItemDoesNotBelongToQuiz() {
+        // given
+        UUID wrongQuizId = UUID.randomUUID();
+        ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
+        input.setQuizId(wrongQuizId); // 다른 퀴즈 ID
+        input.setQuizItemId(quizItemId4);
+        input.setUserId(userId);
+
+        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
+
+        // when, then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
+                () -> quizService.toggleLikeQuizItem(input));
+        
+        assertEquals("Quiz item does not belong to the specified quiz", exception.getMessage());
+
+        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
+        verify(quizItemRepository, never()).findById(any(UUID.class));
+        verify(quizItemRepository, never()).updateQuizItem(any(QuizItem.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 문제 좋아요 토글 - 퀴즈 문제가 존재하지 않는 경우 예외 발생")
+    void toggleLikeQuizItem_QuizItemNotFound() {
+        // given
+        ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
+        input.setQuizId(quizId);
+        input.setQuizItemId(quizItemId4);
+        input.setUserId(userId);
+
+        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
+        when(quizItemRepository.findById(quizItemId4)).thenReturn(Optional.empty());
+
+        // when, then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
+                () -> quizService.toggleLikeQuizItem(input));
+        
+        assertEquals("Quiz item not found", exception.getMessage());
+
+        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
+        verify(quizItemRepository, times(1)).findById(quizItemId4);
+        verify(quizItemRepository, never()).updateQuizItem(any(QuizItem.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 문제 좋아요 토글 - 업데이트 실패 시 예외 발생")
+    void toggleLikeQuizItem_UpdateFailed() {
+        // given
+        ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
+        input.setQuizId(quizId);
+        input.setQuizItemId(quizItemId4);
+        input.setUserId(userId);
+
+        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
+        when(quizItemRepository.findById(quizItemId4)).thenReturn(Optional.of(testQuizItem));
+        when(quizItemRepository.updateQuizItem(any(QuizItem.class))).thenReturn(null); // 업데이트 실패
+
+        // when, then
+        RuntimeException exception = assertThrows(RuntimeException.class, 
+                () -> quizService.toggleLikeQuizItem(input));
+        
+        assertEquals("Failed to update quiz item like status", exception.getMessage());
+
+        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
+        verify(quizItemRepository, times(1)).findById(quizItemId4);
+        verify(quizItemRepository, times(1)).updateQuizItem(any(QuizItem.class));
+    }   
 }

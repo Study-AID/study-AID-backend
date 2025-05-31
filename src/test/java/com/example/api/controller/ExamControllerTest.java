@@ -336,4 +336,205 @@ public class ExamControllerTest {
         verify(examService, never()).createExam(any(CreateExamInput.class));
         verify(sqsClient, never()).sendGenerateExamMessage(any());
     }
+
+    @Test
+    @DisplayName("코스별 좋아요한 시험 문제 조회")
+    @WithMockUser
+    void getLikedExamItemsByCourse() throws Exception {
+        // given
+        UUID examItemId1 = UUID.randomUUID();
+        UUID examItemId2 = UUID.randomUUID();
+        
+        ExamItemOutput likedExamItem1 = new ExamItemOutput();
+        likedExamItem1.setId(examItemId1);
+        likedExamItem1.setExamId(examId);
+        likedExamItem1.setUserId(userId);
+        likedExamItem1.setQuestion("What is JVM?");
+        likedExamItem1.setQuestionType(QuestionType.short_answer);
+        likedExamItem1.setIsLiked(true);
+        
+        ExamItemOutput likedExamItem2 = new ExamItemOutput();
+        likedExamItem2.setId(examItemId2);
+        likedExamItem2.setExamId(examId);
+        likedExamItem2.setUserId(userId);
+        likedExamItem2.setQuestion("Is Java platform independent?");
+        likedExamItem2.setQuestionType(QuestionType.true_or_false);
+        likedExamItem2.setIsLiked(true);
+
+        when(courseService.findCourseById(courseId)).thenReturn(Optional.of(testCourseOutput));
+        when(examService.findLikedExamItemByCourseId(courseId))
+                .thenReturn(new ExamItemListOutput(List.of(likedExamItem1, likedExamItem2)));
+
+        // when, then
+        mockMvc.perform(get("/v1/exams/course/{courseId}/items/liked", courseId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.examItems", hasSize(2)))
+                .andExpect(jsonPath("$.examItems[0].id", is(examItemId1.toString())))
+                .andExpect(jsonPath("$.examItems[0].examId", is(examId.toString())))
+                .andExpect(jsonPath("$.examItems[0].userId", is(userId.toString())))
+                .andExpect(jsonPath("$.examItems[0].question", is("What is JVM?")))
+                .andExpect(jsonPath("$.examItems[0].questionType", is("short_answer")))
+                .andExpect(jsonPath("$.examItems[0].isLiked", is(true)))
+                .andExpect(jsonPath("$.examItems[1].id", is(examItemId2.toString())))
+                .andExpect(jsonPath("$.examItems[1].question", is("Is Java platform independent?")))
+                .andExpect(jsonPath("$.examItems[1].questionType", is("true_or_false")))
+                .andExpect(jsonPath("$.examItems[1].isLiked", is(true)));
+
+        verify(courseService, times(1)).findCourseById(courseId);
+        verify(examService, times(1)).findLikedExamItemByCourseId(courseId);
+    }
+
+    @Test
+    @DisplayName("좋아요한 시험 문제 조회 - 코스가 존재하지 않는 경우")
+    @WithMockUser
+    void getLikedExamItemsByCourse_CourseNotFound() throws Exception {
+        // given
+        when(courseService.findCourseById(courseId)).thenReturn(Optional.empty());
+
+        // when, then
+        mockMvc.perform(get("/v1/exams/course/{courseId}/items/liked", courseId))
+                .andExpect(status().isNotFound());
+
+        verify(courseService, times(1)).findCourseById(courseId);
+        verify(examService, never()).findLikedExamItemByCourseId(any(UUID.class));
+    }
+
+    @Test
+    @DisplayName("좋아요한 시험 문제 조회 - 권한이 없는 경우")
+    @WithMockUser
+    void getLikedExamItemsByCourse_Forbidden() throws Exception {
+        // given
+        CourseOutput otherUserCourse = new CourseOutput();
+        otherUserCourse.setId(courseId);
+        otherUserCourse.setUserId(UUID.randomUUID()); // 다른 사용자의 코스
+        otherUserCourse.setName("Other User's Course");
+
+        when(courseService.findCourseById(courseId)).thenReturn(Optional.of(otherUserCourse));
+
+        // when, then
+        mockMvc.perform(get("/v1/exams/course/{courseId}/items/liked", courseId))
+                .andExpect(status().isForbidden());
+
+        verify(courseService, times(1)).findCourseById(courseId);
+        verify(examService, never()).findLikedExamItemByCourseId(any(UUID.class));
+    }
+
+    @Test
+    @DisplayName("시험 문제 좋아요 토글 - 좋아요 추가")
+    @WithMockUser
+    void toggleLikeExamItem_AddLike() throws Exception {
+        // given
+        UUID examItemId = UUID.randomUUID();
+        ToggleLikeExamItemRequest request = new ToggleLikeExamItemRequest();
+        
+        ExamItemOutput toggledExamItem = new ExamItemOutput();
+        toggledExamItem.setId(examItemId);
+        toggledExamItem.setExamId(examId);
+        toggledExamItem.setUserId(userId);
+        toggledExamItem.setQuestion("What is polymorphism?");
+        toggledExamItem.setQuestionType(QuestionType.short_answer);
+        toggledExamItem.setIsLiked(true); // 토글 후 좋아요 상태
+
+        when(examService.findExamById(examId)).thenReturn(Optional.of(testExamOutput));
+        when(examService.toggleLikeExamItem(any(ToggleLikeExamItemInput.class))).thenReturn(toggledExamItem);
+
+        // when, then
+        mockMvc.perform(post("/v1/exams/{id}/items/{examItemId}/toggle-like", examId, examItemId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(examItemId.toString())))
+                .andExpect(jsonPath("$.examId", is(examId.toString())))
+                .andExpect(jsonPath("$.userId", is(userId.toString())))
+                .andExpect(jsonPath("$.question", is("What is polymorphism?")))
+                .andExpect(jsonPath("$.questionType", is("short_answer")))
+                .andExpect(jsonPath("$.isLiked", is(true)));
+
+        verify(examService, times(1)).findExamById(examId);
+        verify(examService, times(1)).toggleLikeExamItem(argThat(input -> 
+                input.getExamId().equals(examId) && 
+                input.getExamItemId().equals(examItemId) && 
+                input.getUserId().equals(userId)));
+    }
+
+    @Test
+    @DisplayName("시험 문제 좋아요 토글 - 좋아요 제거")
+    @WithMockUser
+    void toggleLikeExamItem_RemoveLike() throws Exception {
+        // given
+        UUID examItemId = UUID.randomUUID();
+        ToggleLikeExamItemRequest request = new ToggleLikeExamItemRequest();
+        
+        ExamItemOutput toggledExamItem = new ExamItemOutput();
+        toggledExamItem.setId(examItemId);
+        toggledExamItem.setExamId(examId);
+        toggledExamItem.setUserId(userId);
+        toggledExamItem.setQuestion("What is encapsulation?");
+        toggledExamItem.setQuestionType(QuestionType.multiple_choice);
+        toggledExamItem.setIsLiked(false); // 토글 후 좋아요 해제 상태
+
+        when(examService.findExamById(examId)).thenReturn(Optional.of(testExamOutput));
+        when(examService.toggleLikeExamItem(any(ToggleLikeExamItemInput.class))).thenReturn(toggledExamItem);
+
+        // when, then
+        mockMvc.perform(post("/v1/exams/{id}/items/{examItemId}/toggle-like", examId, examItemId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(examItemId.toString())))
+                .andExpect(jsonPath("$.examId", is(examId.toString())))
+                .andExpect(jsonPath("$.userId", is(userId.toString())))
+                .andExpect(jsonPath("$.question", is("What is encapsulation?")))
+                .andExpect(jsonPath("$.questionType", is("multiple_choice")))
+                .andExpect(jsonPath("$.isLiked", is(false)));
+
+        verify(examService, times(1)).findExamById(examId);
+        verify(examService, times(1)).toggleLikeExamItem(any(ToggleLikeExamItemInput.class));
+    }
+
+    @Test
+    @DisplayName("시험 문제 좋아요 토글 - 시험이 존재하지 않는 경우")
+    @WithMockUser
+    void toggleLikeExamItem_ExamNotFound() throws Exception {
+        // given
+        UUID examItemId = UUID.randomUUID();
+        ToggleLikeExamItemRequest request = new ToggleLikeExamItemRequest();
+
+        when(examService.findExamById(examId)).thenReturn(Optional.empty());
+
+        // when, then
+        mockMvc.perform(post("/v1/exams/{id}/items/{examItemId}/toggle-like", examId, examItemId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+
+        verify(examService, times(1)).findExamById(examId);
+        verify(examService, never()).toggleLikeExamItem(any(ToggleLikeExamItemInput.class));
+    }
+
+    @Test
+    @DisplayName("시험 문제 좋아요 토글 - 권한이 없는 경우")
+    @WithMockUser
+    void toggleLikeExamItem_Forbidden() throws Exception {
+        // given
+        UUID examItemId = UUID.randomUUID();
+        ToggleLikeExamItemRequest request = new ToggleLikeExamItemRequest();
+        
+        ExamOutput otherUserExam = new ExamOutput();
+        otherUserExam.setId(examId);
+        otherUserExam.setCourseId(courseId);
+        otherUserExam.setUserId(UUID.randomUUID()); // 다른 사용자의 시험
+        otherUserExam.setTitle("Other User's Exam");
+
+        when(examService.findExamById(examId)).thenReturn(Optional.of(otherUserExam));
+
+        // when, then
+        mockMvc.perform(post("/v1/exams/{id}/items/{examItemId}/toggle-like", examId, examItemId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(examService, times(1)).findExamById(examId);
+        verify(examService, never()).toggleLikeExamItem(any(ToggleLikeExamItemInput.class));
+    }
 }

@@ -559,7 +559,7 @@ public class ExamController extends BaseController {
                     @ApiResponse(
                         responseCode = "200",
                         description = "Like toggled successfully",
-                        content = @Content(schema = @Schema(implementation = ToggleLikeExamItemResponse.class))
+                        content = @Content(schema = @Schema(implementation = ExamItemResponse.class))
                     ),
                     @ApiResponse(
                         responseCode = "403",
