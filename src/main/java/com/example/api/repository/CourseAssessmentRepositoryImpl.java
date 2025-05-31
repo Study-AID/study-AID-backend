@@ -34,12 +34,14 @@ public class CourseAssessmentRepositoryImpl implements CourseAssessmentRepositor
 
     @Transactional
     public CourseAssessment createCourseAssessment(CourseAssessment courseAssessment) {
+        courseAssessment.setCreatedAt(LocalDateTime.now());
         manager.persist(courseAssessment);
         return courseAssessment;
     }
 
     @Transactional
     public CourseAssessment updateCourseAssessment(CourseAssessment courseAssessment) {
+        courseAssessment.setUpdatedAt(LocalDateTime.now());
         return manager.merge(courseAssessment);
     }
 
