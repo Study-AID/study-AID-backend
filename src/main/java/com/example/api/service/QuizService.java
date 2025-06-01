@@ -26,8 +26,8 @@ public interface QuizService {
     void deleteQuiz(UUID quizId);
 
     @Transactional
-    QuizResponseListOutput createQuizResponse(List<CreateQuizResponseInput> inputs);
+    QuizResponseListOutput submitAndGradeQuizWithStatus(List<CreateQuizResponseInput> inputs);
     
     @Transactional
-    void gradeQuiz(UUID quizId);
+    void gradeNonEssayQuestions(UUID quizId);
 }
