@@ -157,7 +157,8 @@ public class QuizServiceImpl implements QuizService {
         List<QuizResponse> quizResponses = quizResponseRepo.findByQuizId(quizId);
         
         // 퀴즈 총점 설정 및 계산
-        Float initialMaxScore = setPointsForQuizItems(quizItemRepo.findByQuizId(quizId));
+        List<QuizItem> quizItems = quizItemRepo.findByQuizId(quizId);
+        Float initialMaxScore = setPointsForQuizItems(quizItems);
         
         // 퀴즈 아이템의 questionType에 문제 유형을 확인하여 점수를 부여
         Float nonEssayScore = 0f;

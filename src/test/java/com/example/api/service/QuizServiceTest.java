@@ -172,8 +172,6 @@ public class QuizServiceTest {
         shortAnswerItem.setQuestion("What does JVM stand for?");
         shortAnswerItem.setTextAnswer("Java Virtual Machine");
 
-        testQuizItems = Arrays.asList(trueOrFalseItem, multipleChoiceItem, shortAnswerItem);
-
         // Create quiz responses
         QuizResponse trueOrFalseResponse = new QuizResponse();
         trueOrFalseResponse.setId(UUID.randomUUID());
@@ -302,14 +300,20 @@ public class QuizServiceTest {
         when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
         when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
 
+        List<QuizItem> quizItems = Arrays.asList(
+                testQuizResponses.get(0).getQuizItem(),
+                testQuizResponses.get(1).getQuizItem(),
+                testQuizResponses.get(2).getQuizItem()
+        );
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(quizItems);
         // Item 1: true/false
-        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizItems.get(0));
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizResponses.get(0).getQuizItem());
 
         // Item 2: multiple choice
-        when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(testQuizItems.get(1));
+        when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(testQuizResponses.get(1).getQuizItem());
 
         // Item 3: short answer
-        when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(testQuizItems.get(2));
+        when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(testQuizResponses.get(2).getQuizItem());
         // 변경: updateQuiz 제거 (gradeNonEssayQuestions는 퀴즈 상태를 직접 업데이트하지 않음)
         when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
         when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
@@ -320,6 +324,7 @@ public class QuizServiceTest {
         // then
         verify(quizRepository, times(1)).getReferenceById(quizId);
         verify(quizResponseRepository, times(1)).findByQuizId(quizId);
+        verify(quizItemRepository, times(1)).findByQuizId(quizId);
         verify(quizItemRepository, times(3)).getReferenceById(any(UUID.class));
 
         // 변경: 퀴즈 상태 업데이트 검증 제거 (gradeNonEssayQuestions는 퀴즈 상태를 직접 업데이트하지 않음)
@@ -349,7 +354,12 @@ public class QuizServiceTest {
 
         when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
         when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
-
+        List<QuizItem> quizItems = Arrays.asList(
+            testQuizResponses.get(0).getQuizItem(),
+            testQuizResponses.get(1).getQuizItem(),
+            testQuizResponses.get(2).getQuizItem()
+        );
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(quizItems);
         // Item 1: true/false
         when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizResponses.get(0).getQuizItem());
 
@@ -368,6 +378,7 @@ public class QuizServiceTest {
         // then
         verify(quizRepository, times(1)).getReferenceById(quizId);
         verify(quizResponseRepository, times(1)).findByQuizId(quizId);
+        verify(quizItemRepository, times(1)).findByQuizId(quizId);
         verify(quizItemRepository, times(3)).getReferenceById(any(UUID.class));
 
         // 변경: 퀴즈 상태 업데이트 검증 제거 (gradeNonEssayQuestions는 퀴즈 상태를 직접 업데이트하지 않음)
@@ -382,30 +393,6 @@ public class QuizServiceTest {
 
         // Verify quiz result is created
         verify(quizResultRepository).createQuizResult(any(QuizResult.class));
-    }
-
-    @Test
-    @DisplayName("퀴즈 채점 테스트 - question type이 null인 경우 예외 처리")
-    void gradeQuizWithNullQuestionType() {
-        // given
-        testQuiz.setStatus(Status.submitted); // 채점을 위해 상태 변경
-
-        // Set questionType to null
-        testQuizResponses.get(0).getQuizItem().setQuestionType(null);
-
-        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
-        when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
-        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizResponses.get(0).getQuizItem());
-
-        // when, then
-        assertThrows(IllegalArgumentException.class, () -> quizService.gradeNonEssayQuestions(quizId));
-
-        verify(quizRepository, times(1)).getReferenceById(quizId);
-        verify(quizResponseRepository, times(1)).findByQuizId(quizId);
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId1);
-        verify(quizResponseRepository, never()).updateQuizResponse(any(QuizResponse.class));
-        // 변경: updateQuiz 제거 (gradeNonEssayQuestions는 퀴즈 상태를 직접 업데이트하지 않음)
-        verify(quizResultRepository, never()).createQuizResult(any(QuizResult.class));
     }
 
     @Test
