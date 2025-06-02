@@ -272,22 +272,16 @@ public class ExamServiceTest {
         // Item 3: short answer
         when(examItemRepo.getReferenceById(examItemId3)).thenReturn(testExamResponses.get(2).getExamItem());
 
-        when(examRepo.updateExam(any(Exam.class))).thenReturn(testExam);
         when(examResponseRepo.updateExamResponse(any(ExamResponse.class))).thenReturn(new ExamResponse());
         when(examResultRepo.createExamResult(any(ExamResult.class))).thenReturn(new ExamResult());
 
         // when
-        examService.gradeExam(examId);
+        examService.gradeNonEssayQuestions(examId);
 
         // then
         verify(examRepo, times(1)).getReferenceById(examId);
         verify(examResponseRepo, times(1)).findByExamId(examId);
         verify(examItemRepo, times(3)).getReferenceById(any(UUID.class));
-
-        // Verify exam status is updated to graded
-        verify(examRepo).updateExam(examCaptor.capture());
-        Exam capturedExam = examCaptor.getValue();
-        assertEquals(Status.graded, capturedExam.getStatus());
 
         // Verify each response is updated with correct isCorrect flag
         verify(examResponseRepo, times(3)).updateExamResponse(examResponseCaptor.capture());
@@ -324,22 +318,16 @@ public class ExamServiceTest {
         // Item 3: short answer
         when(examItemRepo.getReferenceById(examItemId3)).thenReturn(testExamResponses.get(2).getExamItem());
 
-        when(examRepo.updateExam(any(Exam.class))).thenReturn(testExam);
         when(examResponseRepo.updateExamResponse(any(ExamResponse.class))).thenReturn(new ExamResponse());
         when(examResultRepo.createExamResult(any(ExamResult.class))).thenReturn(new ExamResult());
 
         // when
-        examService.gradeExam(examId);
+        examService.gradeNonEssayQuestions(examId);
 
         // then
         verify(examRepo, times(1)).getReferenceById(examId);
         verify(examResponseRepo, times(1)).findByExamId(examId);
         verify(examItemRepo, times(3)).getReferenceById(any(UUID.class));
-
-        // Verify exam status is updated to graded
-        verify(examRepo).updateExam(examCaptor.capture());
-        Exam capturedExam = examCaptor.getValue();
-        assertEquals(Status.graded, capturedExam.getStatus());
 
         // Verify each response is updated
         verify(examResponseRepo, times(3)).updateExamResponse(examResponseCaptor.capture());
@@ -373,13 +361,12 @@ public class ExamServiceTest {
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(testExamResponses.get(0).getExamItem());
 
         // when, then
-        assertThrows(IllegalArgumentException.class, () -> examService.gradeExam(examId));
+        assertThrows(IllegalArgumentException.class, () -> examService.gradeNonEssayQuestions(examId));
 
         verify(examRepo, times(1)).getReferenceById(examId);
         verify(examResponseRepo, times(1)).findByExamId(examId);
         verify(examItemRepo, times(1)).getReferenceById(examItemId1);
         verify(examResponseRepo, never()).updateExamResponse(any(ExamResponse.class));
-        verify(examRepo, never()).updateExam(any(Exam.class));
         verify(examResultRepo, never()).createExamResult(any(ExamResult.class));
     }
 }
