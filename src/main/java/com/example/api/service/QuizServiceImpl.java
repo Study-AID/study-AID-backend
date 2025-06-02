@@ -127,15 +127,15 @@ public class QuizServiceImpl implements QuizService {
         quiz.setStatus(Status.submitted);
         quizRepo.updateQuiz(quiz);
 
-        // 서술형 제외한 문제들 즉시 채점 및 QuizResult 생성
-        gradeNonEssayQuestions(quizId);
-
-        // 서술형 문제 유무에 따라 퀴즈 상태 'partially_graded', 'graded' 업데이트 다르게 처리
-        if (hasEssayQuestions(quizId)) {
-            quiz.setStatus(Status.partially_graded);
-            // TODO(jin): 서술형 채점 SQS 메시지 전송
-        } else {
+        // 서술형 문제 유무 확인
+        boolean hasEssay = hasEssayQuestions(quizId);
+        if (!hasEssay) {
+            gradeNonEssayQuestions(quizId);
             quiz.setStatus(Status.graded);
+        } else {
+            gradeNonEssayQuestions(quizId);
+            quiz.setStatus(Status.partially_graded);
+            // TODO(jin): 서술형 채점 함수 (gradeEssayQuestions) 작성 및 서술형 채점 SQS 메시지 전송
         }
         quizRepo.updateQuiz(quiz);
 
