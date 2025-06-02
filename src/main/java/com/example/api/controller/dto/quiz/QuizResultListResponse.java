@@ -17,10 +17,13 @@ public class QuizResultListResponse {
     @Schema(description = "List of quiz results response")
     private List<QuizResultResponse> quizResults;
 
-    public static QuizResultListResponse fromServiceDto(QuizResultListOutput quizResultListOutput) {
+    private Float averageScore;
+
+    public static QuizResultListResponse fromServiceDto(QuizResultListOutput quizResultListOutput, 
+                                                       Float averageScore) {
         List<QuizResultResponse> quizResultResponses = quizResultListOutput.getQuizResults().stream()
                 .map(QuizResultResponse::fromServiceDto)
                 .toList();
-        return new QuizResultListResponse(quizResultResponses);
+        return new QuizResultListResponse(quizResultResponses, averageScore);
     }
 }

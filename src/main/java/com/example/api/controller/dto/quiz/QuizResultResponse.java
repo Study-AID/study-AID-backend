@@ -1,8 +1,10 @@
 package com.example.api.controller.dto.quiz;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
+import com.example.api.service.dto.quiz.QuizResultElement;
 import com.example.api.service.dto.quiz.QuizResultOutput;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -44,6 +46,9 @@ public class QuizResultResponse {
 
     @Schema(description = "Last Update Time")
     private LocalDateTime updatedAt;
+    
+    @Schema(description = "Elements of the Quiz Result(Quiz Item, Quiz Response)")
+    private List<QuizResultElement> quizResultElements;
 
     public static QuizResultResponse fromServiceDto(QuizResultOutput quizResultOutput) {
         return new QuizResultResponse(
@@ -56,7 +61,8 @@ public class QuizResultResponse {
                 quizResultOutput.getStartTime(),
                 quizResultOutput.getEndTime(),
                 quizResultOutput.getCreatedAt(),
-                quizResultOutput.getUpdatedAt()
+                quizResultOutput.getUpdatedAt(),
+                quizResultOutput.getQuizResultElements()
         );
     }
 }

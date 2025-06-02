@@ -210,4 +210,86 @@ public class QuizServiceImpl implements QuizService {
         quizResult.setEndTime(LocalDateTime.now());
         quizResultRepo.createQuizResult(quizResult);
     }
+
+    @Override
+    @Transactional
+    public QuizResultOutput createQuizResult(CreateQuizResultInput input) {
+        Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
+        User user = userRepo.getReferenceById(input.getUserId());
+
+        QuizResult quizResult = new QuizResult();
+        quizResult.setQuiz(quiz);
+        quizResult.setUser(user);
+        quizResult.setScore(input.getScore());
+        quizResult.setMaxScore(input.getMaxScore());
+
+        QuizResult createdQuizResult = quizResultRepo.createQuizResult(quizResult);
+        return QuizResultOutput.fromEntity(createdQuizResult);
+    }
+
+    @Override
+    @Transactional
+    public Optional<QuizResultOutput> findQuizResultByQuizId(UUID quizId) {
+        Optional<QuizResult> quizResult = quizResultRepo.findByQuizId(quizId);
+        List<QuizItem> quizItems = quizItemRepo.findByQuizId(quizId);
+        List<UUID> quizItemIds = quizItems.stream().map(QuizItem::getId).toList();
+        // 각 퀴즈 아이템에 대한 퀴즈 응답을 가져옴
+        List<QuizResultElement> quizResultElements = new ArrayList<>();
+        for (UUID quizItemId : quizItemIds) {
+            Optional<QuizResponse> quizResponses = quizResponseRepo.findByQuizItemId(quizItemId);
+            if (quizResponses.isPresent()) {
+                QuizResponse quizResponse = quizResponses.get();
+                QuizItem quizItem = quizItemRepo.getReferenceById(quizItemId);
+                QuizResultElement element = QuizResultElement.fromQuizItemAndResponse(quizItem, quizResponse);
+                quizResultElements.add(element);
+            }
+        }
+        
+        return quizResult.map(qr -> QuizResultOutput.fromEntityAndQuizResultElements(qr, quizResultElements));
+    }
+
+    @Override
+    @Transactional
+    public QuizResultListOutput findQuizResultsByCourseId(UUID courseId) {
+        List<Lecture> lectures = lectureRepo.findByCourseId(courseId);
+        List<QuizResult> quizResults = new ArrayList<>();
+        for (Lecture lecture : lectures) {
+            List<Quiz> quizzes = quizRepo.findByLectureId(lecture.getId());
+            for (Quiz quiz : quizzes) {
+                Optional<QuizResult> result = quizResultRepo.findByQuizId(quiz.getId());
+                if (result.isPresent()) {
+                    quizResults.add(result.get());
+                }
+            }
+        }
+        QuizResultListOutput quizResultOutputs = new QuizResultListOutput();
+        for (QuizResult quizResult : quizResults) {
+            QuizResultOutput output = QuizResultOutput.fromEntity(quizResult);
+            quizResultOutputs.getQuizResults().add(output);
+        }
+        return quizResultOutputs;
+    }
+
+    @Override
+    @Transactional
+    public Float calculateQuizAverageScore(UUID courseId) {
+        List<Lecture> lectures = lectureRepo.findByCourseId(courseId);
+        float totalScore = 0;
+        int count = 0;
+
+        for (Lecture lecture : lectures) {
+            List<Quiz> quizzes = quizRepo.findByLectureId(lecture.getId());
+            for (Quiz quiz : quizzes) {
+                Optional<QuizResult> result = quizResultRepo.findByQuizId(quiz.getId());
+                if (result.isPresent()) {
+                    QuizResult quizResult = result.get();
+                    Float eachScore = quizResult.getScore() / quizResult.getMaxScore() * 100; // Convert to percentage
+                    totalScore += eachScore;
+                    count++;
+                }
+            }
+        }
+
+        return count > 0 ? totalScore / count : 0f;
+    }
 }

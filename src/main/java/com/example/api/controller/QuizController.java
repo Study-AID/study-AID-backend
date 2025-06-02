@@ -12,6 +12,7 @@ import com.example.api.adapters.sqs.GenerateQuizMessage;
 import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.controller.dto.quiz.*;
 import com.example.api.entity.enums.Status;
+import com.example.api.service.CourseService;
 import com.example.api.service.LectureService;
 import com.example.api.service.QuizService;
 import com.example.api.service.dto.quiz.*;
@@ -44,15 +45,18 @@ import org.springframework.web.bind.annotation.PutMapping;
 public class QuizController extends BaseController {
     private final QuizService quizService;
     private final LectureService lectureService;
+    private final CourseService courseService;
     private final SQSClient sqsClient;
 
     public QuizController(
             QuizService quizService, 
             LectureService lectureService, 
+            CourseService courseService,
             SQSClient sqsClient
     ) {
         this.quizService = quizService;
         this.lectureService = lectureService;
+        this.courseService = courseService;
         this.sqsClient = sqsClient;
     }
     
@@ -255,13 +259,25 @@ public class QuizController extends BaseController {
             createQuizInput.setLectureId(request.getLectureId());
             createQuizInput.setUserId(userId);
             createQuizInput.setTitle(request.getTitle());
-            createQuizInput.setTrueOrFalseCount(request.getTrueOrFalseCount());
-            createQuizInput.setMultipleChoiceCount(request.getMultipleChoiceCount());
-            createQuizInput.setShortAnswerCount(request.getShortAnswerCount());
-            createQuizInput.setEssayCount(request.getEssayCount());
 
             QuizOutput createdQuizOutput = quizService.createQuiz(createQuizInput);
 
+            // Create a new Quiz Result
+            Float initialMaxScore = 
+                request.getTrueOrFalseCount() * 1f + 
+                request.getMultipleChoiceCount() * 3f + 
+                request.getShortAnswerCount() * 5f + 
+                request.getEssayCount() * 10f;
+            CreateQuizResultInput createQuizResultInput = new CreateQuizResultInput();
+            createQuizResultInput.setQuizId(createdQuizOutput.getId());
+            createQuizResultInput.setUserId(userId);
+            createQuizResultInput.setScore(0f); // Initial score is 0
+            createQuizResultInput.setMaxScore(initialMaxScore); // Initial max score
+
+            QuizResultOutput quizResultOutput = quizService.createQuizResult(createQuizResultInput);
+            if (quizResultOutput == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
             // Get the courseId from the lecture
             UUID courseId = lectureOutput.get().getCourseId();
 
@@ -571,14 +587,14 @@ public class QuizController extends BaseController {
         }
     }
 
-    @GetMapping("/lecture/{lectureId}/results")
+    @GetMapping("/course/{courseId}/results")
     @Operation(
-            summary = "Get all quiz results by lecture ID",
-            description = "Retrieve all quiz results associated with a specific lecture ID.",
+            summary = "Get all quiz results by course ID",
+            description = "Retrieve all quiz results associated with a specific course ID.",
             parameters = {
                     @Parameter(
-                        name = "lectureId", 
-                        description = "Lecture ID", 
+                        name = "courseId", 
+                        description = "Course ID", 
                         required = true
                     )
             },
@@ -594,7 +610,7 @@ public class QuizController extends BaseController {
                     ),
                     @ApiResponse(
                         responseCode = "404", 
-                        description = "Lecture not found"
+                        description = "Course not found"
                     ),
                     @ApiResponse(
                         responseCode = "500",
@@ -602,26 +618,26 @@ public class QuizController extends BaseController {
                     )
             }
     )
-    public ResponseEntity<QuizResultListResponse> getQuizResultsByLecture(
-            @PathVariable UUID lectureId
+    public ResponseEntity<QuizResultListResponse> getQuizResultsByCourse(
+            @PathVariable UUID courseId
     ) {
         UUID userId = getAuthenticatedUserId();
 
-        // Check if the lecture exists
-        var lectureOutput = lectureService.findLectureById(lectureId);
-        if (lectureOutput.isEmpty()) {
+        // Check if the course exists
+        var courseOutput = courseService.findCourseById(courseId);
+        if (courseOutput.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         // Check if the user is same as the quiz owner
-        if (!lectureOutput.get().getUserId().equals(userId)) {
+        if (!courseOutput.get().getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        // Retrieve quiz results associated with the lecture
-        QuizResultListOutput quizResultOutputs = quizService.findQuizResultsByLectureId(lectureId);
-
-        QuizResultListResponse quizResultResponses = QuizResultListResponse.fromServiceDto(quizResultOutputs);
+        // Retrieve quiz results associated with the course
+        QuizResultListOutput quizResultOutputs = quizService.findQuizResultsByCourseId(courseId);
+        Float averageScore = quizService.calculateQuizAverageScore(courseId);
+        QuizResultListResponse quizResultResponses = QuizResultListResponse.fromServiceDto(quizResultOutputs, averageScore);
 
         return ResponseEntity.ok(quizResultResponses);
     }
