@@ -276,8 +276,10 @@ public class QuizControllerTest {
                 .andExpect(jsonPath("$.title", is("Quiz 1")));
 
         verify(quizService, times(1)).findQuizById(quizId);
-        verify(quizService, times(1)).updateQuiz(argThat(input -> input.getId().equals(quizId)
-                && input.getTitle().equals("Updated Quiz Title")));
+        verify(quizService, times(1)).updateQuiz(argThat(input ->
+                input.getId().equals(quizId)
+                && input.getTitle().equals("Updated Quiz Title")
+        ));
     }
 
     @Test
@@ -298,7 +300,7 @@ public class QuizControllerTest {
     @Test
     @DisplayName("퀴즈 응답 생성")
     @WithMockUser
-    void createQuizResponse() throws Exception {
+    void submitAndGradeQuiz() throws Exception {
         // given
         SubmitQuizRequest submitQuizRequest = new SubmitQuizRequest();
 
@@ -310,8 +312,8 @@ public class QuizControllerTest {
         testQuizResponse1.setQuiz(testQuiz);
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
-        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any()))
-                .thenReturn(testQuizResponseListOutput);
+        when(quizService.submitAndGradeQuizWithStatus(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
+
 
         submitQuizRequest.setSubmitQuizItems(List.of(
                 new SubmitQuizItem(),
@@ -324,8 +326,7 @@ public class QuizControllerTest {
         submitQuizRequest.getSubmitQuizItems().get(1).setSelectedIndices(new Integer[] { 0, 1 });
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
-        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any()))
-                .thenReturn(testQuizResponseListOutput);
+        when(quizService.submitAndGradeQuizWithStatus(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
 
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/submit", quizId)

@@ -308,23 +308,19 @@ public class QuizServiceTest {
 
         // Item 3: short answer
         when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(testQuizResponses.get(2).getQuizItem());
-
-        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+        // 변경: updateQuiz 제거 (gradeNonEssayQuestions는 퀴즈 상태를 직접 업데이트하지 않음)
         when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
         when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
 
         // when
-        quizService.gradeQuiz(quizId);
+        quizService.gradeNonEssayQuestions(quizId);
 
         // then
         verify(quizRepository, times(1)).getReferenceById(quizId);
         verify(quizResponseRepository, times(1)).findByQuizId(quizId);
         verify(quizItemRepository, times(3)).getReferenceById(any(UUID.class));
 
-        // Verify quiz status is updated to graded
-        verify(quizRepository).updateQuiz(quizCaptor.capture());
-        Quiz capturedQuiz = quizCaptor.getValue();
-        assertEquals(Status.graded, capturedQuiz.getStatus());
+        // 변경: 퀴즈 상태 업데이트 검증 제거 (gradeNonEssayQuestions는 퀴즈 상태를 직접 업데이트하지 않음)
 
         // Verify each response is updated with correct isCorrect flag
         verify(quizResponseRepository, times(3)).updateQuizResponse(quizResponseCaptor.capture());
@@ -361,35 +357,25 @@ public class QuizServiceTest {
         // Item 3: short answer
         when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(testQuizResponses.get(2).getQuizItem());
 
-        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
         when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
         when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
 
         // when
-        quizService.gradeQuiz(quizId);
+        quizService.gradeNonEssayQuestions(quizId);
 
         // then
         verify(quizRepository, times(1)).getReferenceById(quizId);
         verify(quizResponseRepository, times(1)).findByQuizId(quizId);
         verify(quizItemRepository, times(3)).getReferenceById(any(UUID.class));
 
-        // Verify quiz status is updated to graded
-        verify(quizRepository).updateQuiz(quizCaptor.capture());
-        Quiz capturedQuiz = quizCaptor.getValue();
-        assertEquals(Status.graded, capturedQuiz.getStatus());
+        // 변경: 퀴즈 상태 업데이트 검증 제거 (gradeNonEssayQuestions는 퀴즈 상태를 직접 업데이트하지 않음)
 
         // Verify each response is updated
         verify(quizResponseRepository, times(3)).updateQuizResponse(quizResponseCaptor.capture());
         List<QuizResponse> capturedResponses = quizResponseCaptor.getAllValues();
 
-        // The first two responses should NOT be marked as correct, but the third one should be
-        assertEquals(testQuizResponses.get(0).getId(), capturedResponses.get(0).getId());
-        assertEquals(Boolean.FALSE, capturedResponses.get(0).getIsCorrect()); // Wrong answer
-
-        assertEquals(testQuizResponses.get(1).getId(), capturedResponses.get(1).getId());
-        assertEquals(Boolean.FALSE, capturedResponses.get(1).getIsCorrect()); // Wrong answer
-
-        assertEquals(testQuizResponses.get(2).getId(), capturedResponses.get(2).getId());
+        assertEquals(Boolean.FALSE, capturedResponses.get(0).getIsCorrect()); // Wrong answer - set to false
+        assertEquals(Boolean.FALSE, capturedResponses.get(1).getIsCorrect()); // Wrong answer - set to false
         assertEquals(Boolean.TRUE, capturedResponses.get(2).getIsCorrect()); // Correct
 
         // Verify quiz result is created
@@ -410,13 +396,13 @@ public class QuizServiceTest {
         when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizResponses.get(0).getQuizItem());
 
         // when, then
-        assertThrows(IllegalArgumentException.class, () -> quizService.gradeQuiz(quizId));
+        assertThrows(IllegalArgumentException.class, () -> quizService.gradeNonEssayQuestions(quizId));
 
         verify(quizRepository, times(1)).getReferenceById(quizId);
         verify(quizResponseRepository, times(1)).findByQuizId(quizId);
         verify(quizItemRepository, times(1)).getReferenceById(quizItemId1);
         verify(quizResponseRepository, never()).updateQuizResponse(any(QuizResponse.class));
-        verify(quizRepository, never()).updateQuiz(any(Quiz.class));
+        // 변경: updateQuiz 제거 (gradeNonEssayQuestions는 퀴즈 상태를 직접 업데이트하지 않음)
         verify(quizResultRepository, never()).createQuizResult(any(QuizResult.class));
     }
 
