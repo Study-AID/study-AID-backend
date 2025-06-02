@@ -172,6 +172,8 @@ public class QuizServiceTest {
         shortAnswerItem.setQuestion("What does JVM stand for?");
         shortAnswerItem.setTextAnswer("Java Virtual Machine");
 
+        testQuizItems = Arrays.asList(trueOrFalseItem, multipleChoiceItem, shortAnswerItem);
+
         // Create quiz responses
         QuizResponse trueOrFalseResponse = new QuizResponse();
         trueOrFalseResponse.setId(UUID.randomUUID());
@@ -301,13 +303,13 @@ public class QuizServiceTest {
         when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
 
         // Item 1: true/false
-        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizResponses.get(0).getQuizItem());
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizItems.get(0));
 
         // Item 2: multiple choice
-        when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(testQuizResponses.get(1).getQuizItem());
+        when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(testQuizItems.get(1));
 
         // Item 3: short answer
-        when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(testQuizResponses.get(2).getQuizItem());
+        when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(testQuizItems.get(2));
         // 변경: updateQuiz 제거 (gradeNonEssayQuestions는 퀴즈 상태를 직접 업데이트하지 않음)
         when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
         when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());

@@ -262,22 +262,6 @@ public class QuizController extends BaseController {
 
             QuizOutput createdQuizOutput = quizService.createQuiz(createQuizInput);
 
-            // Create a new Quiz Result
-            Float initialMaxScore = 
-                request.getTrueOrFalseCount() * 1f + 
-                request.getMultipleChoiceCount() * 3f + 
-                request.getShortAnswerCount() * 5f + 
-                request.getEssayCount() * 10f;
-            CreateQuizResultInput createQuizResultInput = new CreateQuizResultInput();
-            createQuizResultInput.setQuizId(createdQuizOutput.getId());
-            createQuizResultInput.setUserId(userId);
-            createQuizResultInput.setScore(0f); // Initial score is 0
-            createQuizResultInput.setMaxScore(initialMaxScore); // Initial max score
-
-            QuizResultOutput quizResultOutput = quizService.createQuizResult(createQuizResultInput);
-            if (quizResultOutput == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            }
             // Get the courseId from the lecture
             UUID courseId = lectureOutput.get().getCourseId();
 
