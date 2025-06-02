@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -283,6 +284,14 @@ public class ExamServiceTest {
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(examResponseRepo.findByExamId(examId)).thenReturn(testExamResponses);
 
+        List<ExamItem> examItems = Arrays.asList(
+                testExamResponses.get(0).getExamItem(),
+                testExamResponses.get(1).getExamItem(),
+                testExamResponses.get(2).getExamItem()
+        );
+
+        when(examItemRepo.findByExamId(examId)).thenReturn(examItems);
+
         // Item 1: true/false
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(testExamResponses.get(0).getExamItem());
 
@@ -328,6 +337,14 @@ public class ExamServiceTest {
 
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(examResponseRepo.findByExamId(examId)).thenReturn(testExamResponses);
+
+        List<ExamItem> examItems = Arrays.asList(
+                testExamResponses.get(0).getExamItem(),
+                testExamResponses.get(1).getExamItem(),
+                testExamResponses.get(2).getExamItem()
+        );
+
+        when(examItemRepo.findByExamId(examId)).thenReturn(examItems);
 
         // Item 1: true/false
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(testExamResponses.get(0).getExamItem());
@@ -433,60 +450,45 @@ public class ExamServiceTest {
     @DisplayName("코스 ID로 시험 결과 목록 조회")
     void findExamResultsByCourseIdTest() {
         // given
-        when(examResultRepo.findByCourseId(courseId)).thenReturn(testExamResults);
+        Exam exam1 = new Exam();
+        UUID exam1Id = UUID.randomUUID();
+        exam1.setId(exam1Id);
+        exam1.setCourse(testCourse);
 
-        // when
-        ExamResultListOutput result = examService.findExamResultsByCourseId(courseId);
+        ExamResult examResult1 = new ExamResult();
+        examResult1.setId(UUID.randomUUID());
+        examResult1.setExam(exam1);
+        examResult1.setUser(testUser);
+        examResult1.setScore(85.0f);
+        examResult1.setMaxScore(100.0f);
+        examResult1.setFeedback("Excellent!");
+        examResult1.setStartTime(LocalDateTime.now().minusHours(3));
+        examResult1.setEndTime(LocalDateTime.now().minusHours(1));
+        examResult1.setCreatedAt(LocalDateTime.now());
+        examResult1.setUpdatedAt(LocalDateTime.now());
 
-        // then
-        assertNotNull(result);
-        assertEquals(1, result.getExamResults().size());
+        Exam exam2 = new Exam();
+        UUID exam2Id = UUID.randomUUID();
+        exam2.setId(exam2Id);
+        exam2.setCourse(testCourse);
 
-        ExamResultOutput resultOutput = result.getExamResults().get(0);
-        assertEquals(testExamResult.getId(), resultOutput.getId());
-        assertEquals(testExamResult.getExam().getId(), resultOutput.getExamId());
-        assertEquals(testExamResult.getUser().getId(), resultOutput.getUserId());
-        assertEquals(testExamResult.getScore(), resultOutput.getScore());
-        assertEquals(testExamResult.getMaxScore(), resultOutput.getMaxScore());
-        assertEquals(testExamResult.getFeedback(), resultOutput.getFeedback());
+        ExamResult examResult2 = new ExamResult();
+        examResult2.setId(UUID.randomUUID());
+        examResult2.setExam(exam2);
+        examResult2.setUser(testUser);
+        examResult2.setScore(90.0f);
+        examResult2.setMaxScore(100.0f);
+        examResult2.setFeedback("Excellent!");
+        examResult2.setStartTime(LocalDateTime.now().minusHours(3));
+        examResult2.setEndTime(LocalDateTime.now().minusHours(2));
+        examResult2.setCreatedAt(LocalDateTime.now());
+        examResult2.setUpdatedAt(LocalDateTime.now());
 
-        verify(examResultRepo, times(1)).findByCourseId(courseId);
-    }
+        List<Exam> exams = List.of(exam1, exam2);
 
-    @Test
-    @DisplayName("존재하지 않는 코스 ID로 시험 결과 목록 조회")
-    void findExamResultsByCourseIdTest_EmptyList() {
-        // given
-        UUID nonExistentCourseId = UUID.randomUUID();
-        when(examResultRepo.findByCourseId(nonExistentCourseId)).thenReturn(List.of());
-
-        // when
-        ExamResultListOutput result = examService.findExamResultsByCourseId(nonExistentCourseId);
-
-        // then
-        assertNotNull(result);
-        assertTrue(result.getExamResults().isEmpty());
-        verify(examResultRepo, times(1)).findByCourseId(nonExistentCourseId);
-    }
-
-    @Test
-    @DisplayName("여러 시험 결과가 있는 코스의 시험 결과 목록 조회")
-    void findExamResultsByCourseIdTest_MultipleResults() {
-        // given
-        ExamResult anotherExamResult = new ExamResult();
-        anotherExamResult.setId(UUID.randomUUID());
-        anotherExamResult.setExam(testExam);
-        anotherExamResult.setUser(testUser);
-        anotherExamResult.setScore(75.0f);
-        anotherExamResult.setMaxScore(100.0f);
-        anotherExamResult.setFeedback("Nice work!");
-        anotherExamResult.setStartTime(LocalDateTime.now().minusHours(2));
-        anotherExamResult.setEndTime(LocalDateTime.now().minusHours(1));
-        anotherExamResult.setCreatedAt(LocalDateTime.now());
-        anotherExamResult.setUpdatedAt(LocalDateTime.now());
-
-        List<ExamResult> multipleExamResults = List.of(testExamResult, anotherExamResult);
-        when(examResultRepo.findByCourseId(courseId)).thenReturn(multipleExamResults);
+        when(examRepo.findByCourseId(courseId)).thenReturn(exams);
+        when(examResultRepo.findByExamId(exam1Id)).thenReturn(Optional.of(examResult1));
+        when(examResultRepo.findByExamId(exam2Id)).thenReturn(Optional.of(examResult2));
 
         // when
         ExamResultListOutput result = examService.findExamResultsByCourseId(courseId);
@@ -497,14 +499,123 @@ public class ExamServiceTest {
 
         // 첫 번째 결과 검증
         ExamResultOutput firstResult = result.getExamResults().get(0);
-        assertEquals(testExamResult.getId(), firstResult.getId());
+        assertEquals(examResult1.getId(), firstResult.getId());
         assertEquals(85.0f, firstResult.getScore());
 
         // 두 번째 결과 검증
         ExamResultOutput secondResult = result.getExamResults().get(1);
-        assertEquals(anotherExamResult.getId(), secondResult.getId());
-        assertEquals(75.0f, secondResult.getScore());
+        assertEquals(examResult2.getId(), secondResult.getId());
+        assertEquals(90.0f, secondResult.getScore());
 
-        verify(examResultRepo, times(1)).findByCourseId(courseId);
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, times(1)).findByExamId(exam1Id);
+        verify(examResultRepo, times(1)).findByExamId(exam2Id);
+    }
+
+
+    @Test
+    @DisplayName("코스 ID로 시험 결과 목록 조회 - 일부 시험만 결과가 있는 경우")
+    void findExamResultsByCourseIdTest_PartialResults() {
+        // given
+        Exam examWithResult = new Exam();
+        examWithResult.setId(examId);
+        examWithResult.setCourse(testCourse);
+
+        Exam examWithoutResult = new Exam();
+        UUID examWithoutResultId = UUID.randomUUID();
+        examWithoutResult.setId(examWithoutResultId);
+        examWithoutResult.setCourse(testCourse);
+
+        List<Exam> exams = List.of(examWithResult, examWithoutResult);
+
+        when(examRepo.findByCourseId(courseId)).thenReturn(exams);
+        when(examResultRepo.findByExamId(examId)).thenReturn(Optional.of(testExamResult));
+        when(examResultRepo.findByExamId(examWithoutResultId)).thenReturn(Optional.empty());
+
+        // when
+        ExamResultListOutput result = examService.findExamResultsByCourseId(courseId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(1, result.getExamResults().size());
+
+        ExamResultOutput resultOutput = result.getExamResults().get(0);
+        assertEquals(testExamResult.getId(), resultOutput.getId());
+        assertEquals(85.0f, resultOutput.getScore());
+
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, times(1)).findByExamId(examId);
+        verify(examResultRepo, times(1)).findByExamId(examWithoutResultId);
+    }
+
+    @Test
+    @DisplayName("시험 평균 점수 계산 - 성공 케이스")
+    void calculateExamAverageScoreTest_Success() {
+        // given
+        Exam exam1 = new Exam();
+        exam1.setId(examId);
+
+        Exam exam2 = new Exam();
+        UUID exam2Id = UUID.randomUUID();
+        exam2.setId(exam2Id);
+
+        ExamResult result1 = new ExamResult();
+        result1.setScore(80.0f);
+        result1.setMaxScore(100.0f); // 80%
+
+        ExamResult result2 = new ExamResult();
+        result2.setScore(45.0f);
+        result2.setMaxScore(50.0f); // 90%
+
+        List<Exam> exams = List.of(exam1, exam2);
+
+        when(examRepo.findByCourseId(courseId)).thenReturn(exams);
+        when(examResultRepo.findByExamId(examId)).thenReturn(Optional.of(result1));
+        when(examResultRepo.findByExamId(exam2Id)).thenReturn(Optional.of(result2));
+
+        // when
+        Float averageScore = examService.calculateExamAverageScore(courseId);
+
+        // then
+        assertEquals(85.0f, averageScore); // (80 + 90) / 2 = 85
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, times(1)).findByExamId(examId);
+        verify(examResultRepo, times(1)).findByExamId(exam2Id);
+    }
+
+    @Test
+    @DisplayName("시험 평균 점수 계산 - 결과가 없는 경우")
+    void calculateExamAverageScoreTest_NoResults() {
+        // given
+        Exam exam1 = new Exam();
+        exam1.setId(examId);
+
+        List<Exam> exams = List.of(exam1);
+
+        when(examRepo.findByCourseId(courseId)).thenReturn(exams);
+        when(examResultRepo.findByExamId(examId)).thenReturn(Optional.empty());
+
+        // when
+        Float averageScore = examService.calculateExamAverageScore(courseId);
+
+        // then
+        assertEquals(0.0f, averageScore);
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, times(1)).findByExamId(examId);
+    }
+
+    @Test
+    @DisplayName("시험 평균 점수 계산 - 시험이 없는 경우")
+    void calculateExamAverageScoreTest_NoExams() {
+        // given
+        when(examRepo.findByCourseId(courseId)).thenReturn(new ArrayList<>());
+
+        // when
+        Float averageScore = examService.calculateExamAverageScore(courseId);
+
+        // then
+        assertEquals(0.0f, averageScore);
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, never()).findByExamId(any(UUID.class));
     }
 }

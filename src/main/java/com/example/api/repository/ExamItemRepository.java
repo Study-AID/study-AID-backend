@@ -10,5 +10,8 @@ import java.util.UUID;
 
 public interface ExamItemRepository extends JpaRepository<ExamItem, UUID> {
     List<ExamItem> findByExamId(UUID examId);
+
     boolean existsByExamIdAndQuestionTypeAndDeletedAtIsNull(UUID examId, QuestionType questionType);
+
+    ExamItem updateExamItem(ExamItem examItem);
 }

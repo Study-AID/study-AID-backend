@@ -7,11 +7,8 @@ import com.example.api.repository.*;
 import com.example.api.service.dto.quiz.*;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -273,6 +270,7 @@ public class QuizServiceImpl implements QuizService {
     public QuizResultListOutput findQuizResultsByCourseId(UUID courseId) {
         List<Lecture> lectures = lectureRepo.findByCourseId(courseId);
         List<QuizResult> quizResults = new ArrayList<>();
+
         for (Lecture lecture : lectures) {
             List<Quiz> quizzes = quizRepo.findByLectureId(lecture.getId());
             for (Quiz quiz : quizzes) {
@@ -282,11 +280,8 @@ public class QuizServiceImpl implements QuizService {
                 }
             }
         }
-        QuizResultListOutput quizResultOutputs = new QuizResultListOutput();
-        for (QuizResult quizResult : quizResults) {
-            QuizResultOutput output = QuizResultOutput.fromEntity(quizResult);
-            quizResultOutputs.getQuizResults().add(output);
-        }
+
+        QuizResultListOutput quizResultOutputs = QuizResultListOutput.fromEntities(quizResults);
         return quizResultOutputs;
     }
 

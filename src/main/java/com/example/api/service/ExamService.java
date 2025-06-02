@@ -36,4 +36,13 @@ public interface ExamService {
 
     @Transactional
     void gradeNonEssayQuestions(UUID examId);
+
+    @Transactional
+    Optional<ExamResultOutput> findExamResultByExamId(UUID examId);
+
+    @Transactional
+    ExamResultListOutput findExamResultsByCourseId(UUID courseId);
+
+    @Transactional
+    Float calculateExamAverageScore(UUID courseId);
 }

@@ -8,7 +8,6 @@ import com.example.api.repository.*;
 import com.example.api.service.dto.quiz.CreateQuizInput;
 import com.example.api.service.dto.quiz.QuizListOutput;
 import com.example.api.service.dto.quiz.QuizOutput;
-import com.example.api.service.dto.quiz.QuizResultListOutput;
 import com.example.api.service.dto.quiz.QuizResultOutput;
 import com.example.api.service.dto.quiz.UpdateQuizInput;
 import org.junit.jupiter.api.BeforeEach;

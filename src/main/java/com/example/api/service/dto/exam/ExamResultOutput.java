@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import com.example.api.entity.ExamResult;
@@ -24,6 +25,8 @@ public class ExamResultOutput {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    private List<ExamResultElement> examResultElements;
+
     public static ExamResultOutput fromEntity(ExamResult examResult) {
         return new ExamResultOutput(
                 examResult.getId(),
@@ -35,7 +38,24 @@ public class ExamResultOutput {
                 examResult.getStartTime(),
                 examResult.getEndTime(),
                 examResult.getCreatedAt(),
-                examResult.getUpdatedAt()
+                examResult.getUpdatedAt(),
+                null // No elements provided here
+        );
+    }
+
+    public static ExamResultOutput fromEntityAndExamResultElements(ExamResult examResult, List<ExamResultElement> examResultElements) {
+        return new ExamResultOutput(
+                examResult.getId(),
+                examResult.getExam().getId(),
+                examResult.getUser().getId(),
+                examResult.getScore(),
+                examResult.getMaxScore(),
+                examResult.getFeedback(),
+                examResult.getStartTime(),
+                examResult.getEndTime(),
+                examResult.getCreatedAt(),
+                examResult.getUpdatedAt(),
+                examResultElements
         );
     }
 }
