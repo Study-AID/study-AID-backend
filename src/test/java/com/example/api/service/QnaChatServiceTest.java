@@ -256,14 +256,12 @@ public class QnaChatServiceTest {
         testMessage.setUser(testUser);
         testMessage.setIsLiked(false);
 
-        when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
-                .thenReturn(Optional.of(testQnaChat));
         when(qnaChatMessageRepository.findById(TEST_MESSAGE_ID)).thenReturn(Optional.of(testMessage));
         when(qnaChatMessageRepository.save(any(QnaChatMessage.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_LECTURE_ID, TEST_MESSAGE_ID, TEST_USER_ID);
+        ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_MESSAGE_ID, TEST_USER_ID);
         ToggleLikeMessageOutput output = qnaChatService.toggleLikeMessage(input);
 
         // Then
@@ -285,14 +283,12 @@ public class QnaChatServiceTest {
         testMessage.setUser(testUser);
         testMessage.setIsLiked(true);
 
-        when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
-                .thenReturn(Optional.of(testQnaChat));
         when(qnaChatMessageRepository.findById(TEST_MESSAGE_ID)).thenReturn(Optional.of(testMessage));
         when(qnaChatMessageRepository.save(any(QnaChatMessage.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_LECTURE_ID, TEST_MESSAGE_ID, TEST_USER_ID);
+        ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_MESSAGE_ID, TEST_USER_ID);
         ToggleLikeMessageOutput output = qnaChatService.toggleLikeMessage(input);
 
         // Then
@@ -313,12 +309,10 @@ public class QnaChatServiceTest {
         userMessage.setQnaChat(testQnaChat);
         userMessage.setUser(testUser);
 
-        when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
-                .thenReturn(Optional.of(testQnaChat));
         when(qnaChatMessageRepository.findById(TEST_MESSAGE_ID)).thenReturn(Optional.of(userMessage));
 
         // When & Then
-        ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_LECTURE_ID, TEST_MESSAGE_ID, TEST_USER_ID);
+        ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_MESSAGE_ID, TEST_USER_ID);
         BadRequestException exception = assertThrows(BadRequestException.class,
                 () -> qnaChatService.toggleLikeMessage(input));
         assertEquals("사용자 메시지는 좋아요할 수 없습니다", exception.getMessage());

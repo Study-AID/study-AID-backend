@@ -285,8 +285,6 @@ public class QnaChatServiceImpl implements QnaChatService {
     @Override
     @Transactional
     public ToggleLikeMessageOutput toggleLikeMessage(ToggleLikeMessageInput input) {
-        QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
-                .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
         QnaChatMessage message = qnaChatMessageRepository.findById(input.getMessageId())
                 .orElseThrow(() -> new NotFoundException("메시지를 찾을 수 없습니다"));
 

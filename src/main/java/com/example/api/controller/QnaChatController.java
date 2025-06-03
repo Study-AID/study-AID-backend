@@ -385,7 +385,7 @@ public class QnaChatController {
             @PathVariable UUID lectureId,
             @PathVariable UUID messageId) {
         UUID userId = getUserId();
-        ToggleLikeMessageInput input = new ToggleLikeMessageInput(lectureId, messageId, userId);
+        ToggleLikeMessageInput input = new ToggleLikeMessageInput(messageId, userId);
         ToggleLikeMessageOutput output = qnaChatService.toggleLikeMessage(input);
 
         ToggleLikeMessageResponse response = new ToggleLikeMessageResponse(
