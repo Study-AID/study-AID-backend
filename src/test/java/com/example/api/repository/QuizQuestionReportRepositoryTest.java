@@ -3,6 +3,9 @@ package com.example.api.repository;
 import com.example.api.entity.*;
 import com.example.api.entity.enums.*;
 import jakarta.persistence.EntityManager;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -25,88 +28,162 @@ public class QuizQuestionReportRepositoryTest {
     @Autowired
     private EntityManager entityManager;
 
+    private User testUser;
+    private Semester testSemester;
+    private Course testCourse;
+    private Lecture testLecture;
+    private Quiz testQuiz;
+    private QuizItem testQuizItem;
+    private QuizQuestionReport testQuizQuestionReport;
+
+    @BeforeEach
+    void setUp() {
+        School testSchool = new School();
+        testSchool.setId(UUID.randomUUID());
+        testSchool.setName("Ajou University");
+        entityManager.persist(testSchool);
+
+        testUser = new User();
+        testUser.setId(UUID.randomUUID());
+        testUser.setSchool(testSchool);
+        testUser.setName("Test User");
+        testUser.setEmail("test@example.com");
+        testUser.setAuthType(AuthType.email);
+        testUser.setCreatedAt(LocalDateTime.now());
+        testUser.setUpdatedAt(LocalDateTime.now());
+        entityManager.persist(testUser);
+
+        testSemester = new Semester();
+        testSemester.setId(UUID.randomUUID());
+        testSemester.setUser(testUser);
+        testSemester.setName("2025 봄학기");
+        testSemester.setYear(2025);
+        testSemester.setSeason(Season.spring);
+        entityManager.persist(testSemester);
+
+        testCourse = new Course();
+        testCourse.setId(UUID.randomUUID());
+        testCourse.setSemester(testSemester);
+        testCourse.setUser(testUser);
+        testCourse.setName("운영체제");
+        entityManager.persist(testCourse);
+
+        testLecture = new Lecture();
+        testLecture.setId(UUID.randomUUID());
+        testLecture.setCourse(testCourse);
+        testLecture.setUser(testUser);
+        testLecture.setTitle("Intro.");
+        testLecture.setMaterialPath("");
+        testLecture.setMaterialType("pdf");
+        testLecture.setDisplayOrderLex("");
+        testLecture.setSummaryStatus(SummaryStatus.not_started);
+        entityManager.persist(testLecture);
+
+        testQuiz = new Quiz();
+        testQuiz.setId(UUID.randomUUID());
+        testQuiz.setLecture(testLecture);
+        testQuiz.setUser(testUser);
+        testQuiz.setTitle("Quiz 1");
+        testQuiz.setStatus(Status.not_started);
+        testQuiz.setContentsGenerateAt(LocalDateTime.now());
+        entityManager.persist(testQuiz);
+
+        testQuizItem = new QuizItem();
+        testQuizItem.setId(UUID.randomUUID());
+        testQuizItem.setQuiz(testQuiz);
+        testQuizItem.setUser(testUser);
+        testQuizItem.setQuestion("오렌지는");
+        testQuizItem.setQuestionType(QuestionType.short_answer);
+
+        entityManager.persist(testQuizItem);
+
+        testQuizQuestionReport = new QuizQuestionReport();
+        testQuizQuestionReport.setId(UUID.randomUUID());
+        testQuizQuestionReport.setQuiz(testQuiz);
+        testQuizQuestionReport.setQuizItem(testQuizItem);
+        testQuizQuestionReport.setUser(testUser);
+        testQuizQuestionReport.setReportReason("그냥 싫어요.");
+
+        entityManager.flush();
+        entityManager.clear();
+    }
+
     @Test
-    void saveAndFindQuizQuestionReportRepositoryTest() {
-        UUID schoolUUID = UUID.randomUUID();
-        School school = new School();
-        school.setId(schoolUUID);
-        school.setName("Ajou");
-        entityManager.persist(school);
+    @DisplayName("퀴즈 질문 신고 저장 및 ID로 조회 테스트")
+    void testCreateAndFindQuizQuestionReport() {
+        // Save the report
+        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
 
-        UUID userUuid = UUID.randomUUID();
-        User user = new User();
-        user.setId(userUuid);
-        //user.setSchool(school);
-        user.setName("Test User");
-        user.setEmail("test@example.com");
-        user.setAuthType(AuthType.email);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        entityManager.persist(user); // user 엔티티 저장
+        // Find by ID
+        Optional<QuizQuestionReport> foundReport = quizQuestionReportRepository.findById(testQuizQuestionReport.getId());
 
-        UUID semesterUuid = UUID.randomUUID();
-        Semester semester = new Semester();
-        semester.setId(semesterUuid);
-        semester.setUser(user);
-        semester.setName("2025 봄학기");
-        semester.setYear(2025);
-        semester.setSeason(Season.spring);
+        // Verify the report was saved and retrieved correctly
+        assertTrue(foundReport.isPresent(), "The report should be present after saving.");
+        assertTrue(foundReport.get().getId().equals(testQuizQuestionReport.getId()), "The retrieved report ID should match the saved report ID.");
+    }
 
-        entityManager.persist(semester);
+    @Test
+    @DisplayName("퀴즈 질문 신고 저장 및 퀴즈 ID, 퀴즈 아이템 ID, 사용자 ID로 조회 테스트")
+    void testFindByQuizIdAndQuizItemIdAndUserId() {
+        // Save the report
+        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
 
-        UUID courseUuid = UUID.randomUUID();
-        Course course = new Course();
-        course.setId(courseUuid);
-        course.setSemester(semester);
-        course.setUser(user);
-        course.setName("운영체제");
+        // Find by quiz ID, quiz item ID, and user ID
+        Optional<QuizQuestionReport> foundReport = quizQuestionReportRepository.findByQuizIdAndQuizItemIdAndUserId(
+                testQuiz.getId(), testQuizItem.getId(), testUser.getId());
 
-        entityManager.persist(course);
+        // Verify the report was found correctly
+        assertTrue(foundReport.isPresent(), "The report should be present when queried by quiz ID, quiz item ID, and user ID.");
+        assertTrue(foundReport.get().getId().equals(testQuizQuestionReport.getId()), "The retrieved report ID should match the saved report ID.");
+    }
 
-        UUID lectureUuid = UUID.randomUUID();
-        Lecture lecture = new Lecture();
-        lecture.setId(lectureUuid);
-        lecture.setCourse(course);
-        lecture.setUser(user);
-        lecture.setTitle("Intro.");
-        lecture.setMaterialPath("");
-        lecture.setMaterialType("pdf");
-        lecture.setDisplayOrderLex("");
-        lecture.setSummaryStatus(SummaryStatus.not_started);
+    @Test
+    @DisplayName("퀴즈 아이템 ID로 퀴즈 질문 신고 목록 조회 테스트")
+    void testFindByQuizItemIdOrderByCreatedAtDesc() {
+        // Save the report
+        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
 
-        entityManager.persist(lecture);
+        // Find by quiz item ID
+        var reports = quizQuestionReportRepository.findByQuizItemIdOrderByCreatedAtDesc(testQuizItem.getId());
 
-        UUID quizUuid = UUID.randomUUID();
-        Quiz quiz = new Quiz();
-        quiz.setId(quizUuid);
-        quiz.setLecture(lecture);
-        quiz.setUser(user);
-        quiz.setTitle("Quiz 1");
-        quiz.setStatus(Status.not_started);
+        // Verify the report is in the list and sorted by createdAt
+        assertTrue(reports.size() > 0, "There should be at least one report for the quiz item.");
+        assertTrue(reports.get(0).getId().equals(testQuizQuestionReport.getId()), "The first report should match the saved report.");
+    }
 
-        entityManager.persist(quiz);
+    @Test
+    @DisplayName("사용자 ID로 퀴즈 질문 신고 목록 조회 테스트")
+    void testFindByUserIdOrderByCreatedAtDesc() {
+        // Save the report
+        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
 
-        UUID quizItemUuid = UUID.randomUUID();
-        QuizItem quizItem = new QuizItem();
-        quizItem.setId(quizItemUuid);
-        quizItem.setQuiz(quiz);
-        quizItem.setUser(user);
-        quizItem.setQuestion("오렌지는");
-        quizItem.setQuestionType(QuestionType.short_answer);
+        // Find by user ID
+        var reports = quizQuestionReportRepository.findByUserIdOrderByCreatedAtDesc(testUser.getId());
 
-        entityManager.persist(quizItem);
+        // Verify the report is in the list and sorted by createdAt
+        assertTrue(reports.size() > 0, "There should be at least one report for the user.");
+        assertTrue(reports.get(0).getId().equals(testQuizQuestionReport.getId()), "The first report should match the saved report.");
+    }
 
-        UUID quizQuestionReportUuid = UUID.randomUUID();
-        QuizQuestionReport quizQuestionReport = new QuizQuestionReport();
-        quizQuestionReport.setId(quizQuestionReportUuid);
-        quizQuestionReport.setQuiz(quiz);
-        quizQuestionReport.setQuizItem(quizItem);
-        quizQuestionReport.setUser(user);
-        quizQuestionReport.setReportReason("그냥 싫어요.");
+    @Test
+    @DisplayName("퀴즈 아이템 ID로 퀴즈 질문 신고 개수 조회 테스트")
+    void testCountByQuizItemId() {
+        // Save the report
+        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
 
-        quizQuestionReportRepository.save(quizQuestionReport);
-        Optional<QuizQuestionReport> found = quizQuestionReportRepository.findById(quizQuestionReportUuid);
+        // Save the another report for the same quiz item
+        QuizQuestionReport anotherReport = new QuizQuestionReport();
+        anotherReport.setId(UUID.randomUUID());
+        anotherReport.setQuiz(testQuiz);
+        anotherReport.setQuizItem(testQuizItem);
+        anotherReport.setUser(testUser);
+        anotherReport.setReportReason("Another reason.");
+        quizQuestionReportRepository.createQuizQuestionReport(anotherReport);
 
-        assertTrue(found.isPresent());
+        // Count reports by quiz item ID
+        Long count = quizQuestionReportRepository.countByQuizItemId(testQuizItem.getId());
+
+        // Verify the count is correct
+        assertTrue(count == 2, "There should be at least one report for the quiz item.");
     }
 }
