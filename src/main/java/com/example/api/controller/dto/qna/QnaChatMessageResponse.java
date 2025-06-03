@@ -25,5 +25,5 @@ public class QnaChatMessageResponse {
     @NotNull
     private LocalDateTime createdAt;
     @NotNull
-    private boolean liked;
+    private boolean isLiked;
 }

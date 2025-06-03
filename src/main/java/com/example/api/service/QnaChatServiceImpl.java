@@ -11,7 +11,6 @@ import com.example.api.exception.NotFoundException;
 import com.example.api.external.LangchainClient;
 import com.example.api.entity.QnaChat;
 import com.example.api.entity.QnaChatMessage;
-import com.example.api.entity.LikedQnaAnswer;
 import com.example.api.entity.User;
 import com.example.api.external.dto.langchain.EmbeddingCheckResponse;
 import com.example.api.external.dto.langchain.MessageContextResponse;
@@ -23,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,7 +44,6 @@ public class QnaChatServiceImpl implements QnaChatService {
     private final LectureRepository lectureRepository;
     private final QnaChatRepository qnaChatRepository;
     private final QnaChatMessageRepository qnaChatMessageRepository;
-    private final LikedQnaAnswerRepository likedQnaAnswerRepository;
     private final LangchainClient langchainClient;
     private final QnaQuestionRecommendService qnaQuestionRecommendService;
     private final LLMAdapter llmAdapter;
@@ -230,19 +231,17 @@ public class QnaChatServiceImpl implements QnaChatService {
     }
 
     @Override
-    public ReadQnaChatOutput getMessages(ReadQnaChatInput input) {
+    public GetQnaChatMessagesOutput getMessages(GetQnaChatMessagesInput input) {
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
 
-        // TODO(jin): add pagination
-        List<ReadQnaChatOutput.MessageItem> messages = qnaChatMessageRepository.findByQnaChatId(chat.getId()).stream()
+        Pageable pageable = PageRequest.of(input.getPage(), input.getSize());
+        Page<QnaChatMessage> messagePage = qnaChatMessageRepository.findByQnaChatIdWithPagination(chat.getId(), pageable);
+
+        List<GetQnaChatMessagesOutput.MessageItem> messages = messagePage.getContent().stream()
                 .map(m -> {
-                    boolean isLiked = false;
-                    if (m.getRole() == MessageRole.ASSISTANT) {
-                        isLiked = likedQnaAnswerRepository.existsByQnaChatIdAndQnaChatMessageIdAndUserId(
-                                chat.getId(), m.getId(), input.getUserId());
-                    }
-                    return new ReadQnaChatOutput.MessageItem(
+                    boolean isLiked = m.getRole() == MessageRole.ASSISTANT ? m.getIsLiked() : false;
+                    return new GetQnaChatMessagesOutput.MessageItem(
                             m.getId(),
                             m.getRole().getValue(),
                             m.getContent(),
@@ -252,39 +251,32 @@ public class QnaChatServiceImpl implements QnaChatService {
                 })
                 .toList();
 
-        return new ReadQnaChatOutput(chat.getId(), messages);
+        return new GetQnaChatMessagesOutput(chat.getId(), messages);
     }
     
     @Override
-    public ReadQnaChatOutput getLikedMessages(GetLikedMessagesInput input) { 
+    public GetQnaChatMessagesOutput getLikedMessages(GetLikedMessagesInput input) {
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
 
-        List<ReadQnaChatOutput.MessageItem> messages = likedQnaAnswerRepository
-                .findByQnaChatIdAndUserIdWithMessage(chat.getId(), input.getUserId()).stream()
-                .map(liked -> {
-                    QnaChatMessage message = liked.getQnaChatMessage();
-                    return new ReadQnaChatOutput.MessageItem(
-                            message.getId(),
-                            message.getRole().getValue(),
-                            message.getContent(),
-                            message.getCreatedAt(),
-                            true
-                    );
-                })
+        List<QnaChatMessage> likedMessages = qnaChatMessageRepository.findByQnaChatIdAndIsLikedTrue(chat.getId());
+
+        List<GetQnaChatMessagesOutput.MessageItem> messages = likedMessages.stream()
+                .map(message -> new GetQnaChatMessagesOutput.MessageItem(
+                        message.getId(),
+                        message.getRole().getValue(),
+                        message.getContent(),
+                        message.getCreatedAt(),
+                        true
+                ))
                 .toList();
 
-        return new ReadQnaChatOutput(chat.getId(), messages);
+        return new GetQnaChatMessagesOutput(chat.getId(), messages);
     }
 
     @Override
     @Transactional
     public ToggleLikeMessageOutput toggleLikeMessage(ToggleLikeMessageInput input) {
-        log.info("[QnaChatService] toggleLikeMessage 시작: lectureId={}, messageId={}, userId={}",
-                input.getLectureId(), input.getMessageId(), input.getUserId());
-
-        User user = userRepository.findById(input.getUserId())
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
         QnaChatMessage message = qnaChatMessageRepository.findById(input.getMessageId())
@@ -294,27 +286,13 @@ public class QnaChatServiceImpl implements QnaChatService {
             throw new BadRequestException("사용자 메시지는 좋아요할 수 없습니다");
         }
 
-        // 기존 좋아요 상태 확인
-        boolean isCurrentlyLiked = likedQnaAnswerRepository.existsByQnaChatIdAndQnaChatMessageIdAndUserId(
-                chat.getId(), input.getMessageId(), input.getUserId());
+        boolean currentLikedStatus = message.getIsLiked();
+        boolean newLikedStatus = !currentLikedStatus;
 
-        if (isCurrentlyLiked) {
-            likedQnaAnswerRepository.deleteByQnaChatIdAndQnaChatMessageIdAndUserId(
-                    chat.getId(), input.getMessageId(), input.getUserId());
-            log.info("[QnaChatService] 좋아요 제거 완료: chatId={}, messageId={}, userId={}",
-                    chat.getId(), input.getMessageId(), input.getUserId());
+        message.setIsLiked(newLikedStatus);
+        qnaChatMessageRepository.save(message);
 
-            return new ToggleLikeMessageOutput(false, "REMOVED");
-        } else {
-            LikedQnaAnswer like = new LikedQnaAnswer();
-            like.setQnaChat(chat);
-            like.setQnaChatMessage(message);
-            like.setUser(user);
-            likedQnaAnswerRepository.save(like);
-            log.info("[QnaChatService] 좋아요 추가 완료: chatId={}, messageId={}, userId={}",
-                    chat.getId(), input.getMessageId(), input.getUserId());
-
-            return new ToggleLikeMessageOutput(true, "ADDED");
-        }
+        String action = newLikedStatus ? "ADDED" : "REMOVED";
+        return new ToggleLikeMessageOutput(newLikedStatus, action);
     }
 }

@@ -8,7 +8,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class ToggleLikeMessageResponse {
     @NotNull
-    private boolean liked;
+    private boolean isLiked;
     @NotNull
     private String action;
 }

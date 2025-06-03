@@ -5,9 +5,9 @@ import com.example.api.service.dto.qna.*;
 public interface QnaChatService {
     QnaChatMessageOutput ask(QnaChatMessageInput input);
     CreateQnaChatOutput createQnaChat(CreateQnaChatInput input);
-    ReadQnaChatOutput getMessages(ReadQnaChatInput input);
+    GetQnaChatMessagesOutput getMessages(GetQnaChatMessagesInput input);
     GetQnaChatIdOutput getQnaChatId(GetQnaChatIdInput input);
 
-    ReadQnaChatOutput getLikedMessages(GetLikedMessagesInput input);
+    GetQnaChatMessagesOutput getLikedMessages(GetLikedMessagesInput input);
     ToggleLikeMessageOutput toggleLikeMessage(ToggleLikeMessageInput input);
 }

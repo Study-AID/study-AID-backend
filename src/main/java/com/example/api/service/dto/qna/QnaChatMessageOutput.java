@@ -19,5 +19,5 @@ public class QnaChatMessageOutput {
     private List<ReferenceResponse.ReferenceChunkResponse> references;
     private List<String> recommendedQuestions;
     private LocalDateTime createdAt;
-    private boolean liked;
+    private boolean isLiked;
 }

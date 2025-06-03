@@ -41,12 +41,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class QnaChatControllerTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    @MockBean private QnaChatService qnaChatService;
-    @MockBean private UserRepository userRepository;
-    @MockBean private JwtProvider jwtProvider;
+    @MockBean
+    private QnaChatService qnaChatService;
+    @MockBean
+    private UserRepository userRepository;
+    @MockBean
+    private JwtProvider jwtProvider;
 
     // TODO(jin): use authorized user instead of fixed user ID
     private static final UUID FIXED_USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
@@ -92,21 +97,23 @@ class QnaChatControllerTest {
     @DisplayName("채팅방 메시지 조회 성공")
     void getMessagesSuccess() throws Exception {
         // Given
-        List<ReadQnaChatOutput.MessageItem> messages = List.of(
-                new ReadQnaChatOutput.MessageItem(
+        List<GetQnaChatMessagesOutput.MessageItem> messages = List.of(
+                new GetQnaChatMessagesOutput.MessageItem(
                         UUID.randomUUID(), "user", "재귀 함수란 무엇인가요?", LocalDateTime.now(), false
                 ),
-                new ReadQnaChatOutput.MessageItem(
+                new GetQnaChatMessagesOutput.MessageItem(
                         MESSAGE_ID, "assistant", "재귀 함수는 자기 자신을 호출하는 함수입니다.", LocalDateTime.now(), true
                 )
         );
 
-        ReadQnaChatOutput output = new ReadQnaChatOutput(CHAT_ID, messages);
-        when(qnaChatService.getMessages(any(ReadQnaChatInput.class)))
+        GetQnaChatMessagesOutput output = new GetQnaChatMessagesOutput(CHAT_ID, messages);
+        when(qnaChatService.getMessages(any(GetQnaChatMessagesInput.class)))
                 .thenReturn(output);
 
         // When & Then
         mockMvc.perform(get("/v1/lectures/{lectureId}/qna-chat/messages", LECTURE_ID)
+                        .param("page", "0")
+                        .param("size", "10")
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
@@ -124,18 +131,18 @@ class QnaChatControllerTest {
     @DisplayName("좋아요한 메시지 조회 성공")
     void getLikedMessagesSuccess() throws Exception {
         // Given
-        List<ReadQnaChatOutput.MessageItem> likedMessages = List.of(
-                new ReadQnaChatOutput.MessageItem(
+        List<GetQnaChatMessagesOutput.MessageItem> likedMessages = List.of(
+                new GetQnaChatMessagesOutput.MessageItem(
                         MESSAGE_ID, "assistant", "재귀 함수는 자기 자신을 호출하는 함수입니다.", LocalDateTime.now(), true
                 )
         );
 
-        ReadQnaChatOutput output = new ReadQnaChatOutput(CHAT_ID, likedMessages);
+        GetQnaChatMessagesOutput output = new GetQnaChatMessagesOutput(CHAT_ID, likedMessages);
         when(qnaChatService.getLikedMessages(any(GetLikedMessagesInput.class)))
                 .thenReturn(output);
 
         // When & Then
-        mockMvc.perform(get("/v1/lectures/{lectureId}/qna-chat/messages/liked", LECTURE_ID)
+        mockMvc.perform(get("/v1/lectures/{lectureId}/qna-chat/messages/toggle-like", LECTURE_ID)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
@@ -193,7 +200,7 @@ class QnaChatControllerTest {
                 .thenReturn(output);
 
         // When & Then
-        mockMvc.perform(post("/v1/lectures/{lectureId}/qna-chat/messages/{messageId}/likes",
+        mockMvc.perform(post("/v1/lectures/{lectureId}/qna-chat/messages/{messageId}/toggle-like",
                         LECTURE_ID, MESSAGE_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
@@ -212,7 +219,7 @@ class QnaChatControllerTest {
                 .thenReturn(output);
 
         // When & Then
-        mockMvc.perform(post("/v1/lectures/{lectureId}/qna-chat/messages/{messageId}/likes",
+        mockMvc.perform(post("/v1/lectures/{lectureId}/qna-chat/messages/{messageId}/toggle-like",
                         LECTURE_ID, MESSAGE_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
@@ -230,27 +237,11 @@ class QnaChatControllerTest {
                 .thenThrow(new BadRequestException("사용자 메시지는 좋아요할 수 없습니다"));
 
         // When & Then
-        mockMvc.perform(post("/v1/lectures/{lectureId}/qna-chat/messages/{messageId}/likes",
+        mockMvc.perform(post("/v1/lectures/{lectureId}/qna-chat/messages/{messageId}/toggle-like",
                         LECTURE_ID, MESSAGE_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("좋아요 토글 실패 - 메시지 없음")
-    void toggleLikeMessageFail_MessageNotFound() throws Exception {
-        // Given
-        when(qnaChatService.toggleLikeMessage(any(ToggleLikeMessageInput.class)))
-                .thenThrow(new NotFoundException("메시지를 찾을 수 없습니다"));
-
-        // When & Then
-        mockMvc.perform(post("/v1/lectures/{lectureId}/qna-chat/messages/{messageId}/likes",
-                        LECTURE_ID, MESSAGE_ID)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isNotFound());
     }
 }

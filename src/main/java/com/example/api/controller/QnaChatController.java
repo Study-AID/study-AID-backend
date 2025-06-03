@@ -123,7 +123,7 @@ public class QnaChatController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "채팅 메시지 조회 성공",
-                            content = @Content(schema = @Schema(implementation = ReadQnaChatResponse.class),
+                            content = @Content(schema = @Schema(implementation = GetQnaChatMessagesResponse.class),
                                     examples = {
                                             @ExampleObject(
                                                     name = "example",
@@ -135,14 +135,14 @@ public class QnaChatController {
                                                             "\"role\": \"user\", " +
                                                             "\"content\": \"재귀 함수란 무엇인가요?\", " +
                                                             "\"createdAt\": \"2025-05-28T04:15:00Z\", " +
-                                                            "\"liked\": false" +
+                                                            "\"isLiked\": false" +
                                                             "}, " +
                                                             "{" +
                                                             "\"messageId\": \"msg-550e8400-e29b-41d4-a716-446655440002\", " +
                                                             "\"role\": \"assistant\", " +
                                                             "\"content\": \"재귀 함수는 자기 자신을 호출하는 함수를 의미합니다. 함수 내부에서 자신을 다시 호출하는 방식으로 동작하며, 복잡한 문제를 간단하게 해결할 수 있는 프로그래밍 기법입니다.\", " +
                                                             "\"createdAt\": \"2025-05-28T04:15:30Z\", " +
-                                                            "\"liked\": true" +
+                                                            "\"isLiked\": true" +
                                                             "}" +
                                                             "]" +
                                                             "}"
@@ -172,13 +172,16 @@ public class QnaChatController {
             }
     )
     @GetMapping(value = "/messages")
-    public ResponseEntity<ReadQnaChatResponse> getMessages(@PathVariable UUID lectureId) {
+    public ResponseEntity<GetQnaChatMessagesResponse> getMessages(
+            @PathVariable UUID lectureId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
         UUID userId = getUserId();
-        ReadQnaChatInput input = new ReadQnaChatInput(lectureId, userId);
-        ReadQnaChatOutput output = qnaChatService.getMessages(input);
+        GetQnaChatMessagesInput input = new GetQnaChatMessagesInput(lectureId, userId, page, size);
+        GetQnaChatMessagesOutput output = qnaChatService.getMessages(input);
 
-        List<ReadQnaChatResponse.MessageItem> messages = output.getMessages().stream()
-                .map(m -> new ReadQnaChatResponse.MessageItem(
+        List<GetQnaChatMessagesResponse.MessageItem> messages = output.getMessages().stream()
+                .map(m -> new GetQnaChatMessagesResponse.MessageItem(
                         m.getMessageId(),
                         m.getRole(),
                         m.getContent(),
@@ -187,7 +190,7 @@ public class QnaChatController {
                 ))
                 .toList();
 
-        ReadQnaChatResponse response = new ReadQnaChatResponse(
+        GetQnaChatMessagesResponse response = new GetQnaChatMessagesResponse(
                 output.getChatId(),
                 messages
         );
@@ -202,18 +205,18 @@ public class QnaChatController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "좋아요한 메시지 조회 성공",
-                            content = @Content(schema = @Schema(implementation = ReadQnaChatResponse.class))
+                            content = @Content(schema = @Schema(implementation = GetQnaChatMessagesResponse.class))
                     )
             }
     )
-    @GetMapping("/messages/liked")
-    public ResponseEntity<ReadQnaChatResponse> getLikedMessages(@PathVariable UUID lectureId) {
+    @GetMapping("/messages/toggle-like")
+    public ResponseEntity<GetQnaChatMessagesResponse> getLikedMessages(@PathVariable UUID lectureId) {
         UUID userId = getUserId();
         GetLikedMessagesInput input = new GetLikedMessagesInput(lectureId, userId);
-        ReadQnaChatOutput output = qnaChatService.getLikedMessages(input);
+        GetQnaChatMessagesOutput output = qnaChatService.getLikedMessages(input);
 
-        List<ReadQnaChatResponse.MessageItem> messages = output.getMessages().stream()
-                .map(m -> new ReadQnaChatResponse.MessageItem(
+        List<GetQnaChatMessagesResponse.MessageItem> messages = output.getMessages().stream()
+                .map(m -> new GetQnaChatMessagesResponse.MessageItem(
                         m.getMessageId(),
                         m.getRole(),
                         m.getContent(),
@@ -222,7 +225,7 @@ public class QnaChatController {
                 ))
                 .toList();
 
-        ReadQnaChatResponse response = new ReadQnaChatResponse(
+        GetQnaChatMessagesResponse response = new GetQnaChatMessagesResponse(
                 output.getChatId(),
                 messages
         );
@@ -252,7 +255,7 @@ public class QnaChatController {
                                                             "], " +
                                                             "\"recommendedQuestions\": [\"재귀 함수의 장단점은 무엇인가요?\", \"재귀 함수와 반복문의 차이점은 무엇인가요?\", \"재귀 함수에서 기저 사례(base case)란 무엇인가요?\"], " +
                                                             "\"createdAt\": \"2025-05-28T04:15:30Z\", " +
-                                                            "\"liked\": false" +
+                                                            "\"isLiked\": false" +
                                                             "}"
                                             )
                                     })
@@ -324,12 +327,12 @@ public class QnaChatController {
                                             @ExampleObject(
                                                     name = "좋아요 추가",
                                                     description = "좋아요가 추가된 경우",
-                                                    value = "{\"liked\": true, \"action\": \"ADDED\"}"
+                                                    value = "{\"isLiked\": true, \"action\": \"ADDED\"}"
                                             ),
                                             @ExampleObject(
                                                     name = "좋아요 제거",
                                                     description = "좋아요가 제거된 경우",
-                                                    value = "{\"liked\": false, \"action\": \"REMOVED\"}"
+                                                    value = "{\"isLiked\": false, \"action\": \"REMOVED\"}"
                                             )
                                     }
                             )
@@ -356,7 +359,7 @@ public class QnaChatController {
                     )
             }
     )
-    @PostMapping("/messages/{messageId}/likes")
+    @PostMapping("/messages/{messageId}/toggle-like")
     public ResponseEntity<ToggleLikeMessageResponse> toggleLikeMessage(
             @PathVariable UUID lectureId,
             @PathVariable UUID messageId) {

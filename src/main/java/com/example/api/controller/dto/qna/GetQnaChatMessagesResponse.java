@@ -1,5 +1,6 @@
-package com.example.api.service.dto.qna;
+package com.example.api.controller.dto.qna;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -9,17 +10,24 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class ReadQnaChatOutput {
+public class GetQnaChatMessagesResponse {
+    @NotNull
     private UUID chatId;
+    @NotNull
     private List<MessageItem> messages;
 
     @Getter
     @AllArgsConstructor
     public static class MessageItem {
+        @NotNull
         private UUID messageId;
+        @NotNull
         private String role;
+        @NotNull
         private String content;
+        @NotNull
         private LocalDateTime createdAt;
-        private boolean liked;
+        @NotNull
+        private boolean isLiked;
     }
 }

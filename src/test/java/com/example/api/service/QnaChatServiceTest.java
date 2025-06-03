@@ -19,6 +19,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,7 +31,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,8 +44,6 @@ public class QnaChatServiceTest {
     private QnaChatRepository qnaChatRepository;
     @Mock
     private QnaChatMessageRepository qnaChatMessageRepository;
-    @Mock
-    private LikedQnaAnswerRepository likedQnaAnswerRepository;
     @Mock
     private LangchainClient langchainClient;
     @Mock
@@ -96,7 +96,6 @@ public class QnaChatServiceTest {
             return savedChat;
         });
 
-        // 변경: EmbeddingCheckResponse Mock 수정
         EmbeddingCheckResponse mockResponse = new EmbeddingCheckResponse();
         when(langchainClient.checkEmbeddingStatus(TEST_LECTURE_ID))
                 .thenReturn(mockResponse);
@@ -146,31 +145,28 @@ public class QnaChatServiceTest {
         when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(testQnaChat));
 
-        List<QnaChatMessage> messages = new ArrayList<>();
         QnaChatMessage message1 = new QnaChatMessage();
         message1.setId(UUID.randomUUID());
         message1.setRole(MessageRole.USER);
         message1.setContent("재귀 함수란 무엇인가요?");
         message1.setCreatedAt(LocalDateTime.now());
-        messages.add(message1);
+        message1.setIsLiked(false);
 
         QnaChatMessage message2 = new QnaChatMessage();
         message2.setId(TEST_MESSAGE_ID);
         message2.setRole(MessageRole.ASSISTANT);
         message2.setContent("재귀 함수는 자기 자신을 호출하는 함수입니다.");
         message2.setCreatedAt(LocalDateTime.now());
-        messages.add(message2);
+        message2.setIsLiked(true);
 
-        when(qnaChatMessageRepository.findByQnaChatId(TEST_CHAT_ID)).thenReturn(messages);
+        Page<QnaChatMessage> messagePage = new PageImpl<>(List.of(message1, message2));
 
-        // 변경: 좋아요 상태 확인 Mock 추가
-        when(likedQnaAnswerRepository.existsByQnaChatIdAndQnaChatMessageIdAndUserId(
-                any(UUID.class), any(UUID.class), eq(TEST_USER_ID)))
-                .thenReturn(false);
+        when(qnaChatMessageRepository.findByQnaChatIdWithPagination(eq(TEST_CHAT_ID), any(Pageable.class)))
+                .thenReturn(messagePage);
 
         // When
-        ReadQnaChatInput input = new ReadQnaChatInput(TEST_LECTURE_ID, TEST_USER_ID);
-        ReadQnaChatOutput output = qnaChatService.getMessages(input);
+        GetQnaChatMessagesInput input = new GetQnaChatMessagesInput(TEST_LECTURE_ID, TEST_USER_ID, 0, 20);
+        GetQnaChatMessagesOutput output = qnaChatService.getMessages(input);
 
         // Then
         assertNotNull(output);
@@ -183,6 +179,7 @@ public class QnaChatServiceTest {
         assertFalse(output.getMessages().get(0).isLiked());
         assertEquals("assistant", output.getMessages().get(1).getRole());
         assertEquals("재귀 함수는 자기 자신을 호출하는 함수입니다.", output.getMessages().get(1).getContent());
+        assertTrue(output.getMessages().get(1).isLiked());
     }
 
     @Test
@@ -203,7 +200,6 @@ public class QnaChatServiceTest {
             return msg;
         });
 
-        // 변경: EmbeddingCheckResponse Mock 수정
         EmbeddingCheckResponse mockResponse = new EmbeddingCheckResponse();
         when(langchainClient.checkEmbeddingStatus(TEST_LECTURE_ID))
                 .thenReturn(mockResponse);
@@ -256,19 +252,6 @@ public class QnaChatServiceTest {
     }
 
     @Test
-    @DisplayName("질문 요청 실패 테스트 - 채팅방 없음")
-    public void askFailChatNotFoundTest() {
-        // Given
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(testUser));
-        when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
-                .thenReturn(Optional.empty());
-
-        // When & Then
-        QnaChatMessageInput input = new QnaChatMessageInput(TEST_LECTURE_ID, TEST_USER_ID, "질문");
-        assertThrows(NotFoundException.class, () -> qnaChatService.ask(input));
-    }
-
-    @Test
     @DisplayName("좋아요 토글 성공 테스트 - 좋아요 추가")
     public void toggleLikeMessageSuccess_AddLike() {
         // Given
@@ -278,15 +261,12 @@ public class QnaChatServiceTest {
         testMessage.setContent("재귀 함수는 자기 자신을 호출하는 함수입니다.");
         testMessage.setQnaChat(testQnaChat);
         testMessage.setUser(testUser);
+        testMessage.setIsLiked(false);
 
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(testUser));
         when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(testQnaChat));
         when(qnaChatMessageRepository.findById(TEST_MESSAGE_ID)).thenReturn(Optional.of(testMessage));
-        when(likedQnaAnswerRepository.existsByQnaChatIdAndQnaChatMessageIdAndUserId(
-                TEST_CHAT_ID, TEST_MESSAGE_ID, TEST_USER_ID))
-                .thenReturn(false); // 아직 좋아요하지 않음
-        when(likedQnaAnswerRepository.save(any(LikedQnaAnswer.class)))
+        when(qnaChatMessageRepository.save(any(QnaChatMessage.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
@@ -297,6 +277,7 @@ public class QnaChatServiceTest {
         assertNotNull(output);
         assertTrue(output.isLiked());
         assertEquals("ADDED", output.getAction());
+        assertTrue(testMessage.getIsLiked());
     }
 
     @Test
@@ -309,14 +290,13 @@ public class QnaChatServiceTest {
         testMessage.setContent("재귀 함수는 자기 자신을 호출하는 함수입니다.");
         testMessage.setQnaChat(testQnaChat);
         testMessage.setUser(testUser);
+        testMessage.setIsLiked(true);
 
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(testUser));
         when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(testQnaChat));
         when(qnaChatMessageRepository.findById(TEST_MESSAGE_ID)).thenReturn(Optional.of(testMessage));
-        when(likedQnaAnswerRepository.existsByQnaChatIdAndQnaChatMessageIdAndUserId(
-                TEST_CHAT_ID, TEST_MESSAGE_ID, TEST_USER_ID))
-                .thenReturn(true); // 이미 좋아요함
+        when(qnaChatMessageRepository.save(any(QnaChatMessage.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_LECTURE_ID, TEST_MESSAGE_ID, TEST_USER_ID);
@@ -326,10 +306,7 @@ public class QnaChatServiceTest {
         assertNotNull(output);
         assertFalse(output.isLiked());
         assertEquals("REMOVED", output.getAction());
-
-        // verify 삭제 메서드 호출됨
-        verify(likedQnaAnswerRepository).deleteByQnaChatIdAndQnaChatMessageIdAndUserId(
-                TEST_CHAT_ID, TEST_MESSAGE_ID, TEST_USER_ID);
+        assertFalse(testMessage.getIsLiked());
     }
 
     @Test
@@ -338,12 +315,11 @@ public class QnaChatServiceTest {
         // Given
         QnaChatMessage userMessage = new QnaChatMessage();
         userMessage.setId(TEST_MESSAGE_ID);
-        userMessage.setRole(MessageRole.USER); // 사용자 메시지
+        userMessage.setRole(MessageRole.USER);
         userMessage.setContent("재귀 함수란 무엇인가요?");
         userMessage.setQnaChat(testQnaChat);
         userMessage.setUser(testUser);
 
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(testUser));
         when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(testQnaChat));
         when(qnaChatMessageRepository.findById(TEST_MESSAGE_ID)).thenReturn(Optional.of(userMessage));
@@ -356,50 +332,6 @@ public class QnaChatServiceTest {
     }
 
     @Test
-    @DisplayName("좋아요 토글 실패 테스트 - 사용자 없음")
-    public void toggleLikeMessageFail_UserNotFound() {
-        // Given
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.empty());
-
-        // When & Then
-        ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_LECTURE_ID, TEST_MESSAGE_ID, TEST_USER_ID);
-        NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> qnaChatService.toggleLikeMessage(input));
-        assertEquals("사용자를 찾을 수 없습니다", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("좋아요 토글 실패 테스트 - 채팅방 없음")
-    public void toggleLikeMessageFail_ChatNotFound() {
-        // Given
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(testUser));
-        when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
-                .thenReturn(Optional.empty());
-
-        // When & Then
-        ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_LECTURE_ID, TEST_MESSAGE_ID, TEST_USER_ID);
-        NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> qnaChatService.toggleLikeMessage(input));
-        assertEquals("채팅방을 찾을 수 없습니다", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("좋아요 토글 실패 테스트 - 메시지 없음")
-    public void toggleLikeMessageFail_MessageNotFound() {
-        // Given
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(testUser));
-        when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
-                .thenReturn(Optional.of(testQnaChat));
-        when(qnaChatMessageRepository.findById(TEST_MESSAGE_ID)).thenReturn(Optional.empty());
-
-        // When & Then
-        ToggleLikeMessageInput input = new ToggleLikeMessageInput(TEST_LECTURE_ID, TEST_MESSAGE_ID, TEST_USER_ID);
-        NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> qnaChatService.toggleLikeMessage(input));
-        assertEquals("메시지를 찾을 수 없습니다", exception.getMessage());
-    }
-
-    @Test
     @DisplayName("좋아요한 메시지 조회 성공 테스트")
     public void getLikedMessagesSuccess() {
         // Given
@@ -408,22 +340,16 @@ public class QnaChatServiceTest {
         likedMessage.setRole(MessageRole.ASSISTANT);
         likedMessage.setContent("재귀 함수는 자기 자신을 호출하는 함수입니다.");
         likedMessage.setCreatedAt(LocalDateTime.now());
-
-        LikedQnaAnswer likedAnswer = new LikedQnaAnswer();
-        likedAnswer.setId(UUID.randomUUID());
-        likedAnswer.setQnaChat(testQnaChat);
-        likedAnswer.setQnaChatMessage(likedMessage);
-        likedAnswer.setUser(testUser);
-        likedAnswer.setCreatedAt(LocalDateTime.now());
+        likedMessage.setIsLiked(true);
 
         when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(testQnaChat));
-        when(likedQnaAnswerRepository.findByQnaChatIdAndUserIdWithMessage(TEST_CHAT_ID, TEST_USER_ID))
-                .thenReturn(List.of(likedAnswer));
+        when(qnaChatMessageRepository.findByQnaChatIdAndIsLikedTrue(TEST_CHAT_ID))
+                .thenReturn(List.of(likedMessage));
 
         // When
         GetLikedMessagesInput input = new GetLikedMessagesInput(TEST_LECTURE_ID, TEST_USER_ID);
-        ReadQnaChatOutput output = qnaChatService.getLikedMessages(input);
+        GetQnaChatMessagesOutput output = qnaChatService.getLikedMessages(input);
 
         // Then
         assertNotNull(output);

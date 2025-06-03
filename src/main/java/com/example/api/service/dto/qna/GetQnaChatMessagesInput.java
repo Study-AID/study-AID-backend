@@ -7,7 +7,9 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class ReadQnaChatInput {
+public class GetQnaChatMessagesInput {
     private UUID lectureId;
     private UUID userId;
+    private int page;
+    private int size;
 }
