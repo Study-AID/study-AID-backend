@@ -47,8 +47,7 @@ public class QnaChatServiceImpl implements QnaChatService {
 
     @Override
     public CreateQnaChatOutput createQnaChat(CreateQnaChatInput input) {
-        User user = userRepository.findById(input.getUserId())
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+        User user = new User(input.getUserId());
         Lecture lecture = lectureRepository.findById(input.getLectureId())
                 .orElseThrow(() -> new NotFoundException("강의 자료를 찾을 수 없습니다"));
         ParsedText parsedText = lecture.getParsedText();
@@ -87,7 +86,6 @@ public class QnaChatServiceImpl implements QnaChatService {
     public GetQnaChatIdOutput getQnaChatId(GetQnaChatIdInput input) {
         User user = userRepository.findById(input.getUserId())
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
-
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
 
@@ -99,8 +97,8 @@ public class QnaChatServiceImpl implements QnaChatService {
         long startTime = System.currentTimeMillis();
         log.info("[QnaChatService] ask 메소드 시작: lectureId={}, userId={}", input.getLectureId(), input.getUserId());
 
-        User user = userRepository.findById(input.getUserId())
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+        User user = new User(input.getUserId());
+
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
         UUID lectureId = chat.getLecture().getId();
@@ -138,7 +136,6 @@ public class QnaChatServiceImpl implements QnaChatService {
         QnaChatMessage userMsg = new QnaChatMessage();
         userMsg.setQnaChat(chat);
         userMsg.setUser(user);
-        userMsg.setUser(new User(input.getUserId()));
         userMsg.setRole(MessageRole.USER);
         userMsg.setContent(input.getQuestion());
         userMsg = qnaChatMessageRepository.save(userMsg);

@@ -29,10 +29,6 @@ public class QnaChatController {
 
     private UUID getUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication(); // 현재 인증된 사용자 정보 가져오기
-        if (authentication == null || authentication.getPrincipal() == null) {
-
-            return UUID.fromString("550e8400-e29b-41d4-a716-446655440000"); // 테스트 환경용 fallback
-        }
         return UUID.fromString(authentication.getPrincipal().toString());
     }
 
@@ -317,7 +313,6 @@ public class QnaChatController {
     public ResponseEntity<QnaChatMessageResponse> sendMessage(
             @PathVariable UUID lectureId,
             @RequestBody QnaChatMessageRequest request) {
-
         UUID userId = getUserId();
         QnaChatMessageInput input = new QnaChatMessageInput(lectureId, userId, request.getQuestion());
         QnaChatMessageOutput output = qnaChatService.ask(input);

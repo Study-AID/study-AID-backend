@@ -1,5 +1,6 @@
 package com.example.api.controller;
 
+import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.qna.QnaChatMessageRequest;
 import com.example.api.exception.BadRequestException;
 import com.example.api.external.dto.langchain.ReferenceResponse;
@@ -7,14 +8,16 @@ import com.example.api.repository.UserRepository;
 import com.example.api.security.jwt.JwtProvider;
 import com.example.api.service.QnaChatService;
 import com.example.api.service.dto.qna.*;
+import com.example.api.util.WithMockUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,13 +33,9 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(
-        controllers = QnaChatController.class,
-        excludeAutoConfiguration = {
-                SecurityAutoConfiguration.class,
-                SecurityFilterAutoConfiguration.class
-        }
-)
+@WebMvcTest(controllers = QnaChatController.class)
+@Import({TestSecurityConfig.class})
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class QnaChatControllerTest {
 
@@ -52,14 +51,22 @@ class QnaChatControllerTest {
     @MockBean
     private JwtProvider jwtProvider;
 
-    // TODO(jin): use authorized user instead of fixed user ID
-    private static final UUID FIXED_USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
-    private static final UUID LECTURE_ID = UUID.randomUUID();
-    private static final UUID CHAT_ID = UUID.randomUUID();
-    private static final UUID MESSAGE_ID = UUID.randomUUID();
+    private UUID FIXED_USER_ID;
+    private UUID LECTURE_ID;
+    private UUID CHAT_ID;
+    private UUID MESSAGE_ID;
+
+    @BeforeEach
+    void setUp() {
+        FIXED_USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+        LECTURE_ID = UUID.randomUUID();
+        CHAT_ID = UUID.randomUUID();
+        MESSAGE_ID = UUID.randomUUID();
+    }
 
     @Test
     @DisplayName("채팅방 생성 성공")
+    @WithMockUser
     void createChatSuccess() throws Exception {
         // Given
         CreateQnaChatOutput output = new CreateQnaChatOutput(CHAT_ID, LocalDateTime.now());
@@ -78,6 +85,7 @@ class QnaChatControllerTest {
 
     @Test
     @DisplayName("채팅방 ID 조회 성공")
+    @WithMockUser
     void getQnaChatIdSuccess() throws Exception {
         // Given
         GetQnaChatIdOutput output = new GetQnaChatIdOutput(CHAT_ID);
@@ -94,6 +102,7 @@ class QnaChatControllerTest {
 
     @Test
     @DisplayName("채팅방 메시지 조회 성공 - 커서 기반 페이지네이션")
+    @WithMockUser
     void getMessagesSuccess() throws Exception {
         // Given
         List<GetQnaChatMessagesOutput.MessageItem> messages = List.of(
@@ -136,6 +145,7 @@ class QnaChatControllerTest {
 
     @Test
     @DisplayName("좋아요한 메시지 조회 성공")
+    @WithMockUser
     void getLikedMessagesSuccess() throws Exception {
         // Given
         List<GetLikedMessagesOutput.LikedMessageItem> likedMessages = List.of(
@@ -161,6 +171,7 @@ class QnaChatControllerTest {
 
     @Test
     @DisplayName("질문 전송 성공")
+    @WithMockUser
     void sendMessageSuccess() throws Exception {
         // Given
         QnaChatMessageRequest request = new QnaChatMessageRequest("재귀 함수란 무엇인가요?");
@@ -200,6 +211,7 @@ class QnaChatControllerTest {
 
     @Test
     @DisplayName("좋아요 토글 성공 - 좋아요 추가")
+    @WithMockUser
     void toggleLikeMessageSuccess_AddLike() throws Exception {
         // Given
         ToggleLikeMessageOutput output = new ToggleLikeMessageOutput(true, "ADDED");
@@ -219,6 +231,7 @@ class QnaChatControllerTest {
 
     @Test
     @DisplayName("좋아요 토글 성공 - 좋아요 제거")
+    @WithMockUser
     void toggleLikeMessageSuccess_RemoveLike() throws Exception {
         // Given
         ToggleLikeMessageOutput output = new ToggleLikeMessageOutput(false, "REMOVED");
@@ -238,6 +251,7 @@ class QnaChatControllerTest {
 
     @Test
     @DisplayName("좋아요 토글 실패 - 사용자 메시지")
+    @WithMockUser
     void toggleLikeMessageFail_UserMessage() throws Exception {
         // Given
         when(qnaChatService.toggleLikeMessage(any(ToggleLikeMessageInput.class)))

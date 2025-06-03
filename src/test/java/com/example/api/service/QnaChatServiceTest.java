@@ -84,7 +84,6 @@ public class QnaChatServiceTest {
     @DisplayName("채팅방 생성 성공 테스트")
     public void createQnaChatSuccessTest() {
         // Given
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(testUser));
         when(lectureRepository.findById(TEST_LECTURE_ID)).thenReturn(Optional.of(testLecture));
         when(qnaChatRepository.save(any(QnaChat.class))).thenAnswer(invocation -> {
             QnaChat savedChat = invocation.getArgument(0);
@@ -105,17 +104,6 @@ public class QnaChatServiceTest {
         assertNotNull(output);
         assertEquals(TEST_CHAT_ID, output.getChatId());
         assertNotNull(output.getCreatedAt());
-    }
-
-    @Test
-    @DisplayName("채팅방 생성 실패 테스트 - 사용자 없음")
-    public void createQnaChatFailUserNotFoundTest() {
-        // Given
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.empty());
-
-        // When & Then
-        CreateQnaChatInput input = new CreateQnaChatInput(TEST_USER_ID, TEST_LECTURE_ID);
-        assertThrows(NotFoundException.class, () -> qnaChatService.createQnaChat(input));
     }
 
     @Test
@@ -184,7 +172,6 @@ public class QnaChatServiceTest {
         String question = "재귀 함수란 무엇인가요?";
         String answer = "재귀 함수는 자기 자신을 호출하는 함수입니다.";
 
-        when(userRepository.findById(TEST_USER_ID)).thenReturn(Optional.of(testUser));
         when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(testQnaChat));
         when(lectureRepository.findById(TEST_LECTURE_ID)).thenReturn(Optional.of(testLecture));
