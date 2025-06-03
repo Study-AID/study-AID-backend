@@ -228,7 +228,6 @@ public class LectureResponse {
         return stringList;
     }
 
-    // 수정된 fromServiceDto 메서드
     public static LectureResponse fromServiceDto(LectureOutput lecture, StorageConfig storageConfig) {
         return new LectureResponse(
                 lecture.getId(),

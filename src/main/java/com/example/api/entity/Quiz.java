@@ -22,7 +22,7 @@ import java.util.UUID;
                 @Index(name = "idx_quizzes_lecture_updated_at", columnList = "lecture_id, updated_at")
         }
 )
-@Check(constraints = "status IN ('generate_in_progress', 'not_started', 'submitted', 'graded')")
+@Check(constraints = "status IN ('generate_in_progress', 'not_started', 'submitted', 'partially_graded', 'graded')")
 public class Quiz {
     @Id
     @Column()

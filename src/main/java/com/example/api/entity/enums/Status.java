@@ -1,5 +1,5 @@
 package com.example.api.entity.enums;
 
 public enum Status {
-    generate_in_progress, not_started, submitted, graded
+    generate_in_progress, not_started, submitted, partially_graded, graded
 }
