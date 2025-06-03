@@ -1,5 +1,6 @@
 package com.example.api.controller.dto.qna;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -19,6 +20,7 @@ public class GetLikedMessagesResponse {
 
     @Getter
     @AllArgsConstructor
+    @JsonIgnoreProperties({"liked"}) // getter 메소드 isLiked()를 보고 Jackson이 JSON에 자동 생성하는 liked 필드는 무시
     public static class LikedMessageItem {
         @NotNull
         private UUID messageId;
@@ -29,7 +31,7 @@ public class GetLikedMessagesResponse {
         @NotNull
         private LocalDateTime createdAt;
         @NotNull
-        @JsonProperty("isLiked")
+        @JsonProperty("isLiked") // 해당 필드를 JSON 응답에 isLiked로 표시하도록 명시
         private boolean isLiked;
     }
 }

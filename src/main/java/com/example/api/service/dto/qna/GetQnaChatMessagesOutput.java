@@ -1,5 +1,6 @@
 package com.example.api.service.dto.qna;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -14,6 +15,11 @@ public class GetQnaChatMessagesOutput {
     private List<MessageItem> messages;
     private boolean hasMore;
     private UUID nextCursor;
+
+    // Lombok @Getter 실행 시 boolean은 isLiked 처럼 is가 없다면, is Prefix가 붙어 isHasMore로 getter 메서드가 생성되므로 getter 수동 생성
+    public boolean getHasMore() {
+        return hasMore;
+    }
 
     @Getter
     @AllArgsConstructor

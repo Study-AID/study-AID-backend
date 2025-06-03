@@ -119,7 +119,7 @@ class QnaChatControllerTest {
         // 변경: API 경로를 다른 테스트들과 일치하도록 수정
         mockMvc.perform(get("/v1/lectures/{lectureId}/qna-chat/messages", LECTURE_ID)
                         .param("cursor", "550e8400-e29b-41d4-a716-446655440000")
-                        .param("limit", "5")
+                        .param("limit", "20")
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
@@ -156,7 +156,7 @@ class QnaChatControllerTest {
                 .andExpect(jsonPath("$.chatId").value(CHAT_ID.toString()))
                 .andExpect(jsonPath("$.messages").exists())
                 .andExpect(jsonPath("$.messages[0].role").value("assistant"))
-                .andExpect(jsonPath("$.messages[0].liked").value(true));
+                .andExpect(jsonPath("$.messages[0].isLiked").value(true));
     }
 
     @Test

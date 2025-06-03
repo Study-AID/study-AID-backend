@@ -177,7 +177,7 @@ public class QnaChatController {
     public ResponseEntity<GetQnaChatMessagesResponse> getMessages(
             @PathVariable UUID lectureId,
             @RequestParam(required = false) UUID cursor,
-            @RequestParam(defaultValue = "5") int limit) {
+            @RequestParam(defaultValue = "20") int limit) {
         UUID userId = getUserId();
         GetQnaChatMessagesInput input = new GetQnaChatMessagesInput(lectureId, userId, cursor, limit);
         GetQnaChatMessagesOutput output = qnaChatService.getMessages(input);
@@ -195,7 +195,7 @@ public class QnaChatController {
         GetQnaChatMessagesResponse response = new GetQnaChatMessagesResponse(
                 output.getChatId(),
                 messages,
-                output.isHasMore(),
+                output.getHasMore(),
                 output.getNextCursor()
         );
 
