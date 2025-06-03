@@ -72,7 +72,7 @@ class QnaChatControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.chatId").exists()) // 변경: 오타 수정 (andExpected → andExpect)
+                .andExpect(jsonPath("$.chatId").exists())
                 .andExpect(jsonPath("$.createdAt").exists());
     }
 
