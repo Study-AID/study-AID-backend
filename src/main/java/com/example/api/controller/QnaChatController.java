@@ -144,7 +144,9 @@ public class QnaChatController {
                                                             "\"createdAt\": \"2025-05-28T04:15:30Z\", " +
                                                             "\"isLiked\": true" +
                                                             "}" +
-                                                            "]" +
+                                                            "]," +
+                                                            "\"hasMore\": true, " +
+                                                            "\"nextCursor\": \"msg-550e8400-e29b-41d4-a716-446655440002\"" +
                                                             "}"
                                             )
                                     })
@@ -174,10 +176,10 @@ public class QnaChatController {
     @GetMapping(value = "/messages")
     public ResponseEntity<GetQnaChatMessagesResponse> getMessages(
             @PathVariable UUID lectureId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(required = false) UUID cursor,
+            @RequestParam(defaultValue = "5") int limit) {
         UUID userId = getUserId();
-        GetQnaChatMessagesInput input = new GetQnaChatMessagesInput(lectureId, userId, page, size);
+        GetQnaChatMessagesInput input = new GetQnaChatMessagesInput(lectureId, userId, cursor, limit);
         GetQnaChatMessagesOutput output = qnaChatService.getMessages(input);
 
         List<GetQnaChatMessagesResponse.MessageItem> messages = output.getMessages().stream()
@@ -192,7 +194,9 @@ public class QnaChatController {
 
         GetQnaChatMessagesResponse response = new GetQnaChatMessagesResponse(
                 output.getChatId(),
-                messages
+                messages,
+                output.isHasMore(),
+                output.getNextCursor()
         );
 
         return ResponseEntity.ok(response);
@@ -205,18 +209,35 @@ public class QnaChatController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "좋아요한 메시지 조회 성공",
-                            content = @Content(schema = @Schema(implementation = GetQnaChatMessagesResponse.class))
+                            content = @Content(schema = @Schema(implementation = GetQnaChatMessagesResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "example",
+                                                    value = "{" +
+                                                            "\"chatId\": \"550e8400-e29b-41d4-a716-446655440000\", " +
+                                                            "\"messages\": [" +
+                                                            "{" +
+                                                            "\"messageId\": \"msg-550e8400-e29b-41d4-a716-446655440002\", " +
+                                                            "\"role\": \"assistant\", " +
+                                                            "\"content\": \"재귀 함수는 자기 자신을 호출하는 함수를 의미합니다.\", " +
+                                                            "\"createdAt\": \"2025-05-28T04:15:30Z\", " +
+                                                            "\"isLiked\": true" +
+                                                            "}" +
+                                                            "]" +
+                                                            "}"
+                                            )
+                                    })
                     )
             }
     )
-    @GetMapping("/messages/toggle-like")
-    public ResponseEntity<GetQnaChatMessagesResponse> getLikedMessages(@PathVariable UUID lectureId) {
+    @GetMapping("/messages/liked")
+    public ResponseEntity<GetLikedMessagesResponse> getLikedMessages(@PathVariable UUID lectureId) {
         UUID userId = getUserId();
         GetLikedMessagesInput input = new GetLikedMessagesInput(lectureId, userId);
-        GetQnaChatMessagesOutput output = qnaChatService.getLikedMessages(input);
+        GetLikedMessagesOutput output = qnaChatService.getLikedMessages(input);
 
-        List<GetQnaChatMessagesResponse.MessageItem> messages = output.getMessages().stream()
-                .map(m -> new GetQnaChatMessagesResponse.MessageItem(
+        List<GetLikedMessagesResponse.LikedMessageItem> messages = output.getMessages().stream()
+                .map(m -> new GetLikedMessagesResponse.LikedMessageItem(
                         m.getMessageId(),
                         m.getRole(),
                         m.getContent(),
@@ -225,7 +246,7 @@ public class QnaChatController {
                 ))
                 .toList();
 
-        GetQnaChatMessagesResponse response = new GetQnaChatMessagesResponse(
+        GetLikedMessagesResponse response = new GetLikedMessagesResponse (
                 output.getChatId(),
                 messages
         );

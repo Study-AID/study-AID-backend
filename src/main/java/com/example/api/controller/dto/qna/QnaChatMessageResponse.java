@@ -1,6 +1,7 @@
 package com.example.api.controller.dto.qna;
 
 import com.example.api.external.dto.langchain.ReferenceResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,5 +26,6 @@ public class QnaChatMessageResponse {
     @NotNull
     private LocalDateTime createdAt;
     @NotNull
+    @JsonProperty("isLiked")
     private boolean isLiked;
 }

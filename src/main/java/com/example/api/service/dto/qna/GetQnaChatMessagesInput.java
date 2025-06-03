@@ -10,6 +10,6 @@ import java.util.UUID;
 public class GetQnaChatMessagesInput {
     private UUID lectureId;
     private UUID userId;
-    private int page;
-    private int size;
+    private UUID cursor;
+    private int limit;
 }

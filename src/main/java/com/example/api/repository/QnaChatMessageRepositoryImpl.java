@@ -16,22 +16,27 @@ public class QnaChatMessageRepositoryImpl implements QnaChatMessageRepositoryCus
     private EntityManager manager;
 
     @Override
-    public Page<QnaChatMessage> findByQnaChatIdWithPagination(UUID chatId, Pageable pageable) {
-        TypedQuery<QnaChatMessage> query = manager.createQuery(
-                        "SELECT m FROM QnaChatMessage m WHERE m.qnaChat.id = :chatId ORDER BY m.createdAt ASC",
-                        QnaChatMessage.class)
-                .setParameter("chatId", chatId)
-                .setFirstResult((int) pageable.getOffset())
-                .setMaxResults(pageable.getPageSize());
+    public List<QnaChatMessage> findByQnaChatIdWithCursor(UUID chatId, UUID cursor, int limit) {
+        String jpql;
+        TypedQuery<QnaChatMessage> query;
 
-        List<QnaChatMessage> messages = query.getResultList();
+        if (cursor == null) {
+            // 첫 로드: 최신 메시지부터
+            jpql = "SELECT m FROM QnaChatMessage m WHERE m.qnaChat.id = :chatId " +
+                    "ORDER BY m.createdAt DESC";
+            query = manager.createQuery(jpql, QnaChatMessage.class)
+                    .setParameter("chatId", chatId);
+        } else {
+            // 이전 메시지들: cursor보다 오래된 메시지들
+            jpql = "SELECT m FROM QnaChatMessage m WHERE m.qnaChat.id = :chatId " +
+                    "AND m.createdAt < (SELECT cm.createdAt FROM QnaChatMessage cm WHERE cm.id = :cursor) " +
+                    "ORDER BY m.createdAt DESC";
+            query = manager.createQuery(jpql, QnaChatMessage.class)
+                    .setParameter("chatId", chatId)
+                    .setParameter("cursor", cursor);
+        }
 
-        Long totalCount = manager.createQuery(
-                        "SELECT COUNT(m) FROM QnaChatMessage m WHERE m.qnaChat.id = :chatId",
-                        Long.class)
-                .setParameter("chatId", chatId)
-                .getSingleResult();
-
-        return new PageImpl<>(messages, pageable, totalCount);
+        return query.setMaxResults(limit + 1) // +1로 hasMore 판단
+                .getResultList();
     }
 }

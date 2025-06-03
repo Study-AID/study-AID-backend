@@ -8,6 +8,6 @@ public interface QnaChatService {
     GetQnaChatMessagesOutput getMessages(GetQnaChatMessagesInput input);
     GetQnaChatIdOutput getQnaChatId(GetQnaChatIdInput input);
 
-    GetQnaChatMessagesOutput getLikedMessages(GetLikedMessagesInput input);
+    GetLikedMessagesOutput getLikedMessages(GetLikedMessagesInput input);
     ToggleLikeMessageOutput toggleLikeMessage(ToggleLikeMessageInput input);
 }

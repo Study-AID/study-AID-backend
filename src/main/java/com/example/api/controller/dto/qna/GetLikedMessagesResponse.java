@@ -11,18 +11,15 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class GetQnaChatMessagesResponse {
+public class GetLikedMessagesResponse {
     @NotNull
     private UUID chatId;
     @NotNull
-    private List<MessageItem> messages;
-    @NotNull
-    private boolean hasMore;
-    private UUID nextCursor; // 메세지가 아예 없거나, 더 가져올 메세지가 없는 경우 (hasMore가 false인 경우)
+    private List<LikedMessageItem> messages;
 
     @Getter
     @AllArgsConstructor
-    public static class MessageItem {
+    public static class LikedMessageItem {
         @NotNull
         private UUID messageId;
         @NotNull

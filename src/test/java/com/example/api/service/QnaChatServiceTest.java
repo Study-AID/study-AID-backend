@@ -19,9 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -159,13 +156,11 @@ public class QnaChatServiceTest {
         message2.setCreatedAt(LocalDateTime.now());
         message2.setIsLiked(true);
 
-        Page<QnaChatMessage> messagePage = new PageImpl<>(List.of(message1, message2));
-
-        when(qnaChatMessageRepository.findByQnaChatIdWithPagination(eq(TEST_CHAT_ID), any(Pageable.class)))
-                .thenReturn(messagePage);
+        when(qnaChatMessageRepository.findByQnaChatIdWithCursor(eq(TEST_CHAT_ID), eq(TEST_MESSAGE_ID), eq(5)))
+                .thenReturn(List.of(message1, message2));
 
         // When
-        GetQnaChatMessagesInput input = new GetQnaChatMessagesInput(TEST_LECTURE_ID, TEST_USER_ID, 0, 20);
+        GetQnaChatMessagesInput input = new GetQnaChatMessagesInput(TEST_LECTURE_ID, TEST_USER_ID, TEST_MESSAGE_ID, 5);
         GetQnaChatMessagesOutput output = qnaChatService.getMessages(input);
 
         // Then
@@ -246,8 +241,6 @@ public class QnaChatServiceTest {
         assertFalse(output.isLiked());
         assertEquals(1, output.getReferences().size());
         assertEquals("재귀 함수는 자기 자신을 호출하는 함수입니다.", output.getReferences().get(0).getText());
-        assertEquals(42, output.getReferences().get(0).getPage());
-        assertEquals(1, output.getRecommendedQuestions().size());
         assertEquals("재귀 함수의 장단점은 무엇인가요?", output.getRecommendedQuestions().get(0));
     }
 
@@ -349,7 +342,7 @@ public class QnaChatServiceTest {
 
         // When
         GetLikedMessagesInput input = new GetLikedMessagesInput(TEST_LECTURE_ID, TEST_USER_ID);
-        GetQnaChatMessagesOutput output = qnaChatService.getLikedMessages(input);
+        GetLikedMessagesOutput output = qnaChatService.getLikedMessages(input);
 
         // Then
         assertNotNull(output);

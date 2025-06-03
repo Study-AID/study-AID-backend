@@ -22,9 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -235,12 +232,23 @@ public class QnaChatServiceImpl implements QnaChatService {
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
 
-        Pageable pageable = PageRequest.of(input.getPage(), input.getSize());
-        Page<QnaChatMessage> messagePage = qnaChatMessageRepository.findByQnaChatIdWithPagination(chat.getId(), pageable);
+        List<QnaChatMessage> messages = qnaChatMessageRepository.findByQnaChatIdWithCursor(
+                chat.getId(), input.getCursor(), input.getLimit());
 
-        List<GetQnaChatMessagesOutput.MessageItem> messages = messagePage.getContent().stream()
+        boolean hasMore = messages.size() > input.getLimit();
+        if (hasMore) {
+            messages = messages.subList(0, input.getLimit()); // 초과분 제거
+        }
+
+        UUID nextCursor = null;
+        if (!messages.isEmpty() && hasMore) {
+            // 더 가져올 메시지가 있을 때만 가져온 메세지 중 가장 오래된 메세지로 nextCursor 설정
+            nextCursor = messages.get(messages.size() - 1).getId();
+        }
+
+        List<GetQnaChatMessagesOutput.MessageItem> messageItems = messages.stream()
                 .map(m -> {
-                    boolean isLiked = m.getRole() == MessageRole.ASSISTANT ? m.getIsLiked() : false;
+                    boolean isLiked = m.getRole() == MessageRole.ASSISTANT ? m.getIsLiked() : false; // USER 메세지는 좋아요 FALSE 고정
                     return new GetQnaChatMessagesOutput.MessageItem(
                             m.getId(),
                             m.getRole().getValue(),
@@ -251,18 +259,18 @@ public class QnaChatServiceImpl implements QnaChatService {
                 })
                 .toList();
 
-        return new GetQnaChatMessagesOutput(chat.getId(), messages);
+        return new GetQnaChatMessagesOutput(chat.getId(), messageItems, hasMore, nextCursor);
     }
     
     @Override
-    public GetQnaChatMessagesOutput getLikedMessages(GetLikedMessagesInput input) {
+    public GetLikedMessagesOutput getLikedMessages(GetLikedMessagesInput input) {
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
 
         List<QnaChatMessage> likedMessages = qnaChatMessageRepository.findByQnaChatIdAndIsLikedTrue(chat.getId());
 
-        List<GetQnaChatMessagesOutput.MessageItem> messages = likedMessages.stream()
-                .map(message -> new GetQnaChatMessagesOutput.MessageItem(
+        List<GetLikedMessagesOutput.LikedMessageItem> likedMessageItems = likedMessages.stream()
+                .map(message -> new GetLikedMessagesOutput.LikedMessageItem(
                         message.getId(),
                         message.getRole().getValue(),
                         message.getContent(),
@@ -271,7 +279,7 @@ public class QnaChatServiceImpl implements QnaChatService {
                 ))
                 .toList();
 
-        return new GetQnaChatMessagesOutput(chat.getId(), messages);
+        return new GetLikedMessagesOutput(chat.getId(), likedMessageItems); //좋아요 메세지 조회에는 페이지네이션 미적용
     }
 
     @Override

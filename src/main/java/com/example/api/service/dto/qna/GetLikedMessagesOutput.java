@@ -1,5 +1,6 @@
 package com.example.api.service.dto.qna;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -9,15 +10,13 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class GetQnaChatMessagesOutput {
+public class GetLikedMessagesOutput {
     private UUID chatId;
-    private List<MessageItem> messages;
-    private boolean hasMore;
-    private UUID nextCursor;
+    private List<LikedMessageItem> messages;
 
     @Getter
     @AllArgsConstructor
-    public static class MessageItem {
+    public static class LikedMessageItem {
         private UUID messageId;
         private String role;
         private String content;
