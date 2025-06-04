@@ -53,6 +53,11 @@ public class QuizQuestionReportServiceImpl implements QuizQuestionReportService 
         Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
         QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
 
+        // Validate that user, quiz, and quizItem exist
+        if (user == null || quiz == null || quizItem == null || input.getReportReason() == null) {
+            throw new IllegalArgumentException("Missing required fields for report creation");
+        }
+
         QuizQuestionReport report = new QuizQuestionReport();
         report.setUser(user);
         report.setQuiz(quiz);

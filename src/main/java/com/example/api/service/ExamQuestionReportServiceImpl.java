@@ -53,6 +53,11 @@ public class ExamQuestionReportServiceImpl implements ExamQuestionReportService 
         Exam exam = examRepo.getReferenceById(input.getExamId());
         ExamItem examItem = examItemRepo.getReferenceById(input.getExamItemId());
 
+        // Validate that user, exam, and examItem exist
+        if (user == null || exam == null || examItem == null || input.getReportReason() == null) {
+            throw new IllegalArgumentException("Missing required fields for report creation");
+        }
+
         ExamQuestionReport report = new ExamQuestionReport();
         report.setUser(user);
         report.setExam(exam);

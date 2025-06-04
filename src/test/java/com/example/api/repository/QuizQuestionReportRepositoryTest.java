@@ -1,7 +1,12 @@
 package com.example.api.repository;
 
 import com.example.api.entity.*;
-import com.example.api.entity.enums.*;
+import com.example.api.entity.enums.AuthType;
+import com.example.api.entity.enums.QuestionType;
+import com.example.api.entity.enums.Season;
+import com.example.api.entity.enums.Status;
+import com.example.api.entity.enums.SummaryStatus;
+
 import jakarta.persistence.EntityManager;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,9 +18,11 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
@@ -29,12 +36,13 @@ public class QuizQuestionReportRepositoryTest {
     private EntityManager entityManager;
 
     private User testUser;
+    private User anotherUser;
     private Semester testSemester;
     private Course testCourse;
     private Lecture testLecture;
     private Quiz testQuiz;
     private QuizItem testQuizItem;
-    private QuizQuestionReport testQuizQuestionReport;
+    private QuizQuestionReport testReport;
 
     @BeforeEach
     void setUp() {
@@ -52,6 +60,16 @@ public class QuizQuestionReportRepositoryTest {
         testUser.setCreatedAt(LocalDateTime.now());
         testUser.setUpdatedAt(LocalDateTime.now());
         entityManager.persist(testUser);
+
+        anotherUser = new User();
+        anotherUser.setId(UUID.randomUUID());
+        anotherUser.setSchool(testSchool);
+        anotherUser.setName("Another User");
+        anotherUser.setEmail("another@example.com");
+        anotherUser.setAuthType(AuthType.email);
+        anotherUser.setCreatedAt(LocalDateTime.now());
+        anotherUser.setUpdatedAt(LocalDateTime.now());
+        entityManager.persist(anotherUser);
 
         testSemester = new Semester();
         testSemester.setId(UUID.randomUUID());
@@ -92,84 +110,158 @@ public class QuizQuestionReportRepositoryTest {
         testQuizItem.setId(UUID.randomUUID());
         testQuizItem.setQuiz(testQuiz);
         testQuizItem.setUser(testUser);
-        testQuizItem.setQuestion("오렌지는");
-        testQuizItem.setQuestionType(QuestionType.short_answer);
-
+        testQuizItem.setQuestion("What is an OS?");
+        testQuizItem.setQuestionType(QuestionType.multiple_choice);
+        testQuizItem.setChoices(new String[]{"Software", "Hardware", "Network", "Database"});
+        testQuizItem.setAnswerIndices(new Integer[]{0});
+        testQuizItem.setDisplayOrder(1);
+        testQuizItem.setPoints(10.0f);
+        testQuizItem.setIsLiked(false);
         entityManager.persist(testQuizItem);
 
-        testQuizQuestionReport = new QuizQuestionReport();
-        testQuizQuestionReport.setId(UUID.randomUUID());
-        testQuizQuestionReport.setQuiz(testQuiz);
-        testQuizQuestionReport.setQuizItem(testQuizItem);
-        testQuizQuestionReport.setUser(testUser);
-        testQuizQuestionReport.setReportReason("그냥 싫어요.");
+        testReport = new QuizQuestionReport();
+        testReport.setId(UUID.randomUUID());
+        testReport.setUser(testUser);
+        testReport.setQuiz(testQuiz);
+        testReport.setQuizItem(testQuizItem);
+        testReport.setReportReason("부적절한 문제");
 
         entityManager.flush();
         entityManager.clear();
     }
 
     @Test
-    @DisplayName("퀴즈 질문 신고 저장 및 ID로 조회 테스트")
-    void testCreateAndFindQuizQuestionReport() {
-        // Save the report
-        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
+    @DisplayName("퀴즈 문제 신고 생성 테스트")
+    void createQuizQuestionReportTest() {
+        QuizQuestionReport createdReport = quizQuestionReportRepository.createQuizQuestionReport(testReport);
 
-        // Find by ID
-        Optional<QuizQuestionReport> foundReport = quizQuestionReportRepository.findById(testQuizQuestionReport.getId());
+        assertThat(createdReport).isNotNull();
+        assertThat(createdReport.getId()).isNotNull();
+        assertThat(createdReport.getReportReason()).isEqualTo("부적절한 문제");
+        assertThat(createdReport.getCreatedAt()).isNotNull();
+        assertThat(createdReport.getUpdatedAt()).isNotNull();
+        assertThat(createdReport.getDeletedAt()).isNull();
 
-        // Verify the report was saved and retrieved correctly
-        assertTrue(foundReport.isPresent(), "The report should be present after saving.");
-        assertTrue(foundReport.get().getId().equals(testQuizQuestionReport.getId()), "The retrieved report ID should match the saved report ID.");
+        QuizQuestionReport foundReport = entityManager.find(QuizQuestionReport.class, createdReport.getId());
+        assertThat(foundReport).isNotNull();
+        assertThat(foundReport.getReportReason()).isEqualTo("부적절한 문제");
     }
 
     @Test
-    @DisplayName("퀴즈 질문 신고 저장 및 퀴즈 ID, 퀴즈 아이템 ID, 사용자 ID로 조회 테스트")
-    void testFindByQuizIdAndQuizItemIdAndUserId() {
-        // Save the report
-        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
+    @DisplayName("사용자별 퀴즈 문제 신고 목록 조회 테스트")
+    void findByUserIdOrderByCreatedAtDescTest() {
+        // 첫 번째 신고 생성
+        quizQuestionReportRepository.createQuizQuestionReport(testReport);
+        
+        // 두 번째 신고 생성 (나중에 생성됨)
+        QuizQuestionReport secondReport = new QuizQuestionReport();
+        secondReport.setId(UUID.randomUUID());
+        secondReport.setUser(testUser);
+        secondReport.setQuiz(testQuiz);
+        secondReport.setQuizItem(testQuizItem);
+        secondReport.setReportReason("중복 문제");
+        quizQuestionReportRepository.createQuizQuestionReport(secondReport);
 
-        // Find by quiz ID, quiz item ID, and user ID
-        Optional<QuizQuestionReport> foundReport = quizQuestionReportRepository.findByQuizIdAndQuizItemIdAndUserId(
-                testQuiz.getId(), testQuizItem.getId(), testUser.getId());
+        // 다른 사용자의 신고 생성 (결과에 포함되면 안 됨)
+        QuizQuestionReport otherUserReport = new QuizQuestionReport();
+        otherUserReport.setId(UUID.randomUUID());
+        otherUserReport.setUser(anotherUser);
+        otherUserReport.setQuiz(testQuiz);
+        otherUserReport.setQuizItem(testQuizItem);
+        otherUserReport.setReportReason("다른 사용자 신고");
+        quizQuestionReportRepository.createQuizQuestionReport(otherUserReport);
 
-        // Verify the report was found correctly
-        assertTrue(foundReport.isPresent(), "The report should be present when queried by quiz ID, quiz item ID, and user ID.");
-        assertTrue(foundReport.get().getId().equals(testQuizQuestionReport.getId()), "The retrieved report ID should match the saved report ID.");
+        entityManager.flush();
+        entityManager.clear();
+
+        List<QuizQuestionReport> reports = quizQuestionReportRepository.findByUserIdOrderByCreatedAtDesc(testUser.getId());
+
+        assertThat(reports).hasSize(2);
+        assertThat(reports.get(0).getReportReason()).isEqualTo("중복 문제"); // 나중에 생성된 신고가 먼저
+        assertThat(reports.get(1).getReportReason()).isEqualTo("부적절한 문제");
     }
 
     @Test
-    @DisplayName("사용자 ID로 퀴즈 질문 신고 목록 조회 테스트")
-    void testFindByUserIdOrderByCreatedAtDesc() {
-        // Save the report
-        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
+    @DisplayName("퀴즈 문제 신고 ID로 조회 테스트")
+    void findByIdTest() {
+        QuizQuestionReport createdReport = quizQuestionReportRepository.createQuizQuestionReport(testReport);
+        entityManager.flush();
+        entityManager.clear();
 
-        // Find by user ID
-        var reports = quizQuestionReportRepository.findByUserIdOrderByCreatedAtDesc(testUser.getId());
+        Optional<QuizQuestionReport> foundReport = quizQuestionReportRepository.findById(createdReport.getId());
 
-        // Verify the report is in the list and sorted by createdAt
-        assertTrue(reports.size() > 0, "There should be at least one report for the user.");
-        assertTrue(reports.get(0).getId().equals(testQuizQuestionReport.getId()), "The first report should match the saved report.");
+        assertTrue(foundReport.isPresent());
+        assertThat(foundReport.get().getId()).isEqualTo(createdReport.getId());
+        assertThat(foundReport.get().getReportReason()).isEqualTo("부적절한 문제");
     }
 
     @Test
-    @DisplayName("퀴즈 아이템 ID로 퀴즈 질문 신고 개수 조회 테스트")
-    void testCountByQuizItemId() {
-        // Save the report
-        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
+    @DisplayName("특정 퀴즈, 퀴즈아이템, 사용자로 신고 조회 테스트")
+    void findByQuizIdAndQuizItemIdAndUserIdTest() {
+        quizQuestionReportRepository.createQuizQuestionReport(testReport);
+        entityManager.flush();
+        entityManager.clear();
 
-        // Save the another report for the same quiz item
+        Optional<QuizQuestionReport> foundReport = quizQuestionReportRepository
+                .findByQuizIdAndQuizItemIdAndUserId(testQuiz.getId(), testQuizItem.getId(), testUser.getId());
+
+        assertTrue(foundReport.isPresent());
+        assertThat(foundReport.get().getReportReason()).isEqualTo("부적절한 문제");
+    }
+
+    @Test
+    @DisplayName("퀴즈아이템별 신고 수 집계 테스트")
+    void countByQuizItemIdTest() {
+        // 같은 퀴즈아이템에 대해 여러 신고 생성
+        quizQuestionReportRepository.createQuizQuestionReport(testReport);
+        
         QuizQuestionReport anotherReport = new QuizQuestionReport();
         anotherReport.setId(UUID.randomUUID());
+        anotherReport.setUser(anotherUser);
         anotherReport.setQuiz(testQuiz);
         anotherReport.setQuizItem(testQuizItem);
-        anotherReport.setUser(testUser);
-        anotherReport.setReportReason("Another reason.");
+        anotherReport.setReportReason("다른 이유");
         quizQuestionReportRepository.createQuizQuestionReport(anotherReport);
 
-        // Count reports by quiz item ID
+        entityManager.flush();
+        entityManager.clear();
+
         Long count = quizQuestionReportRepository.countByQuizItemId(testQuizItem.getId());
 
-        // Verify the count is correct
-        assertTrue(count == 2, "There should be at least one report for the quiz item.");
+        assertThat(count).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("퀴즈 문제 신고 삭제 테스트 (소프트 삭제)")
+    void deleteByIdTest() {
+        QuizQuestionReport createdReport = quizQuestionReportRepository.createQuizQuestionReport(testReport);
+        entityManager.flush();
+        entityManager.clear();
+
+        quizQuestionReportRepository.deleteById(createdReport.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        // JPA findById는 deletedAt 필터링 없이 엔티티를 찾으므로 여전히 존재함
+        QuizQuestionReport deletedReport = entityManager.find(QuizQuestionReport.class, createdReport.getId());
+        assertThat(deletedReport).isNotNull();
+        assertThat(deletedReport.getDeletedAt()).isNotNull();
+
+        // 커스텀 메서드들은 deletedAt이 null인 것만 조회하므로 찾을 수 없음
+        List<QuizQuestionReport> userReports = quizQuestionReportRepository.findByUserIdOrderByCreatedAtDesc(testUser.getId());
+        assertThat(userReports).isEmpty();
+
+        Long count = quizQuestionReportRepository.countByQuizItemId(testQuizItem.getId());
+        assertThat(count).isEqualTo(0L);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 신고 삭제 시 예외 없이 처리되는지 테스트")
+    void deleteNonExistingReportTest() {
+        UUID nonExistingId = UUID.randomUUID();
+        
+        // 예외가 발생하지 않아야 함
+        quizQuestionReportRepository.deleteById(nonExistingId);
+        entityManager.flush();
     }
 }
