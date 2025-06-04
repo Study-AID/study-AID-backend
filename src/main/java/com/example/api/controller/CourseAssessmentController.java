@@ -305,13 +305,13 @@ public class CourseAssessmentController extends BaseController {
             }
 
             // Validate input data
-            if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            if (request.getTitle() != null && request.getTitle().trim().isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
-            if (request.getScore() == null || request.getScore() < 0) {
+            if (request.getScore() != null && request.getScore() < 0) {
                 return ResponseEntity.badRequest().build();
             }
-            if (request.getMaxScore() == null || request.getMaxScore() <= 0) {
+            if (request.getMaxScore() != null && request.getMaxScore() <= 0) {
                 return ResponseEntity.badRequest().build();
             }
             if (request.getScore() > request.getMaxScore()) {
