@@ -66,7 +66,7 @@ public class QuizControllerTest {
 
     @MockBean
     private JwtProvider jwtProvider;
-    
+
     @MockBean
     private UserRepository userRepository;
 
@@ -158,7 +158,7 @@ public class QuizControllerTest {
         testQuizResponseListOutput.getQuizResponseOutputs().get(0).setUserId(userId);
         testQuizResponseListOutput.getQuizResponseOutputs().get(0).setQuizItemId(testQuizItems.get(0).getId());
     }
-    
+
     @Test
     @DisplayName("강의별 퀴즈 목록 조회")
     @WithMockUser
@@ -259,8 +259,8 @@ public class QuizControllerTest {
                 .andExpect(jsonPath("$.title", is("Quiz 1")));
 
         verify(quizService, times(1)).findQuizById(quizId);
-        verify(quizService, times(1)).updateQuiz(argThat(input -> 
-                input.getId().equals(quizId)    
+        verify(quizService, times(1)).updateQuiz(argThat(input ->
+                input.getId().equals(quizId)
                 && input.getTitle().equals("Updated Quiz Title")
         ));
     }
@@ -283,7 +283,7 @@ public class QuizControllerTest {
     @Test
     @DisplayName("퀴즈 응답 생성")
     @WithMockUser
-    void createQuizResponse() throws Exception {
+    void submitAndGradeQuiz() throws Exception {
         // given
         SubmitQuizRequest submitQuizRequest = new SubmitQuizRequest();
 
@@ -295,9 +295,9 @@ public class QuizControllerTest {
         testQuizResponse1.setQuiz(testQuiz);
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
-        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
-        
-        
+        when(quizService.submitAndGradeQuizWithStatus(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
+
+
         submitQuizRequest.setSubmitQuizItems(List.of(
                 new SubmitQuizItem(),
                 new SubmitQuizItem()
@@ -310,7 +310,7 @@ public class QuizControllerTest {
         submitQuizRequest.getSubmitQuizItems().get(1).setSelectedIndices(new Integer[]{0, 1});
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
-        when(quizService.createQuizResponse(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
+        when(quizService.submitAndGradeQuizWithStatus(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
 
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/submit", quizId)
@@ -322,7 +322,7 @@ public class QuizControllerTest {
                 .andExpect(jsonPath("$.submitQuizResponses[0].userId", is(userId.toString())))
                 .andExpect(jsonPath("$.submitQuizResponses[0].quizItemId", is(testQuizItems.get(0).getId().toString())));
     }
-    
+
     @Test
     @DisplayName("유효하지 않은 요청으로 퀴즈 생성")
     @WithMockUser
@@ -348,7 +348,7 @@ public class QuizControllerTest {
         verify(quizService, never()).createQuiz(any(CreateQuizInput.class));
         verify(sqsClient, never()).sendGenerateQuizMessage(any());
     }
-    
+
     @Test
     @DisplayName("존재하지 않는 강의로 퀴즈 생성")
     @WithMockUser

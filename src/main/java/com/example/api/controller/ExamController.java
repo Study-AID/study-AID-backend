@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -457,7 +456,7 @@ public class ExamController extends BaseController {
                         return input;
                     }).toList();
 
-            ExamResponseListOutput examResponseListOutput = examService.createExamResponse(createExamResponseListInput);
+            ExamResponseListOutput examResponseListOutput = examService.submitAndGradeExamWithStatus(createExamResponseListInput);
 
             List<SubmitExamResponse> submitExamListResponse = examResponseListOutput.getExamResponseOutputs().stream()
                     .map(examResponse -> SubmitExamResponse.fromServiceDto(examResponse))
@@ -465,9 +464,6 @@ public class ExamController extends BaseController {
             if (submitExamListResponse.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
-
-            // examService의 gradeExam 메서드를 호출하여 채점
-            examService.gradeExam(id);
 
             return ResponseEntity.ok(new SubmitExamListResponse(submitExamListResponse));
         } catch (IllegalArgumentException e) {

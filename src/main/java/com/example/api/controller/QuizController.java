@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -481,8 +480,8 @@ public class QuizController extends BaseController {
                     })
                     .toList();
 
-            // createQuizResponse는 사용자가 답한 퀴즈 풀이를 생성하는 method
-            QuizResponseListOutput quizResponseListOutput = quizService.createQuizResponse(createQuizResponseListInput);
+            // submitAndGradeQuizWithStatus 문제 제출 및 채점, 상태관리까지
+            QuizResponseListOutput quizResponseListOutput = quizService.submitAndGradeQuizWithStatus(createQuizResponseListInput);
 
             // quizResponseOutputs의 각 quizResponseOutput을 SubmitQuizResponse 변환하여 정상 처리되었는지 status를 확인
             List<SubmitQuizResponse> submitQuizListResponse = quizResponseListOutput.getQuizResponseOutputs().stream()
@@ -491,9 +490,6 @@ public class QuizController extends BaseController {
             if (submitQuizListResponse.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
-            
-            // quizService의 gradeQuiz를 호출
-            quizService.gradeQuiz(id);
             
             return ResponseEntity.ok(new SubmitQuizListResponse(submitQuizListResponse));
         } catch (IllegalArgumentException e) {

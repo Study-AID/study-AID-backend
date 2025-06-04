@@ -30,8 +30,8 @@ public interface ExamService {
     void deleteExam(UUID examId);
 
     @Transactional
-    ExamResponseListOutput createExamResponse (List<CreateExamResponseInput> inputs);
+    ExamResponseListOutput submitAndGradeExamWithStatus(List<CreateExamResponseInput> inputs);
 
     @Transactional
-    void gradeExam(UUID examId);
+    void gradeNonEssayQuestions(UUID examId);
 }

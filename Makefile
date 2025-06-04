@@ -20,6 +20,7 @@ help:
 	@echo "  make open-coverage-report - Open coverage report in browser"
 	@echo "  make migrate              - Run Flyway migration"
 	@echo "  make migration-info       - Check migrated schema versions and status"
+	@echo "  make migration-repair     - Repair migration checksum mismatches"
 	@echo ""
 	@echo "Lambda Job Test Commands:"
 	@echo "  make test-env-start       - Start test environment (PostgreSQL, LocalStack)"
@@ -115,6 +116,12 @@ migrate:
 # Check migrated schema versions and status
 migration-info:
 	docker compose --profile migration run --rm flyway -configFiles=/flyway/conf/flyway.conf info
+
+# Repair migration checksum mismatches
+migration-repair:
+	@echo "Running DB migration repair with Flyway..."
+	docker compose --profile migration run --rm flyway -configFiles=/flyway/conf/flyway.conf repair
+	@echo "Migration repair completed (Flyway container auto-removed)"
 
 # -------------------------
 # Lambda 테스트 관련 명령어
