@@ -1,4 +1,4 @@
-package com.example.api.service.dto.quiz;
+package com.example.api.service.dto.report;
 
 import com.example.api.entity.QuizQuestionReport;
 import lombok.AllArgsConstructor;

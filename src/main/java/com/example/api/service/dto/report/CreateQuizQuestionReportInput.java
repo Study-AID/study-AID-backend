@@ -1,4 +1,4 @@
-package com.example.api.service.dto.quiz;
+package com.example.api.service.dto.report;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

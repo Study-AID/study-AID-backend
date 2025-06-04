@@ -10,8 +10,6 @@ import java.util.UUID;
 public interface QuizQuestionReportRepository extends JpaRepository<QuizQuestionReport, UUID>, QuizQuestionReportRepositoryCustom {
     Optional<QuizQuestionReport> findByQuizIdAndQuizItemIdAndUserId(UUID quizId, UUID quizItemId, UUID userId);
 
-    List<QuizQuestionReport> findByQuizItemIdOrderByCreatedAtDesc(UUID quizItemId);
-
     List<QuizQuestionReport> findByUserIdOrderByCreatedAtDesc(UUID userId);
 
     QuizQuestionReport createQuizQuestionReport(QuizQuestionReport quizQuestionReport);

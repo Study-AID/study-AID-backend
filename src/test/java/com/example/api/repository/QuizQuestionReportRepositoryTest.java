@@ -138,20 +138,6 @@ public class QuizQuestionReportRepositoryTest {
     }
 
     @Test
-    @DisplayName("퀴즈 아이템 ID로 퀴즈 질문 신고 목록 조회 테스트")
-    void testFindByQuizItemIdOrderByCreatedAtDesc() {
-        // Save the report
-        quizQuestionReportRepository.createQuizQuestionReport(testQuizQuestionReport);
-
-        // Find by quiz item ID
-        var reports = quizQuestionReportRepository.findByQuizItemIdOrderByCreatedAtDesc(testQuizItem.getId());
-
-        // Verify the report is in the list and sorted by createdAt
-        assertTrue(reports.size() > 0, "There should be at least one report for the quiz item.");
-        assertTrue(reports.get(0).getId().equals(testQuizQuestionReport.getId()), "The first report should match the saved report.");
-    }
-
-    @Test
     @DisplayName("사용자 ID로 퀴즈 질문 신고 목록 조회 테스트")
     void testFindByUserIdOrderByCreatedAtDesc() {
         // Save the report

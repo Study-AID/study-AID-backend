@@ -9,8 +9,6 @@ import com.example.api.entity.QuizQuestionReport;
 public interface QuizQuestionReportRepositoryCustom {
     Optional<QuizQuestionReport> findByQuizIdAndQuizItemIdAndUserId(UUID quizId, UUID quizItemId, UUID userId);
 
-    List<QuizQuestionReport> findByQuizItemIdOrderByCreatedAtDesc(UUID quizItemId);
-
     List<QuizQuestionReport> findByUserIdOrderByCreatedAtDesc(UUID userId);
 
     QuizQuestionReport createQuizQuestionReport(QuizQuestionReport quizQuestionReport);

@@ -39,18 +39,6 @@ public class QuizQuestionReportRepositoryImpl implements QuizQuestionReportRepos
     }
 
     @Override
-    public List<QuizQuestionReport> findByQuizItemIdOrderByCreatedAtDesc(UUID quizItemId) {
-        return manager.createQuery(
-                        "SELECT q FROM QuizQuestionReport q " +
-                                "WHERE q.quizItem.id = :quizItemId " +
-                                "AND q.deletedAt IS NULL " +
-                                "ORDER BY q.createdAt DESC",
-                        QuizQuestionReport.class)
-                .setParameter("quizItemId", quizItemId)
-                .getResultList();
-    }
-
-    @Override
     public List<QuizQuestionReport> findByUserIdOrderByCreatedAtDesc(UUID userId) {
         return manager.createQuery(
                         "SELECT q FROM QuizQuestionReport q " +

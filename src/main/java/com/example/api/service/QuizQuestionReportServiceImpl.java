@@ -15,8 +15,8 @@ import com.example.api.repository.QuizQuestionReportRepository;
 import com.example.api.repository.QuizRepository;
 import com.example.api.repository.QuizItemRepository;
 import com.example.api.repository.UserRepository;
-import com.example.api.service.dto.quiz.CreateQuizQuestionReportInput;
-import com.example.api.service.dto.quiz.QuizQuestionReportOutput;
+import com.example.api.service.dto.report.CreateQuizQuestionReportInput;
+import com.example.api.service.dto.report.QuizQuestionReportOutput;
 
 import jakarta.transaction.Transactional;
 
@@ -28,7 +28,7 @@ public class QuizQuestionReportServiceImpl implements QuizQuestionReportService 
     private QuizItemRepository quizItemRepo;
 
     @Autowired
-    public void QuizQuestionReportService(
+    public QuizQuestionReportServiceImpl(
             QuizQuestionReportRepository quizQuestionReportRepo,
             UserRepository userRepo,
             QuizRepository quizRepo,
@@ -38,6 +38,12 @@ public class QuizQuestionReportServiceImpl implements QuizQuestionReportService 
         this.userRepo = userRepo;
         this.quizRepo = quizRepo;
         this.quizItemRepo = quizItemRepo;
+    }
+
+    @Override
+    public Optional<QuizQuestionReportOutput> findReportById(UUID reportId) {
+        return quizQuestionReportRepo.findById(reportId)
+                .map(QuizQuestionReportOutput::fromEntity);
     }
 
     @Override
@@ -58,15 +64,7 @@ public class QuizQuestionReportServiceImpl implements QuizQuestionReportService 
     }
 
     @Override
-    public List<QuizQuestionReportOutput> getReportsByQuizItem(UUID quizItemId) {
-        List<QuizQuestionReport> reports = quizQuestionReportRepo.findByQuizItemIdOrderByCreatedAtDesc(quizItemId);
-        return reports.stream()
-                .map(QuizQuestionReportOutput::fromEntity)
-                .toList();
-    }
-
-    @Override
-    public List<QuizQuestionReportOutput> getReportsByUser(UUID userId) {
+    public List<QuizQuestionReportOutput> findReportsByUser(UUID userId) {
         List<QuizQuestionReport> reports = quizQuestionReportRepo.findByUserIdOrderByCreatedAtDesc(userId);
         return reports.stream()
                 .map(QuizQuestionReportOutput::fromEntity)
@@ -75,23 +73,12 @@ public class QuizQuestionReportServiceImpl implements QuizQuestionReportService 
 
     @Override
     @Transactional
-    public void deleteReport(UUID reportId, UUID userId) {
+    public Boolean deleteReport(UUID reportId) {
         Optional<QuizQuestionReport> reportOpt = quizQuestionReportRepo.findById(reportId);
-        
         if (reportOpt.isEmpty()) {
-            throw new IllegalArgumentException("Report not found with id: " + reportId);
+            return false;
         }
-
-        QuizQuestionReport report = reportOpt.get();
-        
-        if (!report.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("User is not authorized to delete this report");
-        }
-
-        if (report.getDeletedAt() != null) {
-            throw new IllegalArgumentException("Report is already deleted");
-        }
-
         quizQuestionReportRepo.deleteById(reportId);
+        return true;
     }
 }
