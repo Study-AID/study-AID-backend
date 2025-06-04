@@ -1,0 +1,40 @@
+package com.example.api.controller.dto.qna;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@Getter
+@AllArgsConstructor
+public class GetQnaChatMessagesResponse {
+    @NotNull
+    private UUID chatId;
+    @NotNull
+    private List<MessageItem> messages;
+    @NotNull
+    private boolean hasMore;
+    private UUID nextCursor; // 메세지가 아예 없거나, 더 가져올 메세지가 없는 경우 (hasMore가 false인 경우) Null일 수 있음
+
+    @Getter
+    @AllArgsConstructor
+    @JsonIgnoreProperties({"liked"}) // getter 메소드 isLiked()를 보고 Jackson이 JSON에 자동 생성하는 liked 필드는 무시
+    public static class MessageItem {
+        @NotNull
+        private UUID messageId;
+        @NotNull
+        private String role;
+        @NotNull
+        private String content;
+        @NotNull
+        private LocalDateTime createdAt;
+        @NotNull
+        @JsonProperty("isLiked") // 해당 필드를 JSON 응답에 isLiked로 표시하도록 명시
+        private boolean isLiked;
+    }
+}
