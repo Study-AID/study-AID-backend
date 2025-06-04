@@ -37,11 +37,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # Hugging Face 모델 미리 다운로드
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-m3')"
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-base')"
 
 # 소스 코드 복사
 COPY . .
 
 EXPOSE 5000
 
-CMD ["gunicorn", "--workers=1", "--threads=1", "--worker-class=gthread", "--bind=0.0.0.0:5000",  "langchain_server:app", "--timeout=240"]
+CMD ["gunicorn", "--workers=1", "--threads=1", "--worker-class=gthread", "--bind=0.0.0.0:5000",  "langchain_server:app", "--timeout=600"]
