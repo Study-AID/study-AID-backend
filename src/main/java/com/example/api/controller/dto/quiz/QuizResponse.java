@@ -9,6 +9,7 @@ import com.example.api.entity.enums.Status;
 import com.example.api.service.dto.quiz.QuizOutput;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,27 +19,34 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Schema(description = "Quiz response DTO")
 public class QuizResponse {
+    @NotNull
     @Schema(description = "Quiz ID")
     private UUID id;
 
+    @NotNull
     @Schema(description = "Lecture ID")
     private UUID lectureId;
 
+    @NotNull
     @Schema(description = "User ID")
     private UUID userId;
 
+    @NotNull
     @Schema(description = "Quiz title")
     private String title;
 
+    @NotNull
     @Schema(description = "Quiz status")
     private Status status;
 
     @Schema(description = "Contents generation time")
     private LocalDateTime contentsGenerateAt;
 
+    @NotNull
     @Schema(description = "Creation time")
     private LocalDateTime createdAt;
 
+    @NotNull
     @Schema(description = "Last update time")
     private LocalDateTime updatedAt;
 

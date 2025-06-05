@@ -7,6 +7,7 @@ import com.example.api.entity.QuizItem;
 import com.example.api.entity.enums.QuestionType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,15 +17,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Schema(description = "Quiz item response DTO")
 public class QuizItemResponse {
+    @NotNull
     @Schema(description = "Quiz item ID")
     private UUID id;
 
+    @NotNull
     @Schema(description = "Question text")
     private String question;
 
+    @NotNull
     @Schema(description = "Question type")
     private QuestionType questionType;
 
+    @NotNull
     @Schema(description = "Explanation")
     private String explanation;
 
@@ -49,9 +54,11 @@ public class QuizItemResponse {
     @Schema(description = "Is liked")
     private Boolean isLiked;
 
+    @NotNull
     @Schema(description = "Creation time")
     private LocalDateTime createdAt;
 
+    @NotNull
     @Schema(description = "Last update time")
     private LocalDateTime updatedAt;
 
