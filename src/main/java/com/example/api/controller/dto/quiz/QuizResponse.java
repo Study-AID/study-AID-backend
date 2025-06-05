@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import com.example.api.entity.QuizItem;
+
 import com.example.api.entity.enums.Status;
 import com.example.api.service.dto.quiz.QuizOutput;
 
@@ -43,8 +43,7 @@ public class QuizResponse {
     private LocalDateTime updatedAt;
 
     @Schema(description = "Quiz item list")
-    private List<QuizItem> quizItems;
-    
+    private List<QuizItemResponse> quizItems;
 
     public static QuizResponse fromServiceDto(QuizOutput quiz) {
         return new QuizResponse(
@@ -56,7 +55,11 @@ public class QuizResponse {
                 quiz.getContentsGenerateAt(),
                 quiz.getCreatedAt(),
                 quiz.getUpdatedAt(),
-                quiz.getQuizItems() // Assuming quizItems is a field in QuizOutput
+                quiz.getQuizItems() != null ? 
+                    quiz.getQuizItems().stream()
+                        .map(QuizItemResponse::fromEntity)
+                        .toList() : 
+                    List.of()
         );
     }
 }
