@@ -49,15 +49,18 @@ public class QuizQuestionReportServiceImpl implements QuizQuestionReportService 
     @Override
     @Transactional
     public QuizQuestionReportOutput createReport(CreateQuizQuestionReportInput input) {
-        User user = userRepo.getReferenceById(input.getUserId());
-        Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
-        QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
-
         // Validate that user, quiz, and quizItem exist
-        if (user == null || quiz == null || quizItem == null || input.getReportReason() == null) {
-            throw new IllegalArgumentException("Missing required fields for report creation");
-        }
+        User user = userRepo.findById(input.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Quiz quiz = quizRepo.findById(input.getQuizId())
+                .orElseThrow(() -> new IllegalArgumentException("Quiz not found"));
+        QuizItem quizItem = quizItemRepo.findById(input.getQuizItemId())
+                .orElseThrow(() -> new IllegalArgumentException("Quiz item not found"));
 
+        if (input.getReportReason() == null || input.getReportReason().isEmpty()) {
+            throw new IllegalArgumentException("Report reason cannot be empty");
+        }
+        
         QuizQuestionReport report = new QuizQuestionReport();
         report.setUser(user);
         report.setQuiz(quiz);

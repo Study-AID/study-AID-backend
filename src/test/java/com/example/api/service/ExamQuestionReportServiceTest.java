@@ -154,9 +154,9 @@ public class ExamQuestionReportServiceTest {
     @DisplayName("시험 문제 신고 생성 - 정상 케이스")
     void createReportSuccessTest() {
         // given
-        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
-        when(examRepository.getReferenceById(examId)).thenReturn(testExam);
-        when(examItemRepository.getReferenceById(examItemId)).thenReturn(testExamItem);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(testExam));
+        when(examItemRepository.findById(examItemId)).thenReturn(Optional.of(testExamItem));
         when(examQuestionReportRepository.createExamQuestionReport(any(ExamQuestionReport.class)))
                 .thenReturn(testReport);
 
@@ -171,9 +171,9 @@ public class ExamQuestionReportServiceTest {
         assertEquals(examItemId, result.getExamItemId());
         assertEquals("문제가 애매함", result.getReportReason());
 
-        verify(userRepository, times(1)).getReferenceById(userId);
-        verify(examRepository, times(1)).getReferenceById(examId);
-        verify(examItemRepository, times(1)).getReferenceById(examItemId);
+        verify(userRepository, times(1)).findById(userId);
+        verify(examRepository, times(1)).findById(examId);
+        verify(examItemRepository, times(1)).findById(examItemId);
         verify(examQuestionReportRepository, times(1)).createExamQuestionReport(any(ExamQuestionReport.class));
     }
 
@@ -332,15 +332,15 @@ public class ExamQuestionReportServiceTest {
         invalidInput.setExamItemId(examItemId);
         invalidInput.setReportReason(null); // null 값
 
-        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
-        when(examRepository.getReferenceById(examId)).thenReturn(testExam);
-        when(examItemRepository.getReferenceById(examItemId)).thenReturn(testExamItem);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(testExam));
+        when(examItemRepository.findById(examItemId)).thenReturn(Optional.of(testExamItem));
 
         // when & then
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             examQuestionReportService.createReport(invalidInput);
         });
-        assertEquals("Missing required fields for report creation", exception.getMessage());
+        assertEquals("Report reason cannot be null or empty", exception.getMessage());
     }
 
     @Test

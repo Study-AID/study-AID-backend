@@ -154,9 +154,9 @@ public class QuizQuestionReportServiceTest {
     @DisplayName("퀴즈 문제 신고 생성 - 정상 케이스")
     void createReportSuccessTest() {
         // given
-        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
-        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
-        when(quizItemRepository.getReferenceById(quizItemId)).thenReturn(testQuizItem);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(quizRepository.findById(quizId)).thenReturn(Optional.of(testQuiz));
+        when(quizItemRepository.findById(quizItemId)).thenReturn(Optional.of(testQuizItem));
         when(quizQuestionReportRepository.createQuizQuestionReport(any(QuizQuestionReport.class)))
                 .thenReturn(testReport);
 
@@ -171,9 +171,9 @@ public class QuizQuestionReportServiceTest {
         assertEquals(quizItemId, result.getQuizItemId());
         assertEquals("부적절한 문제", result.getReportReason());
 
-        verify(userRepository, times(1)).getReferenceById(userId);
-        verify(quizRepository, times(1)).getReferenceById(quizId);
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId);
+        verify(userRepository, times(1)).findById(userId);
+        verify(quizRepository, times(1)).findById(quizId);
+        verify(quizItemRepository, times(1)).findById(quizItemId);
         verify(quizQuestionReportRepository, times(1)).createQuizQuestionReport(any(QuizQuestionReport.class));
     }
 
@@ -332,14 +332,14 @@ public class QuizQuestionReportServiceTest {
         invalidInput.setQuizItemId(quizItemId);
         invalidInput.setReportReason(null); // null 값
         
-        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
-        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
-        when(quizItemRepository.getReferenceById(quizItemId)).thenReturn(testQuizItem);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(quizRepository.findById(quizId)).thenReturn(Optional.of(testQuiz));
+        when(quizItemRepository.findById(quizItemId)).thenReturn(Optional.of(testQuizItem));
         
         // when & then - 예외가 발생해야 함
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             quizQuestionReportService.createReport(invalidInput);
         });
-        assertEquals("Missing required fields for report creation", exception.getMessage());
+        assertEquals("Report reason cannot be empty", exception.getMessage());
     }   
 }

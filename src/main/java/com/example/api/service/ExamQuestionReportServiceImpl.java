@@ -49,13 +49,16 @@ public class ExamQuestionReportServiceImpl implements ExamQuestionReportService 
     @Override
     @Transactional
     public ExamQuestionReportOutput createReport(CreateExamQuestionReportInput input) {
-        User user = userRepo.getReferenceById(input.getUserId());
-        Exam exam = examRepo.getReferenceById(input.getExamId());
-        ExamItem examItem = examItemRepo.getReferenceById(input.getExamItemId());
-
         // Validate that user, exam, and examItem exist
-        if (user == null || exam == null || examItem == null || input.getReportReason() == null) {
-            throw new IllegalArgumentException("Missing required fields for report creation");
+        User user = userRepo.findById(input.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Exam exam = examRepo.findById(input.getExamId())
+                .orElseThrow(() -> new IllegalArgumentException("Exam not found"));
+        ExamItem examItem = examItemRepo.findById(input.getExamItemId())
+                .orElseThrow(() -> new IllegalArgumentException("Exam item not found"));
+
+        if (input.getReportReason() == null || input.getReportReason().isEmpty()) {
+            throw new IllegalArgumentException("Report reason cannot be null or empty");
         }
 
         ExamQuestionReport report = new ExamQuestionReport();
