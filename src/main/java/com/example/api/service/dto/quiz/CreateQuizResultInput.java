@@ -7,8 +7,9 @@ import java.util.UUID;
 
 @Data
 @NoArgsConstructor
-public class CreateQuizInput {
-    private UUID lectureId;
+public class CreateQuizResultInput {
+    private UUID quizId;
     private UUID userId;
-    private String title;
+    private Float score;
+    private Float maxScore;
 }

@@ -1,6 +1,7 @@
 package com.example.api.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -29,6 +30,17 @@ public class QuizResponseRepositoryImpl implements QuizResponseRepositoryCustom 
                         QuizResponse.class)
                 .setParameter("quizId", quizId)
                 .getResultList();
+    }
+
+    public Optional<QuizResponse> findByQuizItemId(UUID quizItemId) {
+        return manager.createQuery(
+                        "SELECT qr FROM QuizResponse qr " +
+                                "WHERE qr.quizItem.id = :quizItemId " +
+                                "AND qr.deletedAt IS NULL",
+                        QuizResponse.class)
+                .setParameter("quizItemId", quizItemId)
+                .getResultStream()
+                .findFirst();
     }
     
     @Transactional

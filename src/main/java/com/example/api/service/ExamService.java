@@ -12,6 +12,8 @@ import com.example.api.service.dto.exam.CreateExamResponseInput;
 import com.example.api.service.dto.exam.ExamListOutput;
 import com.example.api.service.dto.exam.ExamOutput;
 import com.example.api.service.dto.exam.ExamResponseListOutput;
+import com.example.api.service.dto.exam.ExamResultListOutput;
+import com.example.api.service.dto.exam.ExamResultOutput;
 import com.example.api.service.dto.exam.UpdateExamInput;
 
 @Service
@@ -34,4 +36,13 @@ public interface ExamService {
 
     @Transactional
     void gradeNonEssayQuestions(UUID examId);
+
+    @Transactional
+    Optional<ExamResultOutput> findExamResultByExamId(UUID examId);
+
+    @Transactional
+    ExamResultListOutput findExamResultsByCourseId(UUID courseId);
+
+    @Transactional
+    Float calculateExamAverageScore(UUID courseId);
 }

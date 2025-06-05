@@ -1,6 +1,7 @@
 package com.example.api.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import com.example.api.entity.QuizResult;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 
@@ -16,6 +18,21 @@ public class QuizResultRepositoryImpl implements QuizResultRepositoryCustom {
     @PersistenceContext
     private EntityManager manager;
 
+    public Optional<QuizResult> findByQuizId(UUID quizId) {
+        try {
+                QuizResult quizResult = manager.createQuery(
+                        "SELECT qr FROM QuizResult qr " +
+                                "WHERE qr.quiz.id = :quizId " +
+                                "AND qr.deletedAt IS NULL",
+                        QuizResult.class)
+                .setParameter("quizId", quizId)
+                .getSingleResult();
+                return Optional.of(quizResult);
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
+    
     // QuizResult에는 lectureId가 없고, lectureId는 quizResult의 quiz에 있는 lectureId를 통해서 가져온다.
     // lectureId를 통해서 quizResult를 가져오는 메서드
     public List<QuizResult> findByLectureId(UUID lectureId) {

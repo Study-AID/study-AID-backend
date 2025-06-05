@@ -7,6 +7,8 @@ import com.example.api.repository.*;
 import com.example.api.service.dto.exam.CreateExamInput;
 import com.example.api.service.dto.exam.ExamListOutput;
 import com.example.api.service.dto.exam.ExamOutput;
+import com.example.api.service.dto.exam.ExamResultListOutput;
+import com.example.api.service.dto.exam.ExamResultOutput;
 import com.example.api.service.dto.exam.UpdateExamInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -68,6 +71,7 @@ public class ExamServiceTest {
     private UUID examItemId1;
     private UUID examItemId2;
     private UUID examItemId3;
+    private UUID examResultId;
 
     private User testUser;
     private Course testCourse;
@@ -75,6 +79,8 @@ public class ExamServiceTest {
     private List<ExamItem> testExamItems;
     private List<ExamResponse> testExamResponses;
     private ExamOutput testExamOutput;
+    private ExamResult testExamResult;
+    private List<ExamResult> testExamResults;
 
     @BeforeEach
     void setUp() {
@@ -84,6 +90,7 @@ public class ExamServiceTest {
         examItemId1 = UUID.randomUUID();
         examItemId2 = UUID.randomUUID();
         examItemId3 = UUID.randomUUID();
+        examResultId = UUID.randomUUID();
 
         testUser = new User();
         testUser.setId(userId);
@@ -108,7 +115,7 @@ public class ExamServiceTest {
         testExam.setStatus(Status.not_started);
         testExam.setCreatedAt(LocalDateTime.now());
         testExam.setUpdatedAt(LocalDateTime.now());
-        testExam.setReferencedLectures(new UUID[]{UUID.randomUUID()});
+        testExam.setReferencedLectures(new UUID[] { UUID.randomUUID() });
 
         // Create basic exam items for basic tests
         ExamItem basicItem1 = new ExamItem();
@@ -135,8 +142,8 @@ public class ExamServiceTest {
         multipleChoiceItem.setExam(testExam);
         multipleChoiceItem.setQuestionType(QuestionType.multiple_choice);
         multipleChoiceItem.setQuestion("Which of these are JVM languages?");
-        multipleChoiceItem.setChoices(new String[]{"Java", "Kotlin", "C++", "Python"});
-        multipleChoiceItem.setAnswerIndices(new Integer[]{0, 1});
+        multipleChoiceItem.setChoices(new String[] { "Java", "Kotlin", "C++", "Python" });
+        multipleChoiceItem.setAnswerIndices(new Integer[] { 0, 1 });
 
         ExamItem shortAnswerItem = new ExamItem();
         shortAnswerItem.setId(examItemId3);
@@ -159,7 +166,7 @@ public class ExamServiceTest {
         multipleChoiceResponse.setExam(testExam);
         multipleChoiceResponse.setExamItem(multipleChoiceItem);
         multipleChoiceResponse.setUser(testUser);
-        multipleChoiceResponse.setSelectedIndices(new Integer[]{0, 1}); // Correct answer
+        multipleChoiceResponse.setSelectedIndices(new Integer[] { 0, 1 }); // Correct answer
         multipleChoiceResponse.setCreatedAt(LocalDateTime.now());
 
         ExamResponse shortAnswerResponse = new ExamResponse();
@@ -171,6 +178,20 @@ public class ExamServiceTest {
         shortAnswerResponse.setCreatedAt(LocalDateTime.now());
 
         testExamResponses = Arrays.asList(trueOrFalseResponse, multipleChoiceResponse, shortAnswerResponse);
+
+        testExamResult = new ExamResult();
+        testExamResult.setId(examResultId);
+        testExamResult.setExam(testExam);
+        testExamResult.setUser(testUser);
+        testExamResult.setScore(85.0f);
+        testExamResult.setMaxScore(100.0f);
+        testExamResult.setFeedback("Good job!");
+        testExamResult.setStartTime(LocalDateTime.now().minusHours(1));
+        testExamResult.setEndTime(LocalDateTime.now());
+        testExamResult.setCreatedAt(LocalDateTime.now());
+        testExamResult.setUpdatedAt(LocalDateTime.now());
+
+        testExamResults = List.of(testExamResult);
     }
 
     @Test
@@ -208,7 +229,7 @@ public class ExamServiceTest {
         input.setUserId(userId);
         input.setCourseId(courseId);
         input.setTitle("New Exam");
-        input.setReferencedLectures(new UUID[]{UUID.randomUUID()});
+        input.setReferencedLectures(new UUID[] { UUID.randomUUID() });
 
         when(userRepo.getReferenceById(userId)).thenReturn(testUser);
         when(courseRepo.getReferenceById(courseId)).thenReturn(testCourse);
@@ -263,6 +284,14 @@ public class ExamServiceTest {
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(examResponseRepo.findByExamId(examId)).thenReturn(testExamResponses);
 
+        List<ExamItem> examItems = Arrays.asList(
+                testExamResponses.get(0).getExamItem(),
+                testExamResponses.get(1).getExamItem(),
+                testExamResponses.get(2).getExamItem()
+        );
+
+        when(examItemRepo.findByExamId(examId)).thenReturn(examItems);
+
         // Item 1: true/false
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(testExamResponses.get(0).getExamItem());
 
@@ -304,10 +333,18 @@ public class ExamServiceTest {
 
         // Modify responses to have incorrect answers
         testExamResponses.get(0).setSelectedBool(false); // Wrong answer for true/false
-        testExamResponses.get(1).setSelectedIndices(new Integer[]{0, 2}); // Wrong answer for multiple choice
+        testExamResponses.get(1).setSelectedIndices(new Integer[] { 0, 2 }); // Wrong answer for multiple choice
 
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(examResponseRepo.findByExamId(examId)).thenReturn(testExamResponses);
+
+        List<ExamItem> examItems = Arrays.asList(
+                testExamResponses.get(0).getExamItem(),
+                testExamResponses.get(1).getExamItem(),
+                testExamResponses.get(2).getExamItem()
+        );
+
+        when(examItemRepo.findByExamId(examId)).thenReturn(examItems);
 
         // Item 1: true/false
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(testExamResponses.get(0).getExamItem());
@@ -333,7 +370,8 @@ public class ExamServiceTest {
         verify(examResponseRepo, times(3)).updateExamResponse(examResponseCaptor.capture());
         List<ExamResponse> capturedResponses = examResponseCaptor.getAllValues();
 
-        // The first two responses should NOT be marked as correct, but the third one should be
+        // The first two responses should NOT be marked as correct, but the third one
+        // should be
         assertEquals(testExamResponses.get(0).getId(), capturedResponses.get(0).getId());
         assertNull(capturedResponses.get(0).getIsCorrect()); // Not correct
 
@@ -368,5 +406,216 @@ public class ExamServiceTest {
         verify(examItemRepo, times(1)).getReferenceById(examItemId1);
         verify(examResponseRepo, never()).updateExamResponse(any(ExamResponse.class));
         verify(examResultRepo, never()).createExamResult(any(ExamResult.class));
+    }
+
+    @Test
+    @DisplayName("시험 ID로 시험 결과 조회")
+    void findExamResultByExamIdTest() {
+        // given
+        when(examResultRepo.findByExamId(examId)).thenReturn(Optional.of(testExamResult));
+
+        // when
+        Optional<ExamResultOutput> result = examService.findExamResultByExamId(examId);
+
+        // then
+        assertTrue(result.isPresent());
+        assertEquals(testExamResult.getId(), result.get().getId());
+        assertEquals(testExamResult.getExam().getId(), result.get().getExamId());
+        assertEquals(testExamResult.getUser().getId(), result.get().getUserId());
+        assertEquals(testExamResult.getScore(), result.get().getScore());
+        assertEquals(testExamResult.getMaxScore(), result.get().getMaxScore());
+        assertEquals(testExamResult.getFeedback(), result.get().getFeedback());
+        assertEquals(testExamResult.getStartTime(), result.get().getStartTime());
+        assertEquals(testExamResult.getEndTime(), result.get().getEndTime());
+
+        verify(examResultRepo, times(1)).findByExamId(examId);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 시험 ID로 시험 결과 조회")
+    void findExamResultByExamIdTest_NotFound() {
+        // given
+        UUID nonExistentExamId = UUID.randomUUID();
+        when(examResultRepo.findByExamId(nonExistentExamId)).thenReturn(Optional.empty());
+
+        // when
+        Optional<ExamResultOutput> result = examService.findExamResultByExamId(nonExistentExamId);
+
+        // then
+        assertFalse(result.isPresent());
+        verify(examResultRepo, times(1)).findByExamId(nonExistentExamId);
+    }
+
+    @Test
+    @DisplayName("코스 ID로 시험 결과 목록 조회")
+    void findExamResultsByCourseIdTest() {
+        // given
+        Exam exam1 = new Exam();
+        UUID exam1Id = UUID.randomUUID();
+        exam1.setId(exam1Id);
+        exam1.setCourse(testCourse);
+
+        ExamResult examResult1 = new ExamResult();
+        examResult1.setId(UUID.randomUUID());
+        examResult1.setExam(exam1);
+        examResult1.setUser(testUser);
+        examResult1.setScore(85.0f);
+        examResult1.setMaxScore(100.0f);
+        examResult1.setFeedback("Excellent!");
+        examResult1.setStartTime(LocalDateTime.now().minusHours(3));
+        examResult1.setEndTime(LocalDateTime.now().minusHours(1));
+        examResult1.setCreatedAt(LocalDateTime.now());
+        examResult1.setUpdatedAt(LocalDateTime.now());
+
+        Exam exam2 = new Exam();
+        UUID exam2Id = UUID.randomUUID();
+        exam2.setId(exam2Id);
+        exam2.setCourse(testCourse);
+
+        ExamResult examResult2 = new ExamResult();
+        examResult2.setId(UUID.randomUUID());
+        examResult2.setExam(exam2);
+        examResult2.setUser(testUser);
+        examResult2.setScore(90.0f);
+        examResult2.setMaxScore(100.0f);
+        examResult2.setFeedback("Excellent!");
+        examResult2.setStartTime(LocalDateTime.now().minusHours(3));
+        examResult2.setEndTime(LocalDateTime.now().minusHours(2));
+        examResult2.setCreatedAt(LocalDateTime.now());
+        examResult2.setUpdatedAt(LocalDateTime.now());
+
+        List<Exam> exams = List.of(exam1, exam2);
+
+        when(examRepo.findByCourseId(courseId)).thenReturn(exams);
+        when(examResultRepo.findByExamId(exam1Id)).thenReturn(Optional.of(examResult1));
+        when(examResultRepo.findByExamId(exam2Id)).thenReturn(Optional.of(examResult2));
+
+        // when
+        ExamResultListOutput result = examService.findExamResultsByCourseId(courseId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(2, result.getExamResults().size());
+
+        // 첫 번째 결과 검증
+        ExamResultOutput firstResult = result.getExamResults().get(0);
+        assertEquals(examResult1.getId(), firstResult.getId());
+        assertEquals(85.0f, firstResult.getScore());
+
+        // 두 번째 결과 검증
+        ExamResultOutput secondResult = result.getExamResults().get(1);
+        assertEquals(examResult2.getId(), secondResult.getId());
+        assertEquals(90.0f, secondResult.getScore());
+
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, times(1)).findByExamId(exam1Id);
+        verify(examResultRepo, times(1)).findByExamId(exam2Id);
+    }
+
+
+    @Test
+    @DisplayName("코스 ID로 시험 결과 목록 조회 - 일부 시험만 결과가 있는 경우")
+    void findExamResultsByCourseIdTest_PartialResults() {
+        // given
+        Exam examWithResult = new Exam();
+        examWithResult.setId(examId);
+        examWithResult.setCourse(testCourse);
+
+        Exam examWithoutResult = new Exam();
+        UUID examWithoutResultId = UUID.randomUUID();
+        examWithoutResult.setId(examWithoutResultId);
+        examWithoutResult.setCourse(testCourse);
+
+        List<Exam> exams = List.of(examWithResult, examWithoutResult);
+
+        when(examRepo.findByCourseId(courseId)).thenReturn(exams);
+        when(examResultRepo.findByExamId(examId)).thenReturn(Optional.of(testExamResult));
+        when(examResultRepo.findByExamId(examWithoutResultId)).thenReturn(Optional.empty());
+
+        // when
+        ExamResultListOutput result = examService.findExamResultsByCourseId(courseId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(1, result.getExamResults().size());
+
+        ExamResultOutput resultOutput = result.getExamResults().get(0);
+        assertEquals(testExamResult.getId(), resultOutput.getId());
+        assertEquals(85.0f, resultOutput.getScore());
+
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, times(1)).findByExamId(examId);
+        verify(examResultRepo, times(1)).findByExamId(examWithoutResultId);
+    }
+
+    @Test
+    @DisplayName("시험 평균 점수 계산 - 성공 케이스")
+    void calculateExamAverageScoreTest_Success() {
+        // given
+        Exam exam1 = new Exam();
+        exam1.setId(examId);
+
+        Exam exam2 = new Exam();
+        UUID exam2Id = UUID.randomUUID();
+        exam2.setId(exam2Id);
+
+        ExamResult result1 = new ExamResult();
+        result1.setScore(80.0f);
+        result1.setMaxScore(100.0f); // 80%
+
+        ExamResult result2 = new ExamResult();
+        result2.setScore(45.0f);
+        result2.setMaxScore(50.0f); // 90%
+
+        List<Exam> exams = List.of(exam1, exam2);
+
+        when(examRepo.findByCourseId(courseId)).thenReturn(exams);
+        when(examResultRepo.findByExamId(examId)).thenReturn(Optional.of(result1));
+        when(examResultRepo.findByExamId(exam2Id)).thenReturn(Optional.of(result2));
+
+        // when
+        Float averageScore = examService.calculateExamAverageScore(courseId);
+
+        // then
+        assertEquals(85.0f, averageScore); // (80 + 90) / 2 = 85
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, times(1)).findByExamId(examId);
+        verify(examResultRepo, times(1)).findByExamId(exam2Id);
+    }
+
+    @Test
+    @DisplayName("시험 평균 점수 계산 - 결과가 없는 경우")
+    void calculateExamAverageScoreTest_NoResults() {
+        // given
+        Exam exam1 = new Exam();
+        exam1.setId(examId);
+
+        List<Exam> exams = List.of(exam1);
+
+        when(examRepo.findByCourseId(courseId)).thenReturn(exams);
+        when(examResultRepo.findByExamId(examId)).thenReturn(Optional.empty());
+
+        // when
+        Float averageScore = examService.calculateExamAverageScore(courseId);
+
+        // then
+        assertEquals(0.0f, averageScore);
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, times(1)).findByExamId(examId);
+    }
+
+    @Test
+    @DisplayName("시험 평균 점수 계산 - 시험이 없는 경우")
+    void calculateExamAverageScoreTest_NoExams() {
+        // given
+        when(examRepo.findByCourseId(courseId)).thenReturn(new ArrayList<>());
+
+        // when
+        Float averageScore = examService.calculateExamAverageScore(courseId);
+
+        // then
+        assertEquals(0.0f, averageScore);
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examResultRepo, never()).findByExamId(any(UUID.class));
     }
 }
