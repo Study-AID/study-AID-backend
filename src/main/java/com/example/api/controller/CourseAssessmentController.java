@@ -305,6 +305,11 @@ public class CourseAssessmentController extends BaseController {
             }
 
             // Validate input data
+            if (request.getTitle() == null && request.getScore() == null && request.getMaxScore() == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // If title, score, or maxScore is provided, validate them
             if (request.getTitle() != null && request.getTitle().trim().isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
@@ -316,6 +321,17 @@ public class CourseAssessmentController extends BaseController {
             }
             if (request.getScore() > request.getMaxScore()) {
                 return ResponseEntity.badRequest().build();
+            }
+
+            // If any field is null, use the existing value
+            if (request.getTitle() == null) {
+                request.setTitle(existingOutput.get().getTitle());
+            }
+            if (request.getScore() == null) {
+                request.setScore(existingOutput.get().getScore());
+            }
+            if (request.getMaxScore() == null) {
+                request.setMaxScore(existingOutput.get().getMaxScore());
             }
 
             UpdateCourseAssessmentInput updateInput = new UpdateCourseAssessmentInput();
