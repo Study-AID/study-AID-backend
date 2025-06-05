@@ -1,7 +1,9 @@
 package com.example.api.controller.dto.qna;
 
+import com.example.api.external.dto.langchain.ReferenceResponse;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,6 +21,7 @@ public class GetQnaChatMessagesResponse {
     private List<MessageItem> messages;
     @NotNull
     private boolean hasMore;
+    @Nullable
     private UUID nextCursor; // 메세지가 아예 없거나, 더 가져올 메세지가 없는 경우 (hasMore가 false인 경우) Null일 수 있음
 
     @Getter
@@ -31,6 +34,8 @@ public class GetQnaChatMessagesResponse {
         private String role;
         @NotNull
         private String content;
+        @Nullable
+        private List<ReferenceResponse.ReferenceChunkResponse> references;
         @NotNull
         private LocalDateTime createdAt;
         @NotNull

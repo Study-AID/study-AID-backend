@@ -1,6 +1,6 @@
 package com.example.api.service.dto.qna;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.example.api.external.dto.langchain.ReferenceResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -20,6 +20,7 @@ public class GetLikedMessagesOutput {
         private UUID messageId;
         private String role;
         private String content;
+        private List<ReferenceResponse.ReferenceChunkResponse> references;
         private LocalDateTime createdAt;
         private boolean isLiked;
     }

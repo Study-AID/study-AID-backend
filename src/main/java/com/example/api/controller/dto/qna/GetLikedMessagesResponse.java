@@ -1,5 +1,6 @@
 package com.example.api.controller.dto.qna;
 
+import com.example.api.external.dto.langchain.ReferenceResponse;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
@@ -28,6 +29,7 @@ public class GetLikedMessagesResponse {
         private String role;
         @NotNull
         private String content;
+        private List<ReferenceResponse.ReferenceChunkResponse> references;
         @NotNull
         private LocalDateTime createdAt;
         @NotNull

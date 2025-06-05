@@ -1,12 +1,16 @@
 package com.example.api.entity;
 
 import com.example.api.entity.enums.MessageRole;
+import com.example.api.external.dto.langchain.ReferenceResponse;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -39,6 +43,10 @@ public class QnaChatMessage {
 
     @Column(name = "content")
     private String content;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "reference_chunks", columnDefinition = "jsonb") // references가 postgres 예약어라서 db에서는 reference_chunks로 저장
+    private List<ReferenceResponse.ReferenceChunkResponse> references;
 
     @Column(name = "is_liked", nullable = false)
     private Boolean isLiked;

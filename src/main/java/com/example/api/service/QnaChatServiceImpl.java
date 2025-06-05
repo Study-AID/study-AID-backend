@@ -190,6 +190,7 @@ public class QnaChatServiceImpl implements QnaChatService {
         botMsg.setUser(user);
         botMsg.setRole(MessageRole.ASSISTANT);
         botMsg.setContent(answer);
+        botMsg.setReferences(referenceChunks);
         botMsg = qnaChatMessageRepository.save(botMsg);
         log.info("[Performance] AI 답변 DB에 저장 완료: 소요시간={}ms", System.currentTimeMillis() - saveAnswerStartTime);
 
@@ -250,6 +251,7 @@ public class QnaChatServiceImpl implements QnaChatService {
                             m.getId(),
                             m.getRole().getValue(),
                             m.getContent(),
+                            m.getRole() == MessageRole.ASSISTANT ? m.getReferences() : null,
                             m.getCreatedAt(),
                             isLiked
                     );
@@ -271,6 +273,7 @@ public class QnaChatServiceImpl implements QnaChatService {
                         message.getId(),
                         message.getRole().getValue(),
                         message.getContent(),
+                        message.getReferences(),
                         message.getCreatedAt(),
                         true
                 ))
