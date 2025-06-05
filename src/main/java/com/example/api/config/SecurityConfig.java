@@ -50,12 +50,15 @@ public class SecurityConfig {
                 .build();
     }
 
+    // TODO(jin): CORS 설정 별도 CONFIG로 분리
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
-                "http://studyaid-dev-alb-1539956535.ap-northeast-2.elb.amazonaws.com"
+                "http://studyaid-dev-alb-1539956535.ap-northeast-2.elb.amazonaws.com",
+                "https://studyaid.academy",
+                "https://www.studyaid.academy"
                 //필요시 도메인 추가
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
