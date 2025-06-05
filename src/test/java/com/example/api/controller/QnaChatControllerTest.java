@@ -107,10 +107,12 @@ class QnaChatControllerTest {
         // Given
         List<GetQnaChatMessagesOutput.MessageItem> messages = List.of(
                 new GetQnaChatMessagesOutput.MessageItem(
-                        UUID.randomUUID(), "user", "재귀 함수란 무엇인가요?", LocalDateTime.now(), false
+                        UUID.randomUUID(), "user", "재귀 함수란 무엇인가요?",null, LocalDateTime.now(), false
                 ),
                 new GetQnaChatMessagesOutput.MessageItem(
-                        MESSAGE_ID, "assistant", "재귀 함수는 자기 자신을 호출하는 함수입니다.", LocalDateTime.now(), true
+                        MESSAGE_ID, "assistant", "재귀 함수는 자기 자신을 호출하는 함수입니다.",
+                        List.of(new ReferenceResponse.ReferenceChunkResponse("출처1", 42)),
+                        LocalDateTime.now(), true
                 )
         );
 
@@ -136,9 +138,13 @@ class QnaChatControllerTest {
                 .andExpect(jsonPath("$.messages[0].role").value("user"))
                 .andExpect(jsonPath("$.messages[0].content").value("재귀 함수란 무엇인가요?"))
                 .andExpect(jsonPath("$.messages[0].isLiked").value(false))
+                .andExpect(jsonPath("$.messages[0].references").doesNotExist())
                 .andExpect(jsonPath("$.messages[1].role").value("assistant"))
                 .andExpect(jsonPath("$.messages[1].content").value("재귀 함수는 자기 자신을 호출하는 함수입니다."))
                 .andExpect(jsonPath("$.messages[1].isLiked").value(true))
+                .andExpect(jsonPath("$.messages[1].references").isArray())
+                .andExpect(jsonPath("$.messages[1].references[0].text").value("출처1"))
+                .andExpect(jsonPath("$.messages[1].references[0].page").value(42))
                 .andExpect(jsonPath("$.hasMore").value(false))
                 .andExpect(jsonPath("$.nextCursor").value(nextCursor.toString()));
     }
@@ -150,7 +156,9 @@ class QnaChatControllerTest {
         // Given
         List<GetLikedMessagesOutput.LikedMessageItem> likedMessages = List.of(
                 new GetLikedMessagesOutput.LikedMessageItem(
-                        MESSAGE_ID, "assistant", "재귀 함수는 자기 자신을 호출하는 함수입니다.", LocalDateTime.now(), true
+                        MESSAGE_ID, "assistant", "재귀 함수는 자기 자신을 호출하는 함수입니다.",
+                        List.of(new ReferenceResponse.ReferenceChunkResponse("출처1", 42)),
+                        LocalDateTime.now(), true
                 )
         );
 
@@ -166,7 +174,9 @@ class QnaChatControllerTest {
                 .andExpect(jsonPath("$.chatId").value(CHAT_ID.toString()))
                 .andExpect(jsonPath("$.messages").exists())
                 .andExpect(jsonPath("$.messages[0].role").value("assistant"))
-                .andExpect(jsonPath("$.messages[0].isLiked").value(true));
+                .andExpect(jsonPath("$.messages[0].isLiked").value(true))
+                .andExpect(jsonPath("$.messages[0].references").isArray())
+                .andExpect(jsonPath("$.messages[0].references[0].text").value("출처1"));
     }
 
     @Test

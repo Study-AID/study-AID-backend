@@ -1,5 +1,7 @@
 package com.example.api.service.dto.qna;
 
+import com.example.api.external.dto.langchain.ReferenceResponse;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,6 +29,8 @@ public class GetQnaChatMessagesOutput {
         private UUID messageId;
         private String role;
         private String content;
+        @Nullable
+        private List<ReferenceResponse.ReferenceChunkResponse> references;
         private LocalDateTime createdAt;
         private boolean isLiked;
     }

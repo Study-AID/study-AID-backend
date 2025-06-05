@@ -136,6 +136,7 @@ public class QnaChatServiceTest {
         message1.setContent("재귀 함수란 무엇인가요?");
         message1.setCreatedAt(LocalDateTime.now());
         message1.setIsLiked(false);
+        message1.setReferences(null);
 
         QnaChatMessage message2 = new QnaChatMessage();
         message2.setId(TEST_MESSAGE_ID);
@@ -143,12 +144,13 @@ public class QnaChatServiceTest {
         message2.setContent("재귀 함수는 자기 자신을 호출하는 함수입니다.");
         message2.setCreatedAt(LocalDateTime.now());
         message2.setIsLiked(true);
+        message2.setReferences(List.of(new ReferenceResponse.ReferenceChunkResponse("출처1", 42)));
 
-        when(qnaChatMessageRepository.findByQnaChatIdWithCursor(eq(TEST_CHAT_ID), eq(TEST_MESSAGE_ID), eq(5)))
+        when(qnaChatMessageRepository.findByQnaChatIdWithCursor(eq(TEST_CHAT_ID), eq(TEST_MESSAGE_ID), eq(20)))
                 .thenReturn(List.of(message1, message2));
 
         // When
-        GetQnaChatMessagesInput input = new GetQnaChatMessagesInput(TEST_LECTURE_ID, TEST_USER_ID, TEST_MESSAGE_ID, 5);
+        GetQnaChatMessagesInput input = new GetQnaChatMessagesInput(TEST_LECTURE_ID, TEST_USER_ID, TEST_MESSAGE_ID, 20);
         GetQnaChatMessagesOutput output = qnaChatService.getMessages(input);
 
         // Then
@@ -160,9 +162,13 @@ public class QnaChatServiceTest {
         assertNotNull(output.getMessages().get(0).getMessageId());
         assertNotNull(output.getMessages().get(0).getCreatedAt());
         assertFalse(output.getMessages().get(0).isLiked());
+        assertNull(output.getMessages().get(0).getReferences());
         assertEquals("assistant", output.getMessages().get(1).getRole());
         assertEquals("재귀 함수는 자기 자신을 호출하는 함수입니다.", output.getMessages().get(1).getContent());
         assertTrue(output.getMessages().get(1).isLiked());
+        assertNotNull(output.getMessages().get(1).getReferences());
+        assertEquals(1, output.getMessages().get(1).getReferences().size());
+        assertEquals("출처1", output.getMessages().get(1).getReferences().get(0).getText());
     }
 
     @Test
@@ -315,6 +321,7 @@ public class QnaChatServiceTest {
         likedMessage.setContent("재귀 함수는 자기 자신을 호출하는 함수입니다.");
         likedMessage.setCreatedAt(LocalDateTime.now());
         likedMessage.setIsLiked(true);
+        likedMessage.setReferences(List.of(new ReferenceResponse.ReferenceChunkResponse("출처1", 42)));
 
         when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(testQnaChat));
@@ -333,5 +340,8 @@ public class QnaChatServiceTest {
         assertEquals("assistant", output.getMessages().get(0).getRole());
         assertEquals("재귀 함수는 자기 자신을 호출하는 함수입니다.", output.getMessages().get(0).getContent());
         assertTrue(output.getMessages().get(0).isLiked());
+        assertNotNull(output.getMessages().get(0).getReferences());
+        assertEquals(1, output.getMessages().get(0).getReferences().size());
+        assertEquals("출처1", output.getMessages().get(0).getReferences().get(0).getText());
     }
 }

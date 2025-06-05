@@ -183,6 +183,7 @@ public class QnaChatController {
                         m.getMessageId(),
                         m.getRole(),
                         m.getContent(),
+                        m.getReferences(),
                         m.getCreatedAt(),
                         m.isLiked()
                 ))
@@ -237,6 +238,7 @@ public class QnaChatController {
                         m.getMessageId(),
                         m.getRole(),
                         m.getContent(),
+                        m.getReferences(),
                         m.getCreatedAt(),
                         m.isLiked()
                 ))
