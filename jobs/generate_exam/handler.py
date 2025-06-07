@@ -22,7 +22,7 @@ s3_endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
 
 # TODO(jin): write default sender email and frontend domain
 # AWS SES configuration
-SES_SENDER_EMAIL=os.envrion.get('SES_SENDER_EMAIL')
+SES_SENDER_EMAIL = os.environ.get('SES_SENDER_EMAIL')
 
 # Domain configuration
 FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN')
