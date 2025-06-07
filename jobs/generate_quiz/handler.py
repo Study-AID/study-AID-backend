@@ -18,9 +18,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Constants and configurations
+
 # PDF chunking configuration
 DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
 MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '2'))
+
+# TODO(jin): write default sender email and frontend domain
+# AWS SES configuration
+SES_SENDER_EMAIL=os.envrion.get('SES_SENDER_EMAIL')
+
+# Domain configuration
+FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN')
 
 # Database configuration
 DB_CONFIG = {
@@ -31,8 +39,9 @@ DB_CONFIG = {
     'port': int(os.environ.get('DB_PORT'))
 }
 
+# Initialize clients
 s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
-
+ses_client = boto3.client('ses', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 def get_db_connection():
     try:
@@ -308,6 +317,57 @@ def update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, title=None):
         if conn:
             conn.close()
 
+def send_quiz_email(receiver_email, user_name, lecture_title, lecture_id, quiz_title):
+    # TODO(jin): write default sender email and frontend domain
+    sender_email = os.environ.get('SES_SENDER_EMAIL')
+    frontend_domain = os.environ.get('FRONTEND_DOMAIN')
+
+    # TODO(jin): write correct url
+    quiz_url = f"{frontend_domain}/quizzes/lecture/{lecture_id}"
+
+    subject = f"[Study AID] 🕊️퀴즈 생성 완료: '{lecture_title}'의 '{quiz_title}'"
+    body_text = f"{user_name}님, 강의 '{lecture_title}' 퀴즈 '{quiz_title}'의 생성이 완료되었어요! {quiz_url} 에서 확인하세요."
+
+    body_html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; text-align: center;">
+        <p>안녕하세요, {user_name}님. 기다려주셔서 감사합니다.</p>
+    
+        <p>
+          요청하신 강의 '{lecture_title}'의 퀴즈 '<strong>{quiz_title}</strong>' 생성이
+          완료되었습니다.<br/>아래 버튼을 눌러 퀴즈를 풀어보세요!
+        </p>
+    
+        <p>
+          <a href="{quiz_url}" style="
+              display: inline-block;
+              padding: 12px 20px;
+              background-color: #007BFF;
+              color: white;
+              text-decoration: none;
+              border-radius: 5px;
+              font-weight: bold;
+            ">
+            퀴즈 풀이 바로가기
+          </a>
+        </p>
+    
+        <p>감사합니다.<br/>Study AID 팀 드림</p>
+      </body>
+    </html>
+    """
+
+    ses_client.send_email(
+        Source=sender_email,
+        Destination={'ToAddresses': [receiver_email]},
+        Message={
+            'Subject': {'Data': subject, 'Charset': 'UTF-8'},
+            'Body': {
+                'Text': {'Data': body_text, 'Charset': 'UTF-8'},
+                'Html': {'Data': body_html, 'Charset': 'UTF-8'}
+            }
+        }
+    )
 
 def log_activity(course_id, user_id, activity_type, contents_type, details):
     """Log activity for the course"""
@@ -351,8 +411,11 @@ def lambda_handler(event, context):
 
             # Extract information from the message
             user_id = message.get('user_id')
+            user_email = message.get("user_email")
+            user_name = message.get("user_name")
             course_id = message.get('course_id')
             lecture_id = message.get('lecture_id')
+            lecture_title = message.get("lecture_title")
             quiz_title = message.get('title')
             quiz_id = message.get('quiz_id')  # Get the quiz_id for update
             language = message.get('language', '한국어')  # Default to Korean if not specified
@@ -405,6 +468,12 @@ def lambda_handler(event, context):
 
             # Update quiz in database
             update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, quiz_title)
+
+            # Send email to user with quiz link
+            if user_email and user_name and lecture_title and quiz_title:
+                send_quiz_email(user_email, user_name, lecture_title, lecture_id, quiz_title)
+            else:
+                logger.warning("이메일 전송을 위한 정보가 부족합니다. user_email, user_name, lecture_title, quiz_title 확인 필요.")
 
             # Log the activity
             activity_details = {
