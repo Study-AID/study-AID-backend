@@ -104,15 +104,15 @@ class QnaChatControllerTest {
     @DisplayName("채팅방 메시지 조회 성공 - 커서 기반 페이지네이션")
     @WithMockUser
     void getMessagesSuccess() throws Exception {
-        // Given
+        // Given (Repository에서 DESC로 가져온 순서)
         List<GetQnaChatMessagesOutput.MessageItem> messages = List.of(
-                new GetQnaChatMessagesOutput.MessageItem(
-                        UUID.randomUUID(), "user", "재귀 함수란 무엇인가요?",null, LocalDateTime.now(), false
-                ),
                 new GetQnaChatMessagesOutput.MessageItem(
                         MESSAGE_ID, "assistant", "재귀 함수는 자기 자신을 호출하는 함수입니다.",
                         List.of(new ReferenceResponse.ReferenceChunkResponse("출처1", 42)),
                         LocalDateTime.now(), true
+                ),
+                new GetQnaChatMessagesOutput.MessageItem(
+                        UUID.randomUUID(), "user", "재귀 함수란 무엇인가요?",null, LocalDateTime.now(), false
                 )
         );
 
@@ -127,7 +127,6 @@ class QnaChatControllerTest {
                 .thenReturn(output);
 
         // When & Then
-        // 변경: API 경로를 다른 테스트들과 일치하도록 수정
         mockMvc.perform(get("/v1/lectures/{lectureId}/qna-chat/messages", LECTURE_ID)
                         .param("cursor", "550e8400-e29b-41d4-a716-446655440000")
                         .param("limit", "20")
@@ -135,10 +134,12 @@ class QnaChatControllerTest {
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.chatId").value(CHAT_ID.toString()))
+
                 .andExpect(jsonPath("$.messages[0].role").value("user"))
                 .andExpect(jsonPath("$.messages[0].content").value("재귀 함수란 무엇인가요?"))
                 .andExpect(jsonPath("$.messages[0].isLiked").value(false))
                 .andExpect(jsonPath("$.messages[0].references").doesNotExist())
+
                 .andExpect(jsonPath("$.messages[1].role").value("assistant"))
                 .andExpect(jsonPath("$.messages[1].content").value("재귀 함수는 자기 자신을 호출하는 함수입니다."))
                 .andExpect(jsonPath("$.messages[1].isLiked").value(true))
