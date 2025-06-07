@@ -23,14 +23,14 @@ public class QnaChatMessageRepositoryImpl implements QnaChatMessageRepositoryCus
         if (cursor == null) {
             // 첫 로드: 최신 메시지부터
             jpql = "SELECT m FROM QnaChatMessage m WHERE m.qnaChat.id = :chatId " +
-                    "ORDER BY m.createdAt ASC";
+                    "ORDER BY m.createdAt DESC";
             query = manager.createQuery(jpql, QnaChatMessage.class)
                     .setParameter("chatId", chatId);
         } else {
             // 이전 메시지들: cursor보다 오래된 메시지들
             jpql = "SELECT m FROM QnaChatMessage m WHERE m.qnaChat.id = :chatId " +
-                    "AND m.createdAt > (SELECT cm.createdAt FROM QnaChatMessage cm WHERE cm.id = :cursor) " +
-                    "ORDER BY m.createdAt ASC";
+                    "AND m.createdAt < (SELECT cm.createdAt FROM QnaChatMessage cm WHERE cm.id = :cursor) " +
+                    "ORDER BY m.createdAt DESC";
             query = manager.createQuery(jpql, QnaChatMessage.class)
                     .setParameter("chatId", chatId)
                     .setParameter("cursor", cursor);
