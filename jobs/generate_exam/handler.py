@@ -17,6 +17,16 @@ psycopg2.extras.register_uuid()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# AWS S3 configuration
+s3_endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
+
+# TODO(jin): write default sender email and frontend domain
+# AWS SES configuration
+SES_SENDER_EMAIL=os.envrion.get('SES_SENDER_EMAIL')
+
+# Domain configuration
+FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN')
+
 # Database configuration
 DB_CONFIG = {
     'host': os.environ.get('DB_HOST'),
@@ -26,8 +36,9 @@ DB_CONFIG = {
     'port': int(os.environ.get('DB_PORT'))
 }
 
+# Initialize clients
 s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
-
+ses_client = boto3.client('ses', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 def get_db_connection():
     try:
@@ -256,6 +267,57 @@ def save_exam_to_db(course_id, user_id, exam_data, title=None, referenced_lectur
         if conn:
             conn.close()
 
+def send_exam_email(receiver_email, user_name, exam_title, exam_id):
+    # TODO(jin): write default sender email and frontend domain
+    sender_email = os.environ.get('SES_SENDER_EMAIL')
+    frontend_domain = os.environ.get('FRONTEND_DOMAIN')
+
+    # TODO(jin): write correct url
+    exam_url = f"{frontend_domain}/exams/{exam_id}"
+
+    subject = f"[Study AID] 🕊️모의시험 생성 완료: '{exam_title}'"
+    body_text = f"{user_name}님, 모의시험 '{exam_title}'의 생성이 완료되었어요! {exam_url} 에서 확인하세요."
+
+    body_html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; text-align: center;">
+        <p>안녕하세요, {user_name}님. 기다려주셔서 감사합니다.</p>
+    
+        <p>
+          요청하신 모의시험 '<strong>{exam_title}</strong>' 생성이
+          완료되었습니다.<br/>아래 버튼을 눌러 모의시험을 풀어보세요!
+        </p>
+    
+        <p>
+          <a href="{exam_url}" style="
+              display: inline-block;
+              padding: 12px 20px;
+              background-color: #007BFF;
+              color: white;
+              text-decoration: none;
+              border-radius: 5px;
+              font-weight: bold;
+            ">
+            모의시험 풀이 바로가기
+          </a>
+        </p>
+    
+        <p>감사합니다.<br/>Study AID 팀 드림</p>
+      </body>
+    </html>
+    """
+
+    ses_client.send_email(
+        Source=sender_email,
+        Destination={'ToAddresses': [receiver_email]},
+        Message={
+            'Subject': {'Data': subject, 'Charset': 'UTF-8'},
+            'Body': {
+                'Text': {'Data': body_text, 'Charset': 'UTF-8'},
+                'Html': {'Data': body_html, 'Charset': 'UTF-8'}
+            }
+        }
+    )
 
 def log_activity(course_id, user_id, activity_type, contents_type, details):
     """Log activity for the course"""
@@ -366,6 +428,8 @@ def lambda_handler(event, context):
 
             # Extract information from the message
             user_id = message.get('user_id')
+            user_email = message.get("user_email")
+            user_name = message.get("user_name")
             course_id = message.get('course_id')
             exam_title = message.get('title')
             referenced_lecture_ids = message.get('referenced_lecture_ids', [])
@@ -397,6 +461,12 @@ def lambda_handler(event, context):
 
             # Save exam to database
             exam_id = save_exam_to_db(course_id, user_id, exam_data, exam_title, referenced_lecture_ids)
+
+            # Send email to user with exam link
+            if user_email and user_name and exam_title:
+                send_exam_email(user_email, user_name, exam_title, exam_id)
+            else:
+                logger.warning("이메일 전송을 위한 정보가 부족합니다. user_email, user_name, exam_title 확인 필요.")
 
             # Log the activity
             activity_details = {

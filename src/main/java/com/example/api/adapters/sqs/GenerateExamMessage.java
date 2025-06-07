@@ -17,6 +17,8 @@ public class GenerateExamMessage {
     private UUID requestId;
     private OffsetDateTime occurredAt;
     private UUID userId;
+    private String userName;
+    private String userEmail;
     private UUID courseId;
     private UUID examId;
     private String title;
