@@ -8,25 +8,20 @@ import com.example.api.controller.dto.quiz.SubmitQuizRequest;
 import com.example.api.controller.dto.quiz.UpdateQuizRequest;
 import com.example.api.entity.Quiz;
 import com.example.api.entity.QuizItem;
-import com.example.api.entity.QuizResponse;
+import com.example.api.entity.User;
 import com.example.api.entity.enums.QuestionType;
 import com.example.api.entity.enums.Status;
 import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.UserRepository;
 import com.example.api.security.jwt.JwtAuthenticationFilter;
 import com.example.api.security.jwt.JwtProvider;
-import com.example.api.service.CourseService;
-import com.example.api.service.LectureService;
-import com.example.api.service.QuizService;
-import com.example.api.service.SemesterService;
-import com.example.api.service.StorageService;
+import com.example.api.service.*;
 import com.example.api.service.dto.course.CourseOutput;
 import com.example.api.service.dto.lecture.LectureOutput;
 import com.example.api.service.dto.quiz.*;
 import com.example.api.service.dto.semester.SemesterOutput;
 import com.example.api.util.WithMockUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -105,7 +100,8 @@ public class QuizControllerTest {
     private QuizResultOutput testQuizResultOutput;
     private QuizResultListOutput testQuizResultListOutput;
 
-    // private QuizItem testQuizItem;
+    private Quiz testQuiz;
+    private User testUser;
     private List<QuizItem> testQuizItems;
     private QuizResponseListOutput testQuizResponseListOutput;
 
@@ -146,10 +142,30 @@ public class QuizControllerTest {
         testQuizOutput.setTitle("Quiz 1");
         testQuizOutput.setStatus(Status.not_started);
 
+        // Create test entities for proper QuizItem setup
+        testUser = new User();
+        testUser.setId(userId);
+        testUser.setName("Test User");
+        testUser.setEmail("test@example.com");
+
+        testQuiz = new Quiz();
+        testQuiz.setId(quizId);
+        testQuiz.setUser(testUser);
+        testQuiz.setTitle("Quiz 1");
+        testQuiz.setStatus(Status.not_started);
+
         testQuizItems = List.of(
                 new QuizItem(),
                 new QuizItem());
         testQuizItems.get(0).setId(UUID.randomUUID());
+        testQuizItems.get(0).setQuiz(testQuiz);
+        testQuizItems.get(0).setUser(testUser);
+        testQuizItems.get(0).setQuestion("Sample question 1");
+
+        testQuizItems.get(1).setId(UUID.randomUUID());
+        testQuizItems.get(1).setQuiz(testQuiz);
+        testQuizItems.get(1).setUser(testUser);
+        testQuizItems.get(1).setQuestion("Sample question 2");
         testQuizOutput.setQuizItems(testQuizItems);
 
         testQuizResponseListOutput = new QuizResponseListOutput();
@@ -211,7 +227,8 @@ public class QuizControllerTest {
                 .andExpect(jsonPath("$.userId", is(userId.toString())))
                 .andExpect(jsonPath("$.title", is("Quiz 1")))
                 .andExpect(jsonPath("$.status", is("not_started")))
-                .andExpect(jsonPath("$.quizItems[0].id", is(testQuizItems.get(0).getId().toString())));
+                .andExpect(jsonPath("$.quizItems[0].id", is(testQuizItems.get(0).getId().toString())))
+                .andExpect(jsonPath("$.quizItems[0].question", is("Sample question 1")));
 
         verify(quizService, times(1)).findQuizById(quizId);
     }
@@ -276,7 +293,7 @@ public class QuizControllerTest {
         verify(quizService, times(1)).findQuizById(quizId);
         verify(quizService, times(1)).updateQuiz(argThat(input ->
                 input.getId().equals(quizId)
-                && input.getTitle().equals("Updated Quiz Title")
+                        && input.getTitle().equals("Updated Quiz Title")
         ));
     }
 
@@ -302,13 +319,6 @@ public class QuizControllerTest {
         // given
         SubmitQuizRequest submitQuizRequest = new SubmitQuizRequest();
 
-        Quiz testQuiz = new Quiz();
-        testQuiz.setId(quizId);
-
-        QuizResponse testQuizResponse1 = new QuizResponse();
-        testQuizResponse1.setId(UUID.randomUUID());
-        testQuizResponse1.setQuiz(testQuiz);
-
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
         when(quizService.submitAndGradeQuizWithStatus(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
 
@@ -322,9 +332,6 @@ public class QuizControllerTest {
         submitQuizRequest.getSubmitQuizItems().get(1).setQuizItemId(testQuizItems.get(1).getId());
         submitQuizRequest.getSubmitQuizItems().get(1).setQuestionType(QuestionType.multiple_choice);
         submitQuizRequest.getSubmitQuizItems().get(1).setSelectedIndices(new Integer[] { 0, 1 });
-
-        when(quizService.findQuizById(quizId)).thenReturn(Optional.of(testQuizOutput));
-        when(quizService.submitAndGradeQuizWithStatus(Mockito.<List<CreateQuizResponseInput>>any())).thenReturn(testQuizResponseListOutput);
 
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/submit", quizId)
