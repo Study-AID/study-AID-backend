@@ -11,7 +11,5 @@ import java.util.List;
 @AllArgsConstructor
 public class EssayCriteriaAnalysis {
     private List<ScoringCriterion> criteria;
-
-    @JsonProperty("student_answer_analysis")
-    private String studentAnswerAnalysis;
+    private String analysis;
 }

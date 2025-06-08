@@ -280,7 +280,7 @@ def grade_single_question(openai_client, prompt_path, quiz_item, quiz_response, 
             logger.warning(f"No meaningful text answer provided for question: {question_id}")
             empty_criteria_result = {
                 "criteria": [],
-                "student_answer_analysis": "빈 답변은 0점으로 처리됩니다."
+                "analysis": "빈 답변은 0점으로 처리됩니다."
             }
             update_quiz_response_scoring(question_id, user_id, 0.0, empty_criteria_result)
             return 0.0
@@ -327,7 +327,7 @@ def grade_single_question(openai_client, prompt_path, quiz_item, quiz_response, 
                     "earned_points": max_points
                 }
             ],
-            "student_answer_analysis": "채점 중 시스템 오류가 발생하여 만점으로 처리되었습니다. 정확한 채점을 원하시면 아래 오류 신고를 통해 알려주세요."
+            "analysis": "채점 중 시스템 오류가 발생하여 만점으로 처리되었습니다. 정확한 채점을 원하시면 아래 오류 신고를 통해 알려주세요."
         }
         update_quiz_response_scoring(
             question_id,
