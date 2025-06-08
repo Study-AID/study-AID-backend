@@ -94,6 +94,10 @@ def insert_test_data(conn):
     test_course_id = "d993e3bc-f563-457e-a8b4-8f8d83a889cd"
     test_lecture_id = "743b2baa-16a5-4982-aa21-010ba83ca283"
     test_quiz_id = "a82f7c3e-5a9d-4e2a-b48f-32fc4539d6d0"
+    test_quiz_item1_id = "b1234567-8901-2345-6789-012345678901"
+    test_quiz_item2_id = "c2345678-9012-3456-7890-123456789012"
+    test_quiz_response1_id = "d3456789-0123-4567-8901-234567890123"
+    test_quiz_response2_id = "e4567890-1234-5678-9012-345678901234"
 
     # Sample parsed_text data with 5 pages
     sample_parsed_text = json.dumps({
@@ -175,6 +179,68 @@ def insert_test_data(conn):
                            VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
                            ON CONFLICT (id) DO NOTHING
                            """, (test_quiz_id, test_lecture_id, test_user_id, 'Test Quiz', 'not_started'))
+
+            # Insert test quiz results
+            # 초기 데이터 생성
+            cursor.execute("""
+                INSERT INTO app.quiz_results (id, quiz_id, user_id, score, max_score, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_user_id, test_quiz_id, test_user_id, 0.0, 25.0
+            ))
+
+            # Insert test quiz items
+            # 서술형 문제 1
+            cursor.execute("""
+                INSERT INTO app.quiz_items (id, quiz_id, user_id, question, question_type, 
+                                           explanation, text_answer, points)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_quiz_item1_id, test_quiz_id, test_user_id,
+                "정규화의 개념과 장단점에 대해 설명하시오.",
+                "essay",
+                "이 문제는 학생이 데이터베이스 설계의 핵심 개념인 정규화에 대한 이해도를 평가하기 위한 문제입니다. 정규화의 정의, 목적, 장점과 단점을 균형있게 설명할 수 있는지 확인합니다.",
+                "정규화는 관계형 데이터베이스에서 중복 데이터를 최소화하여 데이터 일관성을 보장하는 설계 기법입니다. 장점으로는 데이터 중복 제거, 저장 공간 절약, 데이터 일관성 보장이 있습니다. 단점으로는 조인 연산 증가로 인한 성능 저하가 있을 수 있습니다.",
+                10.0
+            ))
+
+            # 서술형 문제 2
+            cursor.execute("""
+                INSERT INTO app.quiz_items (id, quiz_id, user_id, question, question_type, 
+                                           explanation, text_answer, points)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_quiz_item2_id, test_quiz_id, test_user_id,
+                "객체지향 프로그래밍의 4가지 특징을 설명하시오.",
+                "essay",
+                "이 문제는 객체지향 프로그래밍의 핵심 개념들에 대한 학생의 이해도를 종합적으로 평가합니다. 4가지 특징(캡슐화, 상속, 다형성, 추상화)을 모두 정확히 설명하고 각각의 개념과 역할을 명확히 구분할 수 있는지 확인합니다.",
+                "객체지향 프로그래밍의 4가지 특징은 다음과 같습니다: 1) 캡슐화: 데이터와 메서드를 하나로 묶어 정보 은닉 2) 상속: 기존 클래스의 특성을 새로운 클래스가 물려받음 3) 다형성: 같은 인터페이스로 다른 구현을 제공 4) 추상화: 복잡한 시스템을 단순화하여 표현",
+                10.0
+            ))
+
+            # Insert test quiz responses
+            # 사용자 답변 1
+            cursor.execute("""
+                INSERT INTO app.quiz_responses (id, quiz_id, question_id, user_id, text_answer, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_quiz_response1_id, test_quiz_id, test_quiz_item1_id, test_user_id,
+                "정규화는 데이터베이스에서 중복을 없애는 것입니다. 장점은 저장공간을 절약할 수 있다는 것입니다."
+            ))
+
+            # 사용자 답변 2
+            cursor.execute("""
+                INSERT INTO app.quiz_responses (id, quiz_id, question_id, user_id, text_answer, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_quiz_response2_id, test_quiz_id, test_quiz_item2_id, test_user_id,
+                "캡슐화, 상속, 다형성이 있습니다. 캡슐화는 데이터를 숨기는 것이고, 상속은 부모 클래스의 기능을 받는 것이고, 다형성은 여러 형태를 가질 수 있다는 것입니다."
+            ))
 
         conn.commit()
         print("Inserted test data into database")
