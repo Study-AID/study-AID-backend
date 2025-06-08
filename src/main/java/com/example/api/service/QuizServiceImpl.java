@@ -1,18 +1,23 @@
 package com.example.api.service;
 
+import com.example.api.adapters.sqs.GradeQuizEssayMessage;
+import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.entity.*;
 import com.example.api.entity.enums.QuestionType;
 import com.example.api.entity.enums.Status;
 import com.example.api.repository.*;
 import com.example.api.service.dto.quiz.*;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.*;
 
 @Service
+@Slf4j
 public class QuizServiceImpl implements QuizService {
     private UserRepository userRepo;
     private QuizRepository quizRepo;
@@ -21,6 +26,7 @@ public class QuizServiceImpl implements QuizService {
 
     private QuizResponseRepository quizResponseRepo;
     private QuizResultRepository quizResultRepo;
+    private SQSClient sqsClient;
 
     @Autowired
     public void QuizService(
@@ -29,7 +35,8 @@ public class QuizServiceImpl implements QuizService {
             QuizItemRepository quizItemRepo,
             LectureRepository lectureRepo,
             QuizResponseRepository quizResponseRepo,
-            QuizResultRepository quizResultRepo
+            QuizResultRepository quizResultRepo,
+            SQSClient sqsClient
     ) {
         this.userRepo = userRepo;
         this.quizRepo = quizRepo;
@@ -37,6 +44,7 @@ public class QuizServiceImpl implements QuizService {
         this.lectureRepo = lectureRepo;
         this.quizResponseRepo = quizResponseRepo;
         this.quizResultRepo = quizResultRepo;
+        this.sqsClient = sqsClient;
     }
 
     @Override
@@ -121,6 +129,7 @@ public class QuizServiceImpl implements QuizService {
                     return QuizResponseOutput.fromEntity(createdQuizResponse);
                 }).toList();
         UUID quizId = inputs.get(0).getQuizId();
+        UUID userId = inputs.get(0).getUserId();
         Quiz quiz = quizRepo.getReferenceById(quizId);
 
         // 퀴즈 상태 'submitted'로 업데이트
@@ -135,7 +144,7 @@ public class QuizServiceImpl implements QuizService {
         } else {
             gradeNonEssayQuestions(quizId);
             quiz.setStatus(Status.partially_graded);
-            // TODO(jin): 서술형 채점 함수 (gradeEssayQuestions) 작성 및 서술형 채점 SQS 메시지 전송
+            sendGradeQuizEssayMessage(userId, quizId);
         }
         quizRepo.updateQuiz(quiz);
 
@@ -209,5 +218,22 @@ public class QuizServiceImpl implements QuizService {
         quizResult.setStartTime(quizResponses.get(0).getCreatedAt());
         quizResult.setEndTime(LocalDateTime.now());
         quizResultRepo.createQuizResult(quizResult);
+    }
+
+    private void sendGradeQuizEssayMessage(UUID userId, UUID quizId) {
+        GradeQuizEssayMessage message = GradeQuizEssayMessage.builder()
+                .schemaVersion("1.0.0")
+                .requestId(UUID.randomUUID())
+                .occurredAt(OffsetDateTime.now())
+                .userId(userId)
+                .quizId(quizId)
+                .build();
+
+        try {
+            sqsClient.sendGradeQuizEssayMessage(message);
+            log.info("Successfully sent grade quiz essay message to SQS: quizId={}, userId={}", quizId, userId);
+        } catch (Exception e) {
+            log.error("Failed to send grade quiz essay message to SQS: quizId={}, userId={}, error={}", quizId, userId, e.getMessage());
+        }
     }
 }

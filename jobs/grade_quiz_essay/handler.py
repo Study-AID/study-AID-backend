@@ -265,7 +265,7 @@ def update_quiz_status_to_graded(quiz_id):
             conn.close()
 
 
-def grade_single_question(openai_client, prompt_path, quiz_item, quiz_response, user_id, quiz_id):
+def grade_single_question(openai_client, prompt_path, quiz_item, quiz_response, user_id):
     """단일 서술형 문항을 채점합니다."""
     question_id = quiz_item['id']
 
@@ -387,8 +387,7 @@ def lambda_handler(event, context):
                     prompt_path,
                     quiz_item,
                     quiz_response,
-                    user_id,
-                    quiz_id
+                    user_id
                 )
 
                 whole_essay_score += question_score

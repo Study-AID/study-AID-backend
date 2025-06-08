@@ -8,6 +8,9 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -50,6 +53,10 @@ public class QuizResponse {
 
     @Column
     private Float score = 0f;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "essay_criteria_analysis")
+    private EssayCriteriaAnalysis essayCriteriaAnalysis;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
