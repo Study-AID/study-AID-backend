@@ -46,10 +46,21 @@ public class QnaChatServiceImpl implements QnaChatService {
     private final LLMAdapter llmAdapter;
 
     @Override
+    @Transactional
     public CreateQnaChatOutput createQnaChat(CreateQnaChatInput input) {
         User user = new User(input.getUserId());
         Lecture lecture = lectureRepository.findById(input.getLectureId())
                 .orElseThrow(() -> new NotFoundException("강의 자료를 찾을 수 없습니다"));
+
+        // 이미 존재하는 채팅방이 있는지 확인 및 있으면 원래 채팅방 반환
+        QnaChat existingChat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
+                .orElse(null);
+        if (existingChat != null) {
+            log.info("강의 {} - 사용자 {} 조합으로 이미 생성된 채팅방이 존재합니다. 기존 채팅방 ID: {}",
+                    input.getLectureId(), input.getUserId(), existingChat.getId());
+            return new CreateQnaChatOutput(existingChat.getId(), existingChat.getCreatedAt());
+        }
+
         ParsedText parsedText = lecture.getParsedText();
 
         // TODO(jin): move vectorization timing from chat creation to after the lecture file uploaded, think about is_vectorized column

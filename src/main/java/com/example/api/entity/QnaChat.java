@@ -17,6 +17,12 @@ import java.util.UUID;
         schema = "app",
         indexes = {
                 @Index(name = "idx_qna_chat_lecture", columnList = "lecture_id")
+        },
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    name = "uk_qna_chat_lecture_user",
+                    columnNames = {"lecture_id", "user_id"}
+            )
         }
 )
 public class QnaChat {

@@ -67,17 +67,10 @@ jobs:
           # Try migration first
           if ! ../flyway-cli/flyway -configFiles=flyway-dev.conf migrate; then
             echo "Migration failed. Checking if repair is needed..."
-
-            # Check if it's a checksum mismatch error
-            if ../flyway-cli/flyway -configFiles=flyway-dev.conf info 2>&1 | grep -q "checksum mismatch"; then
-              echo "Checksum mismatch detected. Running repair..."
-              ../flyway-cli/flyway -configFiles=flyway-dev.conf repair
-              echo "Repair completed. Retrying migration..."
-              ../flyway-cli/flyway -configFiles=flyway-dev.conf migrate
-            else
-              echo "Migration failed for reasons other than checksum mismatch."
-              exit 1
-            fi
+            echo "Checksum mismatch detected. Running repair..."
+            ../flyway-cli/flyway -configFiles=flyway-dev.conf repair
+            echo "Repair completed. Retrying migration..."
+            ../flyway-cli/flyway -configFiles=flyway-dev.conf migrate
           fi
 
       - name: Check migration info
