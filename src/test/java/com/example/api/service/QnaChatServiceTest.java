@@ -78,13 +78,16 @@ public class QnaChatServiceTest {
         testQnaChat.setId(TEST_CHAT_ID);
         testQnaChat.setUser(testUser);
         testQnaChat.setLecture(testLecture);
+        testQnaChat.setCreatedAt(LocalDateTime.now());
     }
 
     @Test
-    @DisplayName("채팅방 생성 성공 테스트")
+    @DisplayName("채팅방 생성 성공 테스트 - 강의의 기존 채팅방 없을 때")
     public void createQnaChatSuccessTest() {
         // Given
         when(lectureRepository.findById(TEST_LECTURE_ID)).thenReturn(Optional.of(testLecture));
+        when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
+                .thenReturn(Optional.empty());
         when(qnaChatRepository.save(any(QnaChat.class))).thenAnswer(invocation -> {
             QnaChat savedChat = invocation.getArgument(0);
             savedChat.setId(TEST_CHAT_ID);
@@ -95,6 +98,24 @@ public class QnaChatServiceTest {
         EmbeddingCheckResponse mockResponse = new EmbeddingCheckResponse();
         when(langchainClient.checkEmbeddingStatus(TEST_LECTURE_ID))
                 .thenReturn(mockResponse);
+
+        // When
+        CreateQnaChatInput input = new CreateQnaChatInput(TEST_USER_ID, TEST_LECTURE_ID);
+        CreateQnaChatOutput output = qnaChatService.createQnaChat(input);
+
+        // Then
+        assertNotNull(output);
+        assertEquals(TEST_CHAT_ID, output.getChatId());
+        assertNotNull(output.getCreatedAt());
+    }
+
+    @Test
+    @DisplayName("채팅방 생성 성공 테스트 - 강의의 기존 채팅방 반환")
+    public void createQnaChatSuccessTest_ExistingChat() {
+        // Given
+        when(lectureRepository.findById(TEST_LECTURE_ID)).thenReturn(Optional.of(testLecture));
+        when(qnaChatRepository.findByLectureIdAndUserId(TEST_LECTURE_ID, TEST_USER_ID))
+                .thenReturn(Optional.of(testQnaChat));
 
         // When
         CreateQnaChatInput input = new CreateQnaChatInput(TEST_USER_ID, TEST_LECTURE_ID);
@@ -121,6 +142,7 @@ public class QnaChatServiceTest {
         // Then
         assertNotNull(output);
         assertEquals(TEST_CHAT_ID, output.getChatId());
+        assertTrue(output.isVectorized());
     }
 
     @Test

@@ -35,12 +35,12 @@ public class QnaChatController {
     }
 
     @Operation(
-            summary = "QnA 채팅방 생성",
-            description = "강의 자료를 기반으로 새로운 QnA 채팅방을 생성합니다.",
+            summary = "QnA 채팅방 생성(또는 기존 채팅방 반환)",
+            description = "강의 자료를 기반으로 새로운 QnA 채팅방을 생성합니다. 한 강의당 하나의 채팅방만 존재합니다.",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "채팅방 생성 성공",
+                            description = "채팅방 생성(또는 기존 채팅방 반환) 성공",
                             content = @Content(schema = @Schema(implementation = CreateQnaChatResponse.class),
                                     examples = {
                                             @ExampleObject(
@@ -84,8 +84,8 @@ public class QnaChatController {
     }
 
     @Operation(
-            summary = "특정 강의의 QnA 채팅방 UUID 조회",
-            description = "특정 강의의 QnA 채팅방 UUID를 조회합니다.",
+            summary = "특정 강의의 QnA 채팅방 UUID와 벡터화 상태 조회",
+            description = "특정 강의의 QnA 채팅방 UUID와 벡터화 상태 조회합니다.",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -94,7 +94,7 @@ public class QnaChatController {
                                     examples = {
                                             @ExampleObject(
                                                     name = "example",
-                                                    value = "{\"chatId\": \"550e8400-e29b-41d4-a716-446655440000\"}"
+                                                    value = "{\"chatId\": \"550e8400-e29b-41d4-a716-446655440000\", \"isVectorized\": true}"
                                             )
                                     })
                     ),
@@ -110,7 +110,7 @@ public class QnaChatController {
         GetQnaChatIdInput input = new GetQnaChatIdInput(lectureId, userId);
         GetQnaChatIdOutput output = qnaChatService.getQnaChatId(input);
 
-        GetQnaChatIdResponse response = new GetQnaChatIdResponse(output.getChatId());
+        GetQnaChatIdResponse response = new GetQnaChatIdResponse(output.getChatId(), output.isVectorized());
         return ResponseEntity.ok(response);
     }
 
