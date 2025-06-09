@@ -108,9 +108,9 @@ A Python Lambda function that grade essay questions (for quiz) using OpenAI's LL
 
 ## 프롬프트 템플릿
 
-퀴즈 생성은 YAML 형식의 프롬프트 템플릿을 사용합니다:
+퀴즈 서술형 채점은 YAML 형식의 프롬프트 템플릿을 사용합니다:
 
-- 템플릿 위치: `../../prompts/generate_quiz/v{version}.yaml`
+- 템플릿 위치: `../../prompts/grade_quiz_essay/v{version}.yaml`
 - 프롬프트 버전 선택:
     - 기본값: `latest` (가장 높은 버전의 프롬프트 파일 자동 선택)
     - 지정 버전: `PROMPT_VERSION` 환경 변수로 설정 (예: `1`, `2`)

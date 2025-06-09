@@ -268,6 +268,7 @@ def update_quiz_status_to_graded(quiz_id):
 def grade_single_question(openai_client, prompt_path, quiz_item, quiz_response, user_id):
     """단일 서술형 문항을 채점합니다."""
     question_id = quiz_item['id']
+    epsilon = 0.01  # 점수 비교에 사용할 허용 오차
 
     # 이미 채점된 문항인지 확인 (추후 문항별 재시도 로직 도입 시 중복 처리 방지)
     if is_question_already_graded(question_id, user_id):
@@ -297,7 +298,7 @@ def grade_single_question(openai_client, prompt_path, quiz_item, quiz_response, 
 
         # 점수 일관성 검증 (평가항목별 점수 합계와 score로 표시해준 점수 일치여부 확인: gpt가 실수할 수 있음)
         criteria_total = sum(c['earned_points'] for c in grade_result['essay_criteria_analysis']['criteria'])
-        if abs(criteria_total - grade_result['score']) > 0.01:
+        if abs(criteria_total - grade_result['score']) > epsilon:
             logger.warning(f"Score mismatch: criteria_total={criteria_total}, score={grade_result['score']}")
             grade_result['score'] = criteria_total
 
@@ -369,7 +370,7 @@ def lambda_handler(event, context):
             prompt_path = get_prompt_path()
 
             # 3. 각 서술형 문항에 대해 순차적으로 채점
-            whole_essay_score = 0.0
+            total_essay_score = 0.0
 
             for quiz_item in essay_items:
                 question_id = quiz_item['id']
@@ -390,15 +391,15 @@ def lambda_handler(event, context):
                     user_id
                 )
 
-                whole_essay_score += question_score
+                total_essay_score += question_score
 
             # 4. quiz_result 테이블 업데이트 (퀴즈 총 점수)
-            update_quiz_result_score(quiz_id, user_id, whole_essay_score)
+            update_quiz_result_score(quiz_id, user_id, total_essay_score)
 
             # 5. 퀴즈 상태를 'graded'로 업데이트
             update_quiz_status_to_graded(quiz_id)
 
-            logger.info(f"Quiz evaluation completed for quiz {quiz_id}, user {user_id}, total score added: {whole_essay_score}")
+            logger.info(f"Quiz evaluation completed for quiz {quiz_id}, user {user_id}, total score added: {total_essay_score}")
 
         return {
             'statusCode': 200,
