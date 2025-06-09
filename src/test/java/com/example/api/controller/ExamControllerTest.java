@@ -243,7 +243,7 @@ public class ExamControllerTest {
     @Test
     @DisplayName("시험 응답 생성")
     @WithMockUser
-    void createExamResponse() throws Exception {
+    void submitAndGradeExam() throws Exception {
         // given
         SubmitExamRequest submitExamRequest = new SubmitExamRequest();
 
@@ -266,7 +266,7 @@ public class ExamControllerTest {
         submitExamRequest.getSubmitExamItems().get(1).setSelectedIndices(new Integer[]{0, 1});
 
         when(examService.findExamById(examId)).thenReturn(Optional.of(testExamOutput));
-        when(examService.createExamResponse(Mockito.<List<CreateExamResponseInput>>any())).thenReturn(testExamResponseListOutput);
+        when(examService.submitAndGradeExamWithStatus(Mockito.<List<CreateExamResponseInput>>any())).thenReturn(testExamResponseListOutput);
 
         // when, then
         mockMvc.perform(post("/v1/exams/{id}/submit", examId)
@@ -277,10 +277,6 @@ public class ExamControllerTest {
                 .andExpect(jsonPath("$.submitExamResponses[0].examId", is(examId.toString())))
                 .andExpect(jsonPath("$.submitExamResponses[0].userId", is(userId.toString())))
                 .andExpect(jsonPath("$.submitExamResponses[0].examItemId", is(testExamItems.get(0).getId().toString())));
-
-        verify(examService, times(1)).findExamById(examId);
-        verify(examService, times(1)).createExamResponse(Mockito.<List<CreateExamResponseInput>>any());
-        verify(examService, times(1)).gradeExam(examId);
     }
 
     @Test

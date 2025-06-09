@@ -87,7 +87,7 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
-    public ExamResponseListOutput createExamResponse(List<CreateExamResponseInput> inputs) {
+    public ExamResponseListOutput submitAndGradeExamWithStatus(List<CreateExamResponseInput> inputs) {
         ExamResponseListOutput examResponseListOutput = (ExamResponseListOutput) inputs.stream()
                 .map(input -> {
                     Exam exam = examRepo.getReferenceById(input.getExamId());
@@ -118,28 +118,53 @@ public class ExamServiceImpl implements ExamService {
 
                     return ExamResponseOutput.fromEntity(createdExamResponse);
                 }).toList();
-        Exam exam = examRepo.getReferenceById(inputs.get(0).getExamId());
+        UUID examId = inputs.get(0).getExamId();
+        Exam exam = examRepo.getReferenceById(examId);
+
+        // 모의시험 상태 'submitted'로 업데이트
         exam.setStatus(Status.submitted);
         examRepo.updateExam(exam);
+
+        // 서술형 문제 유무 확인
+        boolean hasEssay = hasEssayQuestions(examId);
+        if (!hasEssay) {
+            gradeNonEssayQuestions(examId);
+            exam.setStatus(Status.graded);
+        } else {
+            gradeNonEssayQuestions(examId);
+            exam.setStatus(Status.partially_graded);
+            // TODO(jin): 서술형 채점 함수 (gradeEssayQuestions) 작성 및 서술형 채점 SQS 메시지 전송
+        }
+        examRepo.updateExam(exam);
+
         return examResponseListOutput;
+    }
+
+    // 서술형 문제 존재 여부 확인 함수
+    private boolean hasEssayQuestions(UUID examId) {
+        return examItemRepo.existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay);
     }
 
     @Override
     @Transactional
-    public void gradeExam(UUID examId) {
+    public void gradeNonEssayQuestions(UUID examId) {
         Exam exam = examRepo.getReferenceById(examId);
         List<ExamResponse> examResponses = examResponseRepo.findByExamId(examId);
 
-        float totalScore = 0;
+        float nonEssayScore = 0;
         for (ExamResponse examResponse : examResponses) {
             ExamItem examItem = examItemRepo.getReferenceById(examResponse.getExamItem().getId());
             if (examItem.getQuestionType() == null) {
                 throw new IllegalArgumentException("Exam item question type cannot be null");
             }
+            // 서술형 문제는 이 함수에서 채점하지 않음
+            if(examItem.getQuestionType() == QuestionType.essay) {
+                continue;
+            }
             if (examItem.getQuestionType() == QuestionType.true_or_false) {
                 // true/false 문제에 대한 채점 로직
                 if (examResponse.getSelectedBool() != null && examResponse.getSelectedBool().equals(examItem.getIsTrueAnswer())) {
-                    // totalScore += examItem.getScore();
+                    // nonEssayScore += examItem.getScore();
                     examResponse.setIsCorrect(true);
                 }
             } else if (examItem.getQuestionType() == QuestionType.multiple_choice) {
@@ -149,7 +174,7 @@ public class ExamServiceImpl implements ExamService {
                     Set<Integer> answerSet = new HashSet<>(Arrays.asList(examItem.getAnswerIndices()));
 
                     if (selectedSet.equals(answerSet)) {
-                        // totalScore += examItem.getScore();
+                        // nonEssayScore += examItem.getScore();
                         examResponse.setIsCorrect(true);
                     }
                 }
@@ -159,20 +184,14 @@ public class ExamServiceImpl implements ExamService {
                     examResponse.setIsCorrect(true);
                 }
             }
-            // TODO(jin): 서술형 문제 구현
-
             examResponseRepo.updateExamResponse(examResponse);
         }
-        exam.setStatus(Status.graded);
-        examRepo.updateExam(exam);
 
-        // 시험 결과 생성 
-        // TODO(yoon) : 시험 결과 생성 로직을 별개의 메서드로 분리
         ExamResult examResult = new ExamResult();
         examResult.setExam(exam);
         examResult.setUser(examResponses.get(0).getUser());
-        examResult.setScore(totalScore);
-        examResult.setMaxScore(totalScore);
+        examResult.setScore(nonEssayScore);
+        examResult.setMaxScore(nonEssayScore);
         examResult.setFeedback("Feedback");
         examResult.setStartTime(examResponses.get(0).getCreatedAt());
         examResult.setEndTime(LocalDateTime.now());

@@ -88,7 +88,7 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
-    public QuizResponseListOutput createQuizResponse(List<CreateQuizResponseInput> inputs) {
+    public QuizResponseListOutput submitAndGradeQuizWithStatus(List<CreateQuizResponseInput> inputs) {
         QuizResponseListOutput quizResponseListOutput = (QuizResponseListOutput) inputs.stream()
                 .map(input -> {
                     Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
@@ -120,30 +120,55 @@ public class QuizServiceImpl implements QuizService {
 
                     return QuizResponseOutput.fromEntity(createdQuizResponse);
                 }).toList();
-        Quiz quiz = quizRepo.getReferenceById(inputs.get(0).getQuizId());
+        UUID quizId = inputs.get(0).getQuizId();
+        Quiz quiz = quizRepo.getReferenceById(quizId);
+
+        // 퀴즈 상태 'submitted'로 업데이트
         quiz.setStatus(Status.submitted);
         quizRepo.updateQuiz(quiz);
+
+        // 서술형 문제 유무 확인
+        boolean hasEssay = hasEssayQuestions(quizId);
+        if (!hasEssay) {
+            gradeNonEssayQuestions(quizId);
+            quiz.setStatus(Status.graded);
+        } else {
+            gradeNonEssayQuestions(quizId);
+            quiz.setStatus(Status.partially_graded);
+            // TODO(jin): 서술형 채점 함수 (gradeEssayQuestions) 작성 및 서술형 채점 SQS 메시지 전송
+        }
+        quizRepo.updateQuiz(quiz);
+
         return quizResponseListOutput;
+    }
+
+    // 서술형 문제 존재 여부 확인 함수
+    private boolean hasEssayQuestions(UUID quizId) {
+        return quizItemRepo.existsByQuizIdAndQuestionTypeAndDeletedAtIsNull(quizId, QuestionType.essay);
     }
 
     @Override
     @Transactional
-    public void gradeQuiz(UUID quizId) {
+    public void gradeNonEssayQuestions(UUID quizId) {
         // 퀴즈 풀이와 퀴즈 아이템을 가져와서 답을 비교하여 점수 부여
         Quiz quiz = quizRepo.getReferenceById(quizId);
         List<QuizResponse> quizResponses = quizResponseRepo.findByQuizId(quizId);
 
         // 퀴즈 아이템의 questionType에 문제 유형을 확인하여 점수를 부여
-        float totalScore = 0;
+        float nonEssayScore = 0;
         for (QuizResponse quizResponse : quizResponses) {
             QuizItem quizItem = quizItemRepo.getReferenceById(quizResponse.getQuizItem().getId());
             if (quizItem.getQuestionType() == null) {
                 throw new IllegalArgumentException("Exam item question type cannot be null");
             }
+            // 서술형 문제는 이 함수에서 채점하지 않음
+            if(quizItem.getQuestionType() == QuestionType.essay) {
+                continue;
+            }
             if (quizItem.getQuestionType() == QuestionType.true_or_false) {
                 // true/false 문제
                 if (quizResponse.getSelectedBool() != null && quizResponse.getSelectedBool().equals(quizItem.getIsTrueAnswer())) {
-                    // totalScore += quizItem.getPoints();
+                    // nonEssayScore += quizItem.getPoints();
                     quizResponse.setIsCorrect(true);
                 }
             } else if (quizItem.getQuestionType() == QuestionType.multiple_choice) {
@@ -153,39 +178,33 @@ public class QuizServiceImpl implements QuizService {
                     Set<Integer> answerSet = new HashSet<>(Arrays.asList(quizItem.getAnswerIndices()));
                     
                     if (selectedSet.equals(answerSet)) {
-                        // totalScore += quizItem.getPoints();
+                        // nonEssayScore += quizItem.getPoints();
                         quizResponse.setIsCorrect(true);
                     }
                 }
             } else if (quizItem.getQuestionType() == QuestionType.short_answer) {
                 // 주관식 문제
                 if (quizResponse.getTextAnswer() != null && quizResponse.getTextAnswer().equals(quizItem.getTextAnswer())) {
-                    // totalScore += quizItem.getPoints();
+                    // nonEssayScore += quizItem.getPoints();
                     quizResponse.setIsCorrect(true);
                 }
             }
-            // TODO(jin): 서술형 문제 구현
 
-            // // 점수 부여
+            // 점수 부여
             // if (quizResponse.getIsCorrect()) {
             //     quizResponse.setScore(quizItem.getPoints());
-            //     totalScore += quizItem.getPoints();
+            //     nonEssayScore += quizItem.getPoints();
             // } else {
             //     quizResponse.setScore(0f);
             // }
             quizResponseRepo.updateQuizResponse(quizResponse);
         }
-        quiz.setStatus(Status.graded);
 
-        quizRepo.updateQuiz(quiz);
-
-        // 퀴즈 결과 생성 
-        // TODO(yoon) : 퀴즈 결과 생성 로직을 별개의 메서드로 분리
         QuizResult quizResult = new QuizResult();
         quizResult.setQuiz(quiz);
         quizResult.setUser(quizResponses.get(0).getUser());
-        quizResult.setScore(totalScore);
-        quizResult.setMaxScore(totalScore);
+        quizResult.setScore(nonEssayScore);
+        quizResult.setMaxScore(nonEssayScore);
         quizResult.setFeedback("Feedback");
         quizResult.setStartTime(quizResponses.get(0).getCreatedAt());
         quizResult.setEndTime(LocalDateTime.now());
