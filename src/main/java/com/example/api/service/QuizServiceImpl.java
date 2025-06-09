@@ -97,7 +97,7 @@ public class QuizServiceImpl implements QuizService {
     @Override
     @Transactional
     public QuizResponseListOutput submitAndGradeQuizWithStatus(List<CreateQuizResponseInput> inputs) {
-        QuizResponseListOutput quizResponseListOutput = (QuizResponseListOutput) inputs.stream()
+        List<QuizResponseOutput> quizResponseOutputs  = inputs.stream()
                 .map(input -> {
                     Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
                     QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
@@ -128,6 +128,9 @@ public class QuizServiceImpl implements QuizService {
 
                     return QuizResponseOutput.fromEntity(createdQuizResponse);
                 }).toList();
+        
+        QuizResponseListOutput quizResponseListOutput = new QuizResponseListOutput(quizResponseOutputs);
+    
         UUID quizId = inputs.get(0).getQuizId();
         UUID userId = inputs.get(0).getUserId();
         Quiz quiz = quizRepo.getReferenceById(quizId);

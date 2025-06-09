@@ -87,7 +87,7 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional
     public ExamResponseListOutput submitAndGradeExamWithStatus(List<CreateExamResponseInput> inputs) {
-        ExamResponseListOutput examResponseListOutput = (ExamResponseListOutput) inputs.stream()
+        List<ExamResponseOutput> examResponseOutputs = inputs.stream()
                 .map(input -> {
                     Exam exam = examRepo.getReferenceById(input.getExamId());
                     ExamItem examItem = examItemRepo.getReferenceById(input.getExamItemId());
@@ -117,6 +117,9 @@ public class ExamServiceImpl implements ExamService {
 
                     return ExamResponseOutput.fromEntity(createdExamResponse);
                 }).toList();
+
+        ExamResponseListOutput examResponseListOutput = new ExamResponseListOutput(examResponseOutputs);
+
         UUID examId = inputs.get(0).getExamId();
         Exam exam = examRepo.getReferenceById(examId);
 
