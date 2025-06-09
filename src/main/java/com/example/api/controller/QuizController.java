@@ -553,7 +553,7 @@ public class QuizController extends BaseController {
             }
 
             // Check if the quiz has been graded
-            if (quizOutput.get().getStatus() != Status.graded) {
+            if (!(quizOutput.get().getStatus() == Status.graded || quizOutput.get().getStatus() == Status.partially_graded)) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
             }
 

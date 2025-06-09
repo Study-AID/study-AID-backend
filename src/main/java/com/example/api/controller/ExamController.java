@@ -529,8 +529,8 @@ public class ExamController extends BaseController {
             }
             
             // Check if the exam has been graded
-            if (examOutput.get().getStatus() != Status.graded) {
-                return ResponseEntity.badRequest().build();
+            if (!(examOutput.get().getStatus() == Status.graded || examOutput.get().getStatus() == Status.partially_graded)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
             }
             
             // Retrieve the exam result
