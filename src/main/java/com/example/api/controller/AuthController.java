@@ -100,7 +100,7 @@ public class AuthController {
                                 """),
                                     @ExampleObject(name = "wrong-auth-type", value = """
                                     {
-                                      "message": "이메일 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.",
+                                      "message": "해당 로그인 방식 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.",
                                       "data": null
                                     }
                                 """)
@@ -142,7 +142,7 @@ public class AuthController {
                             examples = {
                                     @ExampleObject(name = "wrong-auth-type", value = """
                                 {
-                                  "message": "Google 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.",
+                                  "message": "해당 로그인 방식 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.",
                                   "data": null
                                 }
                             """)
