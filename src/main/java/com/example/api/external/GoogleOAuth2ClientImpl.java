@@ -62,7 +62,7 @@ public class GoogleOAuth2ClientImpl implements GoogleOAuth2Client {
     }
 
     /**
-     * Access Token을 사용하여 Google에서 사용자 정보를 얻는다
+     * Access Token을 사용하여 Google에서 사용자 정보를 얻습니다.
      */
     @Override
     public GoogleUserInfoResponse getUserInfo(String accessToken) {

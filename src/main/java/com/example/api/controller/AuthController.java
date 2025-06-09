@@ -142,7 +142,7 @@ public class AuthController {
                             examples = {
                                     @ExampleObject(name = "wrong-auth-type", value = """
                                 {
-                                  "message": "구글 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.",
+                                  "message": "Google 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.",
                                   "data": null
                                 }
                             """)
