@@ -1,9 +1,11 @@
 package com.example.api.controller;
 
+import com.example.api.controller.dto.oauth2.GoogleLoginRequest;
 import com.example.api.dto.request.*;
 import com.example.api.dto.response.*;
 import com.example.api.exception.auth.*;
 import com.example.api.service.AuthService;
+import com.example.api.service.dto.oauth2.GoogleLoginInput;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -102,6 +104,61 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("Google 로그인 성공 테스트")
+    void googleLoginTest() throws Exception {
+        // given
+        GoogleLoginRequest request = new GoogleLoginRequest();
+        request.setCode("google-auth-code");
+        request.setRedirectUri("https://example.com/callback");
+
+        TokenResponse tokenResponse = new TokenResponse("sample-access-token", "sample-refresh-token");
+        UserSummaryResponse userResponse = new UserSummaryResponse(
+                userId,
+                "google-user@gmail.com",
+                "Google User"
+        );
+        AuthResponse authResponse = new AuthResponse(tokenResponse, userResponse);
+
+        when(authService.loginWithGoogle(any(GoogleLoginInput.class))).thenReturn(authResponse);
+
+        // when & then
+        mockMvc.perform(post("/v1/auth/login/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Google 로그인 성공"))
+                .andExpect(jsonPath("$.data.token.accessToken").value("sample-access-token"))
+                .andExpect(jsonPath("$.data.token.refreshToken").value("sample-refresh-token"))
+                .andExpect(jsonPath("$.data.user.email").value("google-user@gmail.com"))
+                .andExpect(jsonPath("$.data.user.name").value("Google User"));
+
+        verify(authService, times(1)).loginWithGoogle(argThat(input ->
+                input.getCode().equals("google-auth-code") &&
+                        input.getRedirectUri().equals("https://example.com/callback")));
+    }
+
+    @Test
+    @DisplayName("Google 로그인 실패 - Google 로그인 사용자 아님")
+    void googleLoginFail_wrongAuthType() throws Exception {
+        // given
+        GoogleLoginRequest request = new GoogleLoginRequest();
+        request.setCode("google-auth-code");
+        request.setRedirectUri("https://example.com/callback");
+
+        doThrow(new WrongAuthTypeException())
+                .when(authService).loginWithGoogle(any(GoogleLoginInput.class));
+
+        // when & then
+        mockMvc.perform(post("/v1/auth/login/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("해당 로그인 방식 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요."));
+    }
+
+    @Test
     @DisplayName("로그아웃 성공 테스트")
     void logoutTest() throws Exception {
         // given
@@ -151,7 +208,7 @@ class AuthControllerTest {
         verify(authService, times(1)).refreshToken(any(TokenRefreshRequest.class));
     }
 
-    /* TODO(jin): use authorized user
+    /* TODO(jin): controller refactor use authorized user
     @Test
     @DisplayName("사용자 정보 조회 성공 테스트")
     void getCurrentUserInfoTest() throws Exception {
@@ -221,7 +278,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("이메일 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요."));
+                .andExpect(jsonPath("$.message").value("해당 로그인 방식 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요."));
     }
 
     @Test
@@ -272,7 +329,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
     }
 
-    /* TODO(jin): use authorized user
+    /* TODO(jin): controller refactor and use authorized user
     @Test
     @DisplayName("내 정보 조회 실패 - 유효하지 않은 액세스 토큰")
     void meFail_invalidToken() throws Exception {

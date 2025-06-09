@@ -74,3 +74,11 @@ sqs:
     queue-url: ${SQS_GRADE_QUIZ_ESSAY_QUEUE_URL}
   grade-exam-essay:
     queue-url: ${SQS_GRADE_EXAM_ESSAY_QUEUE_URL}
+
+google:
+  oauth2:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
+    redirect-uri: ${GOOGLE_REDIRECT_URI:https://studyaid.academy/auth/google/callback}
+    token-uri: https://oauth2.googleapis.com/token
+    user-info-uri: https://www.googleapis.com/oauth2/v2/userinfo

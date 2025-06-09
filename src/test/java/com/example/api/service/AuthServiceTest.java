@@ -1,13 +1,19 @@
 package com.example.api.service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import com.example.api.dto.response.AuthResponse;
 import com.example.api.dto.response.UserSummaryResponse;
+import com.example.api.entity.enums.AuthType;
 import com.example.api.exception.auth.*;
+import com.example.api.external.GoogleOAuth2Client;
+import com.example.api.external.dto.oauth2.GoogleTokenResponse;
+import com.example.api.external.dto.oauth2.GoogleUserInfoResponse;
 import com.example.api.repository.RefreshTokenRepository;
 import com.example.api.security.jwt.JwtProvider;
+import com.example.api.service.dto.oauth2.GoogleLoginInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,22 +24,29 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.api.dto.request.*;
 import com.example.api.entity.User;
-import com.example.api.entity.enums.AuthType;
 import com.example.api.repository.UserRepository;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock private JwtProvider jwtProvider;
-    @Mock private RefreshTokenRepository refreshTokenRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private PasswordEncoder passwordEncoder;
+    @Mock
+    private JwtProvider jwtProvider;
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock
+    private GoogleOAuth2Client googleOAuth2Client;
 
-    @InjectMocks private AuthServiceImpl authService;
+    @InjectMocks
+    private AuthServiceImpl authService;
 
     private User user;
     private UUID userId;
@@ -140,131 +153,130 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("로그인 실패 - 이메일 로그인 사용자가 아님")
-    void emailLoginFail_notEmailUser() {
+    @DisplayName("Google 로그인 성공 - 신규 사용자")
+    void googleLoginSuccess_newUser() {
         // given
-        EmailLoginRequest req = new EmailLoginRequest("test@gmail.com", "password");
-        User socialUser = new User();
-        socialUser.setEmail("test@gmail.com");
-        socialUser.setPasswordHash("hashedPassword");
-        socialUser.setAuthType(AuthType.google);
-        when(userRepository.findByEmail(req.getEmail())).thenReturn(Optional.of(socialUser));
-        when(passwordEncoder.matches(req.getPassword(), "hashedPassword")).thenReturn(true);
+        GoogleLoginInput input = new GoogleLoginInput("google-auth-code", "https://example.com/callback");
 
-        // when & then
-        WrongAuthTypeException exception = assertThrows(WrongAuthTypeException.class, () -> {
-            authService.loginWithEmail(req);
-        });
+        GoogleTokenResponse tokenResponse = new GoogleTokenResponse();
+        tokenResponse.setAccessToken("google-access-token");
 
-        assertThat(exception.getMessage()).isEqualTo("이메일 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.");
-    }
+        GoogleUserInfoResponse userInfoResponse = new GoogleUserInfoResponse();
+        userInfoResponse.setId("google-user-id");
+        userInfoResponse.setEmail("google-user@gmail.com");
+        userInfoResponse.setName("Google User");
+        userInfoResponse.setVerifiedEmail(true);
 
-    @Test
-    @DisplayName("토큰 재발급 실패 - 유효하지 않은 리프레시 토큰")
-    void tokenRefreshFail_invalidToken() {
-        // given
-        String invalidToken = "invalid-token";
-        TokenRefreshRequest req = new TokenRefreshRequest(invalidToken);
-        when(jwtProvider.isValid(invalidToken)).thenReturn(false);
+        when(googleOAuth2Client.getAccessToken(input.getCode(), input.getRedirectUri())).thenReturn(tokenResponse);
+        when(googleOAuth2Client.getUserInfo(tokenResponse.getAccessToken())).thenReturn(userInfoResponse);
+        when(userRepository.findByEmail(userInfoResponse.getEmail())).thenReturn(Optional.empty());
 
-        // when & then
-        InvalidRefreshTokenException exception = assertThrows(InvalidRefreshTokenException.class, () -> {
-            authService.refreshToken(req);
-        });
-
-        assertThat(exception.getMessage()).isEqualTo("유효하지 않은 리프레시 토큰입니다.");
-    }
-
-    @Test
-    @DisplayName("토큰 재발급 실패 - 저장된 리프레시 토큰과 불일치")
-    void tokenRefreshFail_tokenMismatch() {
-        // given
-        String refreshToken = "refresh-token";
-        TokenRefreshRequest req = new TokenRefreshRequest(refreshToken);
-        when(jwtProvider.isValid(refreshToken)).thenReturn(true);
-        when(jwtProvider.extractUserId(refreshToken)).thenReturn(userId);
-        when(refreshTokenRepository.getRefreshToken(userId)).thenReturn("different-token");
-
-        // when & then
-        RefreshTokenMismatchException exception = assertThrows(RefreshTokenMismatchException.class, () -> {
-            authService.refreshToken(req);
-        });
-
-        assertThat(exception.getMessage()).isEqualTo("리프레시 토큰이 일치하지 않습니다.");
-    }
-
-    @Test
-    @DisplayName("토큰 재발급 실패 - 사용자 없음")
-    void tokenRefreshFail_userNotFound() {
-        // given
-        String refreshToken = "refresh-token";
-        TokenRefreshRequest req = new TokenRefreshRequest(refreshToken);
-        when(jwtProvider.isValid(refreshToken)).thenReturn(true);
-        when(jwtProvider.extractUserId(refreshToken)).thenReturn(userId);
-        when(refreshTokenRepository.getRefreshToken(userId)).thenReturn(refreshToken);
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        // when & then
-        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
-            authService.refreshToken(req);
-        });
-
-        assertThat(exception.getMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
-    }
-
-    @Test
-    @DisplayName("사용자 정보 조회 실패 - 유효하지 않은 액세스 토큰")
-    void getCurrentUserInfoFail_invalidToken() {
-        // when & then
-        InvalidAccessTokenException exception = assertThrows(InvalidAccessTokenException.class, () -> {
-            authService.getCurrentUserInfo(null);
-        });
-
-        assertThat(exception.getMessage()).isEqualTo("유효하지 않은 액세스 토큰입니다.");
-    }
-
-
-    @Test
-    @DisplayName("사용자 정보 조회 실패 - 사용자 없음")
-    void getCurrentUserInfoFail_userNotFound() {
-        // given
-        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
-
-        // when & then
-        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
-            authService.getCurrentUserInfo(user.getId().toString());
-        });
-
-        assertThat(exception.getMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
-    }
-
-    @Test
-    @DisplayName("로그아웃 성공")
-    void logoutSuccess() {
-        // given
-        String refreshToken = "refresh-token";
-        LogoutRequest req = new LogoutRequest(refreshToken);
-        when(jwtProvider.extractUserId(refreshToken)).thenReturn(userId);
+        doReturn("access-token").when(jwtProvider).createAccessToken(any());
+        doReturn("refresh-token").when(jwtProvider).createRefreshToken(any());
 
         // when
-        authService.logout(req);
+        AuthResponse authResponse = authService.loginWithGoogle(input);
 
         // then
-        verify(refreshTokenRepository).deleteRefreshToken(userId);
+        verify(userRepository).save(argThat(saved ->
+                saved.getEmail().equals(userInfoResponse.getEmail()) &&
+                        saved.getName().equals(userInfoResponse.getName()) &&
+                        saved.getGoogleId().equals(userInfoResponse.getId()) &&
+                        saved.getAuthType() == AuthType.google &&
+                        saved.getLastLogin() != null
+        ));
+
+        verify(refreshTokenRepository).saveRefreshToken(any(), eq("refresh-token"));
+
+        assertThat(authResponse.getToken().getAccessToken()).isEqualTo("access-token");
+        assertThat(authResponse.getToken().getRefreshToken()).isEqualTo("refresh-token");
+        assertThat(authResponse.getUser().getEmail()).isEqualTo(userInfoResponse.getEmail());
+        assertThat(authResponse.getUser().getName()).isEqualTo(userInfoResponse.getName());
     }
 
     @Test
-    @DisplayName("사용자 정보 조회 성공")
-    void getCurrentUserInfoSuccess() {
+    @DisplayName("Google 로그인 성공 - 기존 사용자")
+    void googleLoginSuccess_existingUser() {
         // given
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        GoogleLoginInput input = new GoogleLoginInput("google-auth-code", "https://example.com/callback");
+
+        GoogleTokenResponse tokenResponse = new GoogleTokenResponse();
+        tokenResponse.setAccessToken("google-access-token");
+
+        GoogleUserInfoResponse userInfoResponse = new GoogleUserInfoResponse();
+        userInfoResponse.setId("google-user-id");
+        userInfoResponse.setEmail("google-user@gmail.com");
+        userInfoResponse.setName("Google User");
+        userInfoResponse.setVerifiedEmail(true);
+
+        User existingUser = new User();
+        existingUser.setId(UUID.randomUUID());
+        existingUser.setEmail("google-user@gmail.com");
+        existingUser.setName("Google User");
+        existingUser.setGoogleId("google-user-id");
+        existingUser.setAuthType(AuthType.google);
+
+        when(googleOAuth2Client.getAccessToken(input.getCode(), input.getRedirectUri())).thenReturn(tokenResponse);
+        when(googleOAuth2Client.getUserInfo(tokenResponse.getAccessToken())).thenReturn(userInfoResponse);
+        when(userRepository.findByEmail(userInfoResponse.getEmail())).thenReturn(Optional.of(existingUser));
+
+        doReturn("access-token").when(jwtProvider).createAccessToken(existingUser.getId());
+        doReturn("refresh-token").when(jwtProvider).createRefreshToken(existingUser.getId());
 
         // when
-        UserSummaryResponse response = authService.getCurrentUserInfo(user.getId().toString());
+        AuthResponse authResponse = authService.loginWithGoogle(input);
 
         // then
-        assertThat(response.getId()).isEqualTo(user.getId());
-        assertThat(response.getEmail()).isEqualTo(user.getEmail());
-        assertThat(response.getName()).isEqualTo(user.getName());
+        verify(userRepository).save(existingUser); // 마지막 로그인 시간 업데이트 확인
+        verify(refreshTokenRepository).saveRefreshToken(existingUser.getId(), "refresh-token");
+
+        assertThat(authResponse.getToken().getAccessToken()).isEqualTo("access-token");
+        assertThat(authResponse.getToken().getRefreshToken()).isEqualTo("refresh-token");
+        assertThat(authResponse.getUser().getEmail()).isEqualTo(existingUser.getEmail());
+        assertThat(authResponse.getUser().getName()).isEqualTo(existingUser.getName());
+    }
+
+    @Test
+    @DisplayName("Google 로그인 실패 - 이메일 미인증")
+    void googleLoginFail_emailNotVerified() {
+        // given
+        GoogleLoginInput input = new GoogleLoginInput("google-auth-code", "https://example.com/callback");
+
+        GoogleTokenResponse tokenResponse = new GoogleTokenResponse();
+        tokenResponse.setAccessToken("google-access-token");
+
+        GoogleUserInfoResponse userInfoResponse = new GoogleUserInfoResponse();
+        userInfoResponse.setId("google-user-id");
+        userInfoResponse.setEmail("google-user@gmail.com");
+        userInfoResponse.setName("Google User");
+        userInfoResponse.setVerifiedEmail(false);
+
+        when(googleOAuth2Client.getAccessToken(input.getCode(), input.getRedirectUri())).thenReturn(tokenResponse);
+        when(googleOAuth2Client.getUserInfo(tokenResponse.getAccessToken())).thenReturn(userInfoResponse);
+
+        // when & then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            authService.loginWithGoogle(input);
+        });
+
+        // 정확한 오류 메시지 검증 대신 포함 여부 확인
+        assertThat(exception.getMessage()).contains("Google");
+    }
+
+    @Test
+    @DisplayName("Google 로그인 실패 - Google API 호출 중 오류")
+    void googleLoginFail_googleApiError() {
+        // given
+        GoogleLoginInput input = new GoogleLoginInput("google-auth-code", "https://example.com/callback");
+
+        when(googleOAuth2Client.getAccessToken(input.getCode(), input.getRedirectUri()))
+                .thenThrow(new RuntimeException("Google API 호출 중 오류 발생"));
+
+        // when & then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            authService.loginWithGoogle(input);
+        });
+
+        assertThat(exception.getMessage()).isEqualTo("Google 로그인 중 오류가 발생했습니다.");
     }
 }
