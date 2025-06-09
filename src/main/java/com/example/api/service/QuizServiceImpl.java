@@ -9,7 +9,6 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -153,9 +152,13 @@ public class QuizServiceImpl implements QuizService {
         // 퀴즈 풀이와 퀴즈 아이템을 가져와서 답을 비교하여 점수 부여
         Quiz quiz = quizRepo.getReferenceById(quizId);
         List<QuizResponse> quizResponses = quizResponseRepo.findByQuizId(quizId);
-
+        
+        // 퀴즈 총점 설정 및 계산
+        List<QuizItem> quizItems = quizItemRepo.findByQuizId(quizId);
+        Float initialMaxScore = setPointsForQuizItems(quizItems);
+        
         // 퀴즈 아이템의 questionType에 문제 유형을 확인하여 점수를 부여
-        float nonEssayScore = 0;
+        Float nonEssayScore = 0f;
         for (QuizResponse quizResponse : quizResponses) {
             QuizItem quizItem = quizItemRepo.getReferenceById(quizResponse.getQuizItem().getId());
             if (quizItem.getQuestionType() == null) {
@@ -168,7 +171,7 @@ public class QuizServiceImpl implements QuizService {
             if (quizItem.getQuestionType() == QuestionType.true_or_false) {
                 // true/false 문제
                 if (quizResponse.getSelectedBool() != null && quizResponse.getSelectedBool().equals(quizItem.getIsTrueAnswer())) {
-                    // nonEssayScore += quizItem.getPoints();
+                    nonEssayScore += quizItem.getPoints();
                     quizResponse.setIsCorrect(true);
                 }
             } else if (quizItem.getQuestionType() == QuestionType.multiple_choice) {
@@ -178,36 +181,130 @@ public class QuizServiceImpl implements QuizService {
                     Set<Integer> answerSet = new HashSet<>(Arrays.asList(quizItem.getAnswerIndices()));
                     
                     if (selectedSet.equals(answerSet)) {
-                        // nonEssayScore += quizItem.getPoints();
+                        nonEssayScore += quizItem.getPoints();
                         quizResponse.setIsCorrect(true);
                     }
                 }
             } else if (quizItem.getQuestionType() == QuestionType.short_answer) {
                 // 주관식 문제
                 if (quizResponse.getTextAnswer() != null && quizResponse.getTextAnswer().equals(quizItem.getTextAnswer())) {
-                    // nonEssayScore += quizItem.getPoints();
+                    nonEssayScore += quizItem.getPoints();
                     quizResponse.setIsCorrect(true);
                 }
             }
-
-            // 점수 부여
-            // if (quizResponse.getIsCorrect()) {
-            //     quizResponse.setScore(quizItem.getPoints());
-            //     nonEssayScore += quizItem.getPoints();
-            // } else {
-            //     quizResponse.setScore(0f);
-            // }
             quizResponseRepo.updateQuizResponse(quizResponse);
         }
-
+        // Create a new Quiz Result
         QuizResult quizResult = new QuizResult();
         quizResult.setQuiz(quiz);
         quizResult.setUser(quizResponses.get(0).getUser());
         quizResult.setScore(nonEssayScore);
-        quizResult.setMaxScore(nonEssayScore);
-        quizResult.setFeedback("Feedback");
-        quizResult.setStartTime(quizResponses.get(0).getCreatedAt());
-        quizResult.setEndTime(LocalDateTime.now());
+        quizResult.setMaxScore(initialMaxScore);
+
         quizResultRepo.createQuizResult(quizResult);
+    }
+
+    // 각 퀴즈 아이템에 점수를 설정하고 총점을 반환하는 함수
+    private Float setPointsForQuizItems(List<QuizItem> quizItems) {
+        Float initialMaxScore = 0f;
+        for (QuizItem quizItem : quizItems) {
+            if (quizItem.getQuestionType() == QuestionType.true_or_false) {
+                quizItem.setPoints(1f); // True/False 문제는 1점
+                initialMaxScore += 1f;
+            } else if (quizItem.getQuestionType() == QuestionType.multiple_choice) {
+                quizItem.setPoints(3f); // 객관식 문제는 3점
+                initialMaxScore += 3f;
+            } else if (quizItem.getQuestionType() == QuestionType.short_answer) {
+                quizItem.setPoints(5f); // 주관식 문제는 5점
+                initialMaxScore += 5f;
+            } else if (quizItem.getQuestionType() == QuestionType.essay) {
+                quizItem.setPoints(10f); // 서술형 문제는 10점
+                initialMaxScore += 10f;
+            } else {
+                throw new IllegalArgumentException("Unknown question type: " + quizItem.getQuestionType());
+            }
+            quizItemRepo.updateQuizItem(quizItem);
+        }
+        return initialMaxScore;
+    }
+
+    @Override
+    @Transactional
+    public QuizResultOutput createQuizResult(CreateQuizResultInput input) {
+        Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
+        User user = userRepo.getReferenceById(input.getUserId());
+
+        QuizResult quizResult = new QuizResult();
+        quizResult.setQuiz(quiz);
+        quizResult.setUser(user);
+        quizResult.setScore(input.getScore());
+        quizResult.setMaxScore(input.getMaxScore());
+
+        QuizResult createdQuizResult = quizResultRepo.createQuizResult(quizResult);
+        return QuizResultOutput.fromEntity(createdQuizResult);
+    }
+
+    @Override
+    @Transactional
+    public Optional<QuizResultOutput> findQuizResultByQuizId(UUID quizId) {
+        Optional<QuizResult> quizResult = quizResultRepo.findByQuizId(quizId);
+        List<QuizItem> quizItems = quizItemRepo.findByQuizId(quizId);
+        List<UUID> quizItemIds = quizItems.stream().map(QuizItem::getId).toList();
+        // 각 퀴즈 아이템에 대한 퀴즈 응답을 가져옴
+        List<QuizResultElement> quizResultElements = new ArrayList<>();
+        for (UUID quizItemId : quizItemIds) {
+            Optional<QuizResponse> quizResponses = quizResponseRepo.findByQuizItemId(quizItemId);
+            if (quizResponses.isPresent()) {
+                QuizResponse quizResponse = quizResponses.get();
+                QuizItem quizItem = quizItemRepo.getReferenceById(quizItemId);
+                QuizResultElement element = QuizResultElement.fromQuizItemAndResponse(quizItem, quizResponse);
+                quizResultElements.add(element);
+            }
+        }
+        
+        return quizResult.map(qr -> QuizResultOutput.fromEntityAndQuizResultElements(qr, quizResultElements));
+    }
+
+    @Override
+    @Transactional
+    public QuizResultListOutput findQuizResultsByCourseId(UUID courseId) {
+        List<Lecture> lectures = lectureRepo.findByCourseId(courseId);
+        List<QuizResult> quizResults = new ArrayList<>();
+
+        for (Lecture lecture : lectures) {
+            List<Quiz> quizzes = quizRepo.findByLectureId(lecture.getId());
+            for (Quiz quiz : quizzes) {
+                Optional<QuizResult> result = quizResultRepo.findByQuizId(quiz.getId());
+                if (result.isPresent()) {
+                    quizResults.add(result.get());
+                }
+            }
+        }
+
+        QuizResultListOutput quizResultOutputs = QuizResultListOutput.fromEntities(quizResults);
+        return quizResultOutputs;
+    }
+
+    @Override
+    @Transactional
+    public Float calculateQuizAverageScore(UUID courseId) {
+        List<Lecture> lectures = lectureRepo.findByCourseId(courseId);
+        float totalScore = 0;
+        int count = 0;
+
+        for (Lecture lecture : lectures) {
+            List<Quiz> quizzes = quizRepo.findByLectureId(lecture.getId());
+            for (Quiz quiz : quizzes) {
+                Optional<QuizResult> result = quizResultRepo.findByQuizId(quiz.getId());
+                if (result.isPresent()) {
+                    QuizResult quizResult = result.get();
+                    Float eachScore = quizResult.getScore() / quizResult.getMaxScore() * 100; // Convert to percentage
+                    totalScore += eachScore;
+                    count++;
+                }
+            }
+        }
+
+        return count > 0 ? totalScore / count : 0f;
     }
 }

@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -151,6 +150,9 @@ public class ExamServiceImpl implements ExamService {
         Exam exam = examRepo.getReferenceById(examId);
         List<ExamResponse> examResponses = examResponseRepo.findByExamId(examId);
 
+        List<ExamItem> examItems = examItemRepo.findByExamId(examId);
+        Float initialMaxScore = setPointsForExamItems(examItems);
+
         float nonEssayScore = 0;
         for (ExamResponse examResponse : examResponses) {
             ExamItem examItem = examItemRepo.getReferenceById(examResponse.getExamItem().getId());
@@ -164,7 +166,7 @@ public class ExamServiceImpl implements ExamService {
             if (examItem.getQuestionType() == QuestionType.true_or_false) {
                 // true/false 문제에 대한 채점 로직
                 if (examResponse.getSelectedBool() != null && examResponse.getSelectedBool().equals(examItem.getIsTrueAnswer())) {
-                    // nonEssayScore += examItem.getScore();
+                    nonEssayScore += examItem.getPoints();
                     examResponse.setIsCorrect(true);
                 }
             } else if (examItem.getQuestionType() == QuestionType.multiple_choice) {
@@ -174,13 +176,14 @@ public class ExamServiceImpl implements ExamService {
                     Set<Integer> answerSet = new HashSet<>(Arrays.asList(examItem.getAnswerIndices()));
 
                     if (selectedSet.equals(answerSet)) {
-                        // nonEssayScore += examItem.getScore();
+                        nonEssayScore += examItem.getPoints();
                         examResponse.setIsCorrect(true);
                     }
                 }
             } else if (examItem.getQuestionType() == QuestionType.short_answer) {
                 // 단답형 문제에 대한 채점 로직
                 if (examResponse.getTextAnswer() != null && examResponse.getTextAnswer().equals(examItem.getTextAnswer())) {
+                    nonEssayScore += examItem.getPoints();
                     examResponse.setIsCorrect(true);
                 }
             }
@@ -191,10 +194,91 @@ public class ExamServiceImpl implements ExamService {
         examResult.setExam(exam);
         examResult.setUser(examResponses.get(0).getUser());
         examResult.setScore(nonEssayScore);
-        examResult.setMaxScore(nonEssayScore);
-        examResult.setFeedback("Feedback");
-        examResult.setStartTime(examResponses.get(0).getCreatedAt());
-        examResult.setEndTime(LocalDateTime.now());
+        examResult.setMaxScore(initialMaxScore);
+
         examResultRepo.createExamResult(examResult);
+    }
+    
+    // 각 시험 아이템에 점수를 설정하고 총점을 반환하는 함수
+    private Float setPointsForExamItems(List<ExamItem> examItems) {
+        Float initialMaxScore = 0f;
+        for (ExamItem examItem : examItems) {
+            if (examItem.getQuestionType() == QuestionType.true_or_false) {
+                examItem.setPoints(1f); // True/False 문제는 1점
+                initialMaxScore += 1f;
+            } else if (examItem.getQuestionType() == QuestionType.multiple_choice) {
+                examItem.setPoints(3f); // 객관식 문제는 3점
+                initialMaxScore += 3f;
+            } else if (examItem.getQuestionType() == QuestionType.short_answer) {
+                examItem.setPoints(5f); // 주관식 문제는 5점
+                initialMaxScore += 5f;
+            } else if (examItem.getQuestionType() == QuestionType.essay) {
+                examItem.setPoints(10f); // 서술형 문제는 10점
+                initialMaxScore += 10f;
+            } else {
+                throw new IllegalArgumentException("Unknown question type: " + examItem.getQuestionType());
+            }
+            examItemRepo.updateExamItem(examItem);
+        }
+        return initialMaxScore;
+    }
+    
+    @Override
+    @Transactional
+    public Optional<ExamResultOutput> findExamResultByExamId(UUID examId) {
+        Optional<ExamResult> examResult = examResultRepo.findByExamId(examId);
+        List<ExamItem> examItems = examItemRepo.findByExamId(examId);
+        List<UUID> examItemIds = examItems.stream().map(ExamItem::getId).toList();
+        
+        // 각 시험 아이템에 대한 시험 응답을 가져옴
+        List<ExamResultElement> examResultElements = new ArrayList<>();
+        for (UUID examItemId : examItemIds) {
+            Optional<ExamResponse> examResponses = examResponseRepo.findByExamItemId(examItemId);
+            if (examResponses.isPresent()) {
+                ExamResponse examResponse = examResponses.get();
+                ExamItem examItem = examItemRepo.getReferenceById(examItemId);
+                ExamResultElement element = ExamResultElement.fromExamItemAndResponse(examItem, examResponse);
+                examResultElements.add(element);
+            }
+        }
+        
+        return examResult.map(er -> ExamResultOutput.fromEntityAndExamResultElements(er, examResultElements));
+    }
+
+    @Override
+    @Transactional
+    public ExamResultListOutput findExamResultsByCourseId(UUID courseId) {
+        List<Exam> exams = examRepo.findByCourseId(courseId);
+        List<ExamResult> examResults = new ArrayList<>();
+        
+        for (Exam exam : exams) {
+            Optional<ExamResult> result = examResultRepo.findByExamId(exam.getId());
+            if (result.isPresent()) {
+                examResults.add(result.get());
+            }
+        }
+        
+        ExamResultListOutput examResultOutputs = ExamResultListOutput.fromEntities(examResults);
+        return examResultOutputs;
+    }
+
+    @Override
+    @Transactional
+    public Float calculateExamAverageScore(UUID courseId) {
+        List<Exam> exams = examRepo.findByCourseId(courseId);
+        float totalScore = 0;
+        int count = 0;
+
+        for (Exam exam : exams) {
+            Optional<ExamResult> result = examResultRepo.findByExamId(exam.getId());
+            if (result.isPresent()) {
+                ExamResult examResult = result.get();
+                Float eachScore = examResult.getScore() / examResult.getMaxScore() * 100; // Convert to percentage
+                totalScore += eachScore;
+                count++;
+            }
+        }
+
+        return count > 0 ? totalScore / count : 0f;
     }
 }
