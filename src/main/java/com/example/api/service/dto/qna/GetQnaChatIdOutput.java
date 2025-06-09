@@ -9,5 +9,4 @@ import java.util.UUID;
 @AllArgsConstructor
 public class GetQnaChatIdOutput {
     private UUID chatId;
-    private boolean isVectorized;
 }

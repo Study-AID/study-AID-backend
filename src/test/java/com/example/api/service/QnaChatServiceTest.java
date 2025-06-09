@@ -142,7 +142,6 @@ public class QnaChatServiceTest {
         // Then
         assertNotNull(output);
         assertEquals(TEST_CHAT_ID, output.getChatId());
-        assertTrue(output.isVectorized());
     }
 
     @Test

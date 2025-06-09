@@ -63,6 +63,7 @@ public class QnaChatServiceImpl implements QnaChatService {
 
         ParsedText parsedText = lecture.getParsedText();
 
+        // TODO(jin): move vectorization timing from chat creation to after the lecture file uploaded, think about is_vectorized column
         // 강의자료 벡터화(Langchain): 채팅방 생성 시 수행
         log.info("강의 자료 {} 벡터화 여부 LangChain 서버에서 확인 중...", lecture.getId());
         EmbeddingCheckResponse checkResponse = langchainClient.checkEmbeddingStatus(lecture.getId());
@@ -99,11 +100,7 @@ public class QnaChatServiceImpl implements QnaChatService {
         QnaChat chat = qnaChatRepository.findByLectureIdAndUserId(input.getLectureId(), input.getUserId())
                 .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다"));
 
-        // 벡터화 상태 확인 필드 업데이트
-        Lecture lecture = chat.getLecture();
-        boolean isVectorized = lecture.getIsVectorized();
-
-        return new GetQnaChatIdOutput(chat.getId(), isVectorized);
+        return new GetQnaChatIdOutput(chat.getId());
     }
 
     @Override

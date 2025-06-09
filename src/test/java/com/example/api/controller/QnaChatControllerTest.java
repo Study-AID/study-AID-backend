@@ -88,7 +88,7 @@ class QnaChatControllerTest {
     @WithMockUser
     void getQnaChatIdSuccess() throws Exception {
         // Given
-        GetQnaChatIdOutput output = new GetQnaChatIdOutput(CHAT_ID, false);
+        GetQnaChatIdOutput output = new GetQnaChatIdOutput(CHAT_ID);
         when(qnaChatService.getQnaChatId(any(GetQnaChatIdInput.class)))
                 .thenReturn(output);
 
@@ -97,8 +97,7 @@ class QnaChatControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.chatId").value(CHAT_ID.toString()))
-                .andExpect(jsonPath("$.isVectorized").value(false));
+                .andExpect(jsonPath("$.chatId").value(CHAT_ID.toString()));
     }
 
     @Test
