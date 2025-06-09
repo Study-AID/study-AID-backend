@@ -239,6 +239,15 @@ def get_event_data(job_name, event_file=None):
                 })
             }]
         }
+    elif job_name == 'grade_quiz_essay':
+        return {
+            'Records': [{
+                'body': json.dumps({
+                    'user_id': USER_ID,
+                    'quiz_id': QUIZ_ID
+                })
+            }]
+        }
     else:
         # Generic event
         return {

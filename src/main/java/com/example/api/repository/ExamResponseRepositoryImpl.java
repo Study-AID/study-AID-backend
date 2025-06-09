@@ -1,6 +1,7 @@
 package com.example.api.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -31,6 +32,18 @@ public class ExamResponseRepositoryImpl implements ExamResponseRepositoryCustom 
                 .getResultList();
     }
 
+    
+    public Optional<ExamResponse> findByExamItemId(UUID examItemId) {
+        return manager.createQuery(
+                        "SELECT er FROM ExamResponse er " +
+                                "WHERE er.examItem.id = :examItemId " +
+                                "AND er.deletedAt IS NULL",
+                        ExamResponse.class)
+                .setParameter("examItemId", examItemId)
+                .getResultStream()
+                .findFirst();
+    }
+    
     @Transactional
     public ExamResponse createExamResponse(ExamResponse examResponse) {
         if (isDuplicated(examResponse.getExam().getId(), examResponse.getExamItem().getId())) {

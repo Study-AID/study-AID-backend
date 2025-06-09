@@ -17,6 +17,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,12 +35,12 @@ public class QnaChatController {
     }
 
     @Operation(
-            summary = "QnA 채팅방 생성",
-            description = "강의 자료를 기반으로 새로운 QnA 채팅방을 생성합니다.",
+            summary = "QnA 채팅방 생성(또는 기존 채팅방 반환)",
+            description = "강의 자료를 기반으로 새로운 QnA 채팅방을 생성합니다. 한 강의당 하나의 채팅방만 존재합니다.",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "채팅방 생성 성공",
+                            description = "채팅방 생성(또는 기존 채팅방 반환) 성공",
                             content = @Content(schema = @Schema(implementation = CreateQnaChatResponse.class),
                                     examples = {
                                             @ExampleObject(
@@ -195,9 +197,12 @@ public class QnaChatController {
                 ))
                 .toList();
 
+        List<GetQnaChatMessagesResponse.MessageItem> reversedMessages = new ArrayList<>(messages);
+        Collections.reverse(reversedMessages);
+
         GetQnaChatMessagesResponse response = new GetQnaChatMessagesResponse(
                 output.getChatId(),
-                messages,
+                reversedMessages,
                 output.getHasMore(),
                 output.getNextCursor()
         );

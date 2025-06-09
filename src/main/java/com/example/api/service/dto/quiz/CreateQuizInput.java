@@ -11,8 +11,4 @@ public class CreateQuizInput {
     private UUID lectureId;
     private UUID userId;
     private String title;
-    private int trueOrFalseCount;
-    private int multipleChoiceCount;
-    private int shortAnswerCount;
-    private int essayCount;
 }

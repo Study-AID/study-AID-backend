@@ -24,6 +24,16 @@ make test-job-summarize
 make test-job-quiz
 ```
 
+3. **모의시험 생성 기능 테스트** (generate_exam):
+```bash
+make test-job-exam
+```
+
+4. **퀴즈 서술형 채점 기능 테스트** (grade_quiz_essay):
+```bash
+make test-job-grade-quiz-essay
+```
+
 ### OpenAI API 키 설정
 
 테스트에 실제 OpenAI API 키를 사용하려면:

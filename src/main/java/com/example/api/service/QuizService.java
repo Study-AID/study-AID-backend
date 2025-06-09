@@ -30,4 +30,13 @@ public interface QuizService {
     
     @Transactional
     void gradeNonEssayQuestions(UUID quizId);
+
+    @Transactional
+    Optional<QuizResultOutput> findQuizResultByQuizId(UUID quizId);
+
+    @Transactional
+    QuizResultListOutput findQuizResultsByCourseId(UUID courseId);
+
+    @Transactional
+    Float calculateQuizAverageScore(UUID courseId);
 }
