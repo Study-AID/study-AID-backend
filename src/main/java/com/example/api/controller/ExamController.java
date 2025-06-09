@@ -71,7 +71,7 @@ public class ExamController extends BaseController {
                     @ApiResponse(
                         responseCode = "200", 
                         description = "Exams found", 
-                        content = @Content(schema = @Schema(implementation = ExamListOutput.class))),
+                        content = @Content(schema = @Schema(implementation = ExamListResponse.class))),
                     @ApiResponse(
                         responseCode = "403",
                         description = "User does not have access to this quiz"
@@ -116,7 +116,7 @@ public class ExamController extends BaseController {
             description = "Retrieve a specific exam by its ID.",
             parameters = {
                     @Parameter(
-                        name = "examId", 
+                        name = "id", 
                         description = "ID of the exam to retrieve",
                         required = true
                         )
@@ -125,7 +125,7 @@ public class ExamController extends BaseController {
                     @ApiResponse(
                         responseCode = "200", 
                         description = "Exam found", 
-                        content = @Content(schema = @Schema(implementation = ExamOutput.class))
+                        content = @Content(schema = @Schema(implementation = ExamResponse.class))
                     ),
                     @ApiResponse(
                         responseCode = "403",
@@ -195,13 +195,13 @@ public class ExamController extends BaseController {
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Exam creation request body",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = CreateExamInput.class))
+                    content = @Content(schema = @Schema(implementation = CreateExamRequest.class))
             ),
             responses = {
                     @ApiResponse(
                         responseCode = "201", 
                         description = "Exam created successfully", 
-                        content = @Content(schema = @Schema(implementation = ExamOutput.class))
+                        content = @Content(schema = @Schema(implementation = ExamResponse.class))
                     ),
                     @ApiResponse(
                         responseCode = "400", 
@@ -292,7 +292,7 @@ public class ExamController extends BaseController {
             description = "Update an existing exam by its ID.",
             parameters = {
                     @Parameter(
-                        name = "examId", 
+                        name = "id", 
                         description = "ID of the exam to update",
                         required = true
                         )
@@ -373,7 +373,7 @@ public class ExamController extends BaseController {
             description = "Delete an exam by its ID.",
             parameters = {
                     @Parameter(
-                        name = "examId", 
+                        name = "id", 
                         description = "ID of the exam to delete",
                         required = true
                         )
