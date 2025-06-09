@@ -32,9 +32,6 @@ public interface QuizService {
     void gradeNonEssayQuestions(UUID quizId);
 
     @Transactional
-    QuizResultOutput createQuizResult(CreateQuizResultInput input);
-
-    @Transactional
     Optional<QuizResultOutput> findQuizResultByQuizId(UUID quizId);
 
     @Transactional

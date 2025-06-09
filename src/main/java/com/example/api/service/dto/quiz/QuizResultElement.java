@@ -1,5 +1,6 @@
 package com.example.api.service.dto.quiz;
 
+import com.example.api.entity.EssayCriteriaAnalysis;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -31,6 +32,7 @@ public class QuizResultElement {
     private Boolean selectedBool;
     private Integer[] selectedIndices;
     private String textAnswerOfUser;
+    private EssayCriteriaAnalysis essayCriteriaAnalysis;
     private Float score;
 
     public static QuizResultElement fromQuizItemAndResponse(QuizItem quizItem, QuizResponse quizResponse) {
@@ -51,6 +53,7 @@ public class QuizResultElement {
         element.setSelectedIndices(null);
         element.setTextAnswerOfUser(null);
         element.setScore(null);
+        element.setEssayCriteriaAnalysis(quizResponse.getEssayCriteriaAnalysis());
         
         if (quizItem.getQuestionType() == QuestionType.true_or_false) {
             element.setChoices(quizItem.getChoices());
@@ -64,6 +67,7 @@ public class QuizResultElement {
         } else if (quizItem.getQuestionType() == QuestionType.essay) {
             element.setTextAnswer(quizItem.getTextAnswer());
             element.setTextAnswerOfUser(quizResponse.getTextAnswer());
+            element.setEssayCriteriaAnalysis(quizResponse.getEssayCriteriaAnalysis());
         }
 
         return element;
