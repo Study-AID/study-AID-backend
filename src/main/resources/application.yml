@@ -66,6 +66,14 @@ storage:
 sqs:
   generate-summary:
     queue-url: ${SQS_GENERATE_SUMMARY_QUEUE_URL}
+  generate-quiz:
+    queue-url: ${SQS_GENERATE_QUIZ_QUEUE_URL}
+  generate-exam:
+    queue-url: ${SQS_GENERATE_EXAM_QUEUE_URL}
+  grade-quiz-essay:
+    queue-url: ${SQS_GRADE_QUIZ_ESSAY_QUEUE_URL}
+  grade-exam-essay:
+    queue-url: ${SQS_GRADE_EXAM_ESSAY_QUEUE_URL}
 
 google:
   oauth2:

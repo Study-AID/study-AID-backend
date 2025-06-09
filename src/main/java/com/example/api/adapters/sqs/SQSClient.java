@@ -6,4 +6,6 @@ public interface SQSClient {
     void sendGenerateQuizMessage(GenerateQuizMessage message);
 
     void sendGenerateExamMessage(GenerateExamMessage message);
+
+    void sendGradeQuizEssayMessage(GradeQuizEssayMessage message);
 }

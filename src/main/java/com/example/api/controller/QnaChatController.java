@@ -35,12 +35,12 @@ public class QnaChatController {
     }
 
     @Operation(
-            summary = "QnA 채팅방 생성",
-            description = "강의 자료를 기반으로 새로운 QnA 채팅방을 생성합니다.",
+            summary = "QnA 채팅방 생성(또는 기존 채팅방 반환)",
+            description = "강의 자료를 기반으로 새로운 QnA 채팅방을 생성합니다. 한 강의당 하나의 채팅방만 존재합니다.",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "채팅방 생성 성공",
+                            description = "채팅방 생성(또는 기존 채팅방 반환) 성공",
                             content = @Content(schema = @Schema(implementation = CreateQnaChatResponse.class),
                                     examples = {
                                             @ExampleObject(
