@@ -192,6 +192,34 @@ services:
     profiles:
       - exam
 
+  # 서술형 채점 기능 테스트 (grade_quiz_essay)
+  test-grade-quiz-essay:
+    build:
+      context: ../../
+      dockerfile: jobs/test_env/Dockerfile.test
+    depends_on:
+      - postgres-test
+      - localstack-test
+      - setup-db
+    environment:
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: studyaid
+      AWS_ENDPOINT_URL: http://localstack-test:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: ap-northeast-2
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-test_key}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      PROMPT_VERSION: latest
+    volumes:
+      - ../../:/app
+    command: [ "python", "/app/jobs/test_env/run_test_job.py", "--job", "grade_quiz_essay" ]
+    profiles:
+      - grade-quiz-essay
+
 volumes:
   postgres-test-data:
   localstack-test-data:
