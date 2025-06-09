@@ -4,6 +4,7 @@ import com.example.api.dto.request.*;
 import com.example.api.dto.response.AuthResponse;
 import com.example.api.dto.response.UserSummaryResponse;
 import com.example.api.entity.User;
+import com.example.api.service.dto.oauth2.GoogleLoginInput;
 
 // TODO(jin): Refactor to use input/output DTOs (service layer) instead of request/response DTOs (controller layer)
 public interface AuthService {
@@ -12,4 +13,5 @@ public interface AuthService {
     void logout(LogoutRequest req);
     AuthResponse refreshToken(TokenRefreshRequest req);
     UserSummaryResponse getCurrentUserInfo(String userIdString);
+    AuthResponse loginWithGoogle(GoogleLoginInput input);
 }

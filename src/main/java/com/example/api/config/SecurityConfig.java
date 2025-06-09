@@ -38,6 +38,8 @@ public class SecurityConfig {
                         //JWT 인증 필요 없이 접속 가능한 공개 API
                         .requestMatchers("/v1/auth/signup/email",
                                         "/v1/auth/login/email",
+                                        "/v1/auth/login/google",
+                                        "/privacy-policy.html",
                                         "/swagger-ui.html",
                                         "/swagger-ui/**",
                                         "/api-docs/**",

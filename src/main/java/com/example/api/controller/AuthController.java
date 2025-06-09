@@ -1,5 +1,7 @@
 package com.example.api.controller;
 
+import com.example.api.controller.dto.oauth2.GoogleLoginRequest;
+import com.example.api.service.dto.oauth2.GoogleLoginInput;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -108,6 +110,49 @@ public class AuthController {
     public ResponseEntity<SimpleResponse<AuthResponse>> loginWithEmail(@RequestBody EmailLoginRequest req) {
         AuthResponse authResponse = authService.loginWithEmail(req);
         return ResponseEntity.ok(new SimpleResponse<>("이메일 로그인 성공", authResponse));
+    }
+
+    @PostMapping("/login/google")
+    @Operation(summary = "Google 로그인", description = "Google OAuth2 인증 코드로 로그인합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Google 로그인 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                        {
+                          "message": "Google 로그인 성공",
+                          "data": {
+                            "token": {
+                              "accessToken": "sample-access-token",
+                              "refreshToken": "sample-refresh-token"
+                            },
+                            "user": {
+                              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                              "email": "user@gmail.com",
+                              "name": "사용자"
+                            }
+                          }
+                        }
+                    """)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Google 로그인 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(name = "wrong-auth-type", value = """
+                                {
+                                  "message": "구글 로그인 사용자가 아닙니다. 다른 로그인 방식으로 시도해보세요.",
+                                  "data": null
+                                }
+                            """)
+                            }
+                    ))
+    })
+    public ResponseEntity<SimpleResponse<AuthResponse>> loginWithGoogle(@RequestBody GoogleLoginRequest req) {
+        GoogleLoginInput input = new GoogleLoginInput(req.getCode(), req.getRedirectUri());
+        AuthResponse authResponse = authService.loginWithGoogle(input);
+        return ResponseEntity.ok(new SimpleResponse<>("Google 로그인 성공", authResponse));
     }
 
     @PostMapping("/logout")

@@ -8,7 +8,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 
 import java.time.Duration;
 
-// 현재는 Langchain 서버와의 통신을 위해 RestTemplate을 사용하고 있습니다.
+// 현재는 Langchain 서버, Google api(OAuth2) 와의 통신을 위해 RestTemplate을 사용하고 있습니다.
 @Configuration
 public class RestTemplateConfig {
     @Value("${rest-template.connect-timeout-ms:3000}")
