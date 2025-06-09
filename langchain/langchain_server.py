@@ -10,7 +10,6 @@ import time
 import json
 import shutil
 
-# TODO(jin): optimize (hyperparameter, model, memory, vectorDB) for better UX
 # 하이퍼 파라미터 chunk_size, chunk_overlap. 공백 포함 글자 수. 현재는 출처 페이지 제공을 위해 페이지별로 chunking합니다.
 """
 글자수 참고: 
@@ -27,7 +26,7 @@ app = Flask(__name__)
 in_memory_lecture_embeddings_cache = {}
 VECTOR_DIR = "/app/chroma_db"
 embeddings = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-m3",
+    model_name="intfloat/multilingual-e5-base",
     encode_kwargs={"normalize_embeddings": True}
 )
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=100)
@@ -69,7 +68,7 @@ def get_vector_store(lecture_id, check_only=False):
 
     return None
 
-# TODO(jin): optimize vector store preloading strategy for scalability. (popularity-based, LRU, etc.)
+# TODO(jin): optimize vector store preloading strategy for scalability. (Qdrant, popularity-based, LRU, etc.)
 # 벡터 스토어 사전 로드 함수
 def preload_vector_store():
     print("[Langchain] 벡터 스토어 사전 로드 시작...", flush=True)
@@ -134,7 +133,7 @@ def split_and_extract_chunk_documents(parsed_text):
             seen_chunks.add(stripped_chunk)
 
             documents.append(Document(
-                page_content=stripped_chunk,
+                page_content="passage: " + stripped_chunk,
                 metadata={
                     "page": page_number
                 }
@@ -186,8 +185,8 @@ def generate_lecture_embeddings(lecture_id):
             collection_metadata={
                 "hnsw:space": "cosine",  # 코사인 유사도 사용 (기본값: l2 (유클리드 거리))
                 "hnsw:num_threads": 2    # 멀티스레드 사용 (기본값: 1)
-              # "hnsw:M": 16, # 그래프 연결 수 (기본값: 16)
-              # "hnsw:efSearch": 64 # 검색 정확도 (기본값: 100)
+                # "hnsw:M": 16, # 그래프 연결 수 (기본값: 16)
+                # "hnsw:efSearch": 64 # 검색 정확도 (기본값: 100)
             }
         )
 
@@ -261,7 +260,8 @@ def find_references_in_lecture(lecture_id):
     search_start = time.time()
 
     try:
-        docs_and_scores = vector_store.similarity_search_with_score(question, k=top_k)
+        search_query = "query: " + question
+        docs_and_scores = vector_store.similarity_search_with_score(search_query, k=top_k)
     except Exception as e:
         print(f"[Langchain] 출처 검색 실패: {str(e)}", flush=True)
         return jsonify({"error": f"Search failed: {str(e)}"}), 500
@@ -277,8 +277,12 @@ def find_references_in_lecture(lecture_id):
     for doc, score in docs_and_scores:
         similarity = 1.0 - score
         if similarity >= min_similarity:
+            # passage prefix 제거로 응답 정리
+            content = doc.page_content
+            if content.startswith("passage: "):
+                content = content[9:]
             results.append({
-                "text": doc.page_content,
+                "text": content,
                 "page": doc.metadata.get("page", -1),
                 "similarity": round(similarity, 4)
             })
