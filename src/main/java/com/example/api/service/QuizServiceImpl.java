@@ -135,10 +135,6 @@ public class QuizServiceImpl implements QuizService {
         UUID userId = inputs.get(0).getUserId();
         Quiz quiz = quizRepo.getReferenceById(quizId);
 
-        // 퀴즈 상태 'submitted'로 업데이트
-        quiz.setStatus(Status.submitted);
-        quizRepo.updateQuiz(quiz);
-
         // 서술형 문제 유무 확인
         boolean hasEssay = hasEssayQuestions(quizId);
         if (!hasEssay) {

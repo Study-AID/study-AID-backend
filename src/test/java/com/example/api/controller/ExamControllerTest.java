@@ -386,7 +386,7 @@ public class ExamControllerTest {
         notGradedExamOutput.setCourseId(courseId);
         notGradedExamOutput.setUserId(userId);
         notGradedExamOutput.setTitle("중간고사");
-        notGradedExamOutput.setStatus(Status.submitted); // 제출됨 상태 (채점 전)
+        notGradedExamOutput.setStatus(Status.not_started); // 제출됨 상태 (채점 전)
 
         when(examService.findExamById(examId)).thenReturn(Optional.of(notGradedExamOutput));
 

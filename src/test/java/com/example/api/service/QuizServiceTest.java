@@ -290,7 +290,7 @@ public class QuizServiceTest {
     @DisplayName("퀴즈 채점 테스트 - 모든 답이 정확한 경우")
     void gradeQuizWithAllCorrectAnswers() {
         // given
-        testQuiz.setStatus(Status.submitted); // 채점을 위해 상태 변경
+        testQuiz.setStatus(Status.not_started); // 채점을 위해 상태 변경
 
         when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
         when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
@@ -341,7 +341,7 @@ public class QuizServiceTest {
     @DisplayName("퀴즈 채점 테스트 - 일부 답이 틀린 경우")
     void gradeQuizWithSomeIncorrectAnswers() {
         // given
-        testQuiz.setStatus(Status.submitted); // 채점을 위해 상태 변경
+        testQuiz.setStatus(Status.not_started); // 채점을 위해 상태 변경
 
         // Modify responses to have incorrect answers
         testQuizResponses.get(0).setSelectedBool(false); // Wrong answer for true/false

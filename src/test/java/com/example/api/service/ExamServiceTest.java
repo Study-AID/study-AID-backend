@@ -279,7 +279,7 @@ public class ExamServiceTest {
     @DisplayName("시험 채점 테스트 - 모든 답이 정확한 경우")
     void gradeExamWithAllCorrectAnswers() {
         // given
-        testExam.setStatus(Status.submitted); // 채점을 위해 상태 변경
+        testExam.setStatus(Status.not_started); // 채점을 위해 상태 변경
 
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(examResponseRepo.findByExamId(examId)).thenReturn(testExamResponses);
@@ -329,7 +329,7 @@ public class ExamServiceTest {
     @DisplayName("시험 채점 테스트 - 일부 답이 틀린 경우")
     void gradeExamWithSomeIncorrectAnswers() {
         // given
-        testExam.setStatus(Status.submitted); // 채점을 위해 상태 변경
+        testExam.setStatus(Status.not_started); // 채점을 위해 상태 변경
 
         // Modify responses to have incorrect answers
         testExamResponses.get(0).setSelectedBool(false); // Wrong answer for true/false
@@ -389,7 +389,7 @@ public class ExamServiceTest {
     @DisplayName("시험 채점 테스트 - question type이 null인 경우 예외 처리")
     void gradeExamWithNullQuestionType() {
         // given
-        testExam.setStatus(Status.submitted); // 채점을 위해 상태 변경
+        testExam.setStatus(Status.not_started); // 채점을 위해 상태 변경
 
         // Set questionType to null
         testExamResponses.get(0).getExamItem().setQuestionType(null);

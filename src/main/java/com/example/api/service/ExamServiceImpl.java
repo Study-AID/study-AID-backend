@@ -123,10 +123,6 @@ public class ExamServiceImpl implements ExamService {
         UUID examId = inputs.get(0).getExamId();
         Exam exam = examRepo.getReferenceById(examId);
 
-        // 모의시험 상태 'submitted'로 업데이트
-        exam.setStatus(Status.submitted);
-        examRepo.updateExam(exam);
-
         // 서술형 문제 유무 확인
         boolean hasEssay = hasEssayQuestions(examId);
         if (!hasEssay) {
