@@ -5,11 +5,7 @@ import com.example.api.entity.enums.QuestionType;
 import com.example.api.entity.enums.Status;
 import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.*;
-import com.example.api.service.dto.quiz.CreateQuizInput;
-import com.example.api.service.dto.quiz.QuizListOutput;
-import com.example.api.service.dto.quiz.QuizOutput;
-import com.example.api.service.dto.quiz.QuizResultOutput;
-import com.example.api.service.dto.quiz.UpdateQuizInput;
+import com.example.api.service.dto.quiz.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -430,5 +426,96 @@ public class QuizServiceTest {
         // then
         assertFalse(result.isPresent());
         verify(quizResultRepository, times(1)).findByQuizId(nonExistentQuizId);
+    }
+
+    @Test
+    @DisplayName("서술형 문항의 essay_criteria_analysis 포함된 퀴즈 결과 조회")
+    void findQuizResultByQuizIdWithEssayCriteriaAnalysis() {
+        // given
+        UUID essayQuizItemId = UUID.randomUUID();
+        UUID essayResponseId = UUID.randomUUID();
+
+        EssayCriteriaAnalysis essayCriteriaAnalysis = new EssayCriteriaAnalysis();
+        List<ScoringCriterion> criteria = List.of(
+                new ScoringCriterion("내용 정확성", "기본 개념을 정확히 이해했는지 평가", 5.0, 4.0),
+                new ScoringCriterion("구체성", "구체적인 예시나 설명이 있는지 평가", 3.0, 2.5),
+                new ScoringCriterion("논리적 구조", "논리적으로 체계적인 서술인지 평가", 2.0, 1.5)
+        );
+        essayCriteriaAnalysis.setCriteria(criteria);
+        essayCriteriaAnalysis.setAnalysis("전반적으로 운영체제의 기본 개념을 잘 이해하고 있으나, 더 구체적인 예시가 있었다면 좋겠습니다.");
+
+        // 서술형 QuizItem 생성
+        QuizItem essayItem = new QuizItem();
+        essayItem.setId(essayQuizItemId);
+        essayItem.setQuiz(testQuiz);
+        essayItem.setUser(testUser);
+        essayItem.setQuestionType(QuestionType.essay);
+        essayItem.setQuestion("운영체제의 역할에 대해 설명하시오.");
+        essayItem.setTextAnswer("운영체제는 컴퓨터 하드웨어와 응용 프로그램 사이에서 동작하는 시스템 소프트웨어입니다.");
+
+        // 서술형 QuizResponse 생성 (essay_criteria_analysis 포함)
+        QuizResponse essayResponse = new QuizResponse();
+        essayResponse.setId(essayResponseId);
+        essayResponse.setQuiz(testQuiz);
+        essayResponse.setQuizItem(essayItem);
+        essayResponse.setUser(testUser);
+        essayResponse.setTextAnswer("운영체제는 하드웨어를 관리하고 응용프로그램에 서비스를 제공합니다.");
+        essayResponse.setScore(8.0f);
+        essayResponse.setEssayCriteriaAnalysis(essayCriteriaAnalysis);
+
+        List<QuizItem> allItems = Arrays.asList(
+                testQuizResponses.get(0).getQuizItem(),
+                testQuizResponses.get(1).getQuizItem(),
+                testQuizResponses.get(2).getQuizItem(),
+                essayItem
+        );
+
+        when(quizResultRepository.findByQuizId(quizId)).thenReturn(Optional.of(testQuizResult));
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(allItems);
+
+        // 각 QuizItem에 대한 QuizResponse 반환 설정
+        when(quizResponseRepository.findByQuizItemId(testQuizResponses.get(0).getQuizItem().getId()))
+                .thenReturn(Optional.of(testQuizResponses.get(0)));
+        when(quizResponseRepository.findByQuizItemId(testQuizResponses.get(1).getQuizItem().getId()))
+                .thenReturn(Optional.of(testQuizResponses.get(1)));
+        when(quizResponseRepository.findByQuizItemId(testQuizResponses.get(2).getQuizItem().getId()))
+                .thenReturn(Optional.of(testQuizResponses.get(2)));
+        when(quizResponseRepository.findByQuizItemId(essayQuizItemId))
+                .thenReturn(Optional.of(essayResponse));
+
+        when(quizItemRepository.getReferenceById(any(UUID.class))).thenAnswer(invocation -> {
+            UUID id = invocation.getArgument(0);
+            return allItems.stream().filter(item -> item.getId().equals(id)).findFirst().orElse(null);
+        });
+
+        // when
+        Optional<QuizResultOutput> result = quizService.findQuizResultByQuizId(quizId);
+
+        // then
+        assertTrue(result.isPresent());
+        QuizResultOutput quizResult = result.get();
+
+        // QuizResultElement에서 서술형 문항 찾기
+        Optional<QuizResultElement> essayElement = quizResult.getQuizResultElements().stream()
+                .filter(element -> element.getQuestionType() == QuestionType.essay)
+                .findFirst();
+
+        assertTrue(essayElement.isPresent());
+
+        // essay_criteria_analysis가 포함되어 있는지 확인
+        assertNotNull(essayElement.get().getEssayCriteriaAnalysis());
+        assertEquals(3, essayElement.get().getEssayCriteriaAnalysis().getCriteria().size());
+        assertEquals("전반적으로 운영체제의 기본 개념을 잘 이해하고 있으나, 더 구체적인 예시가 있었다면 좋겠습니다.",
+                essayElement.get().getEssayCriteriaAnalysis().getAnalysis());
+
+        // 첫 번째 채점 기준 확인
+        ScoringCriterion firstCriterion = essayElement.get().getEssayCriteriaAnalysis().getCriteria().get(0);
+        assertEquals("내용 정확성", firstCriterion.getName());
+        assertEquals(5.0, firstCriterion.getMaxPoints());
+        assertEquals(4.0, firstCriterion.getEarnedPoints());
+
+        verify(quizResultRepository, times(1)).findByQuizId(quizId);
+        verify(quizItemRepository, times(1)).findByQuizId(quizId);
+        verify(quizResponseRepository, times(4)).findByQuizItemId(any(UUID.class));
     }
 }

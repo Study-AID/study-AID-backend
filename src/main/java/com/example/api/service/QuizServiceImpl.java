@@ -238,20 +238,21 @@ public class QuizServiceImpl implements QuizService {
         return initialMaxScore;
     }
 
-    @Override
-    @Transactional
-    public QuizResultOutput createQuizResult(CreateQuizResultInput input) {
-        Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
-        User user = userRepo.getReferenceById(input.getUserId());
+    private void sendGradeQuizEssayMessage(UUID userId, UUID quizId) {
+        GradeQuizEssayMessage message = GradeQuizEssayMessage.builder()
+                .schemaVersion("1.0.0")
+                .requestId(UUID.randomUUID())
+                .occurredAt(OffsetDateTime.now())
+                .userId(userId)
+                .quizId(quizId)
+                .build();
 
-        QuizResult quizResult = new QuizResult();
-        quizResult.setQuiz(quiz);
-        quizResult.setUser(user);
-        quizResult.setScore(input.getScore());
-        quizResult.setMaxScore(input.getMaxScore());
-
-        QuizResult createdQuizResult = quizResultRepo.createQuizResult(quizResult);
-        return QuizResultOutput.fromEntity(createdQuizResult);
+        try {
+            sqsClient.sendGradeQuizEssayMessage(message);
+            log.info("Successfully sent grade quiz essay message to SQS: quizId={}, userId={}", quizId, userId);
+        } catch (Exception e) {
+            log.error("Failed to send grade quiz essay message to SQS: quizId={}, userId={}, error={}", quizId, userId, e.getMessage());
+        }
     }
 
     @Override
@@ -316,22 +317,5 @@ public class QuizServiceImpl implements QuizService {
         }
 
         return count > 0 ? totalScore / count : 0f;
-    }
-
-    private void sendGradeQuizEssayMessage(UUID userId, UUID quizId) {
-        GradeQuizEssayMessage message = GradeQuizEssayMessage.builder()
-                .schemaVersion("1.0.0")
-                .requestId(UUID.randomUUID())
-                .occurredAt(OffsetDateTime.now())
-                .userId(userId)
-                .quizId(quizId)
-                .build();
-
-        try {
-            sqsClient.sendGradeQuizEssayMessage(message);
-            log.info("Successfully sent grade quiz essay message to SQS: quizId={}, userId={}", quizId, userId);
-        } catch (Exception e) {
-            log.error("Failed to send grade quiz essay message to SQS: quizId={}, userId={}, error={}", quizId, userId, e.getMessage());
-        }
     }
 }
