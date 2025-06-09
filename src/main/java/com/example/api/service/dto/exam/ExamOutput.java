@@ -19,8 +19,6 @@ public class ExamOutput {
     private UUID id;
     private UUID courseId;
     private UUID userId;
-    private String userName;
-    private String userEmail;
     private String title;
     private Status status;
     private UUID[] referencedLectures;
@@ -34,8 +32,6 @@ public class ExamOutput {
                 exam.getId(),
                 exam.getCourse().getId(),
                 exam.getUser().getId(),
-                exam.getUser().getName(),
-                exam.getUser().getEmail(),
                 exam.getTitle(),
                 exam.getStatus(),
                 exam.getReferencedLectures(),

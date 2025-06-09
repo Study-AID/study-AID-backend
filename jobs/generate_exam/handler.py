@@ -20,12 +20,11 @@ logger = logging.getLogger(__name__)
 # AWS S3 configuration
 s3_endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
 
-# TODO(jin): write default sender email and frontend domain
 # AWS SES configuration
-SES_SENDER_EMAIL = os.environ.get('SES_SENDER_EMAIL')
+SES_SENDER_EMAIL = os.environ.get('SES_SENDER_EMAIL', 'noreply@studyaid.academy')
 
 # Domain configuration
-FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN')
+FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN', 'https://studyaid.academy')
 
 # Database configuration
 DB_CONFIG = {
@@ -267,13 +266,62 @@ def save_exam_to_db(course_id, user_id, exam_data, title=None, referenced_lectur
         if conn:
             conn.close()
 
-def send_exam_email(receiver_email, user_name, exam_title, exam_id):
-    # TODO(jin): write default sender email and frontend domain
-    sender_email = os.environ.get('SES_SENDER_EMAIL')
-    frontend_domain = os.environ.get('FRONTEND_DOMAIN')
+def get_user_info(user_id):
+    """Get user information from database"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            query = """
+                    SELECT email, name 
+                    FROM app.users 
+                    WHERE id = %s AND deleted_at IS NULL
+                    """
+            cursor.execute(query, (user_id,))
+            user = cursor.fetchone()
 
-    # TODO(jin): write correct url
-    exam_url = f"{frontend_domain}/exams/{exam_id}"
+            if not user:
+                raise ValueError(f"No user found with id: {user_id}")
+
+            return dict(user)
+    except Exception as e:
+        logger.error(f"Error getting user info: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def get_semester_id(course_id):
+    """Get semester_id from course_id"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            query = """
+                    SELECT semester_id 
+                    FROM app.courses 
+                    WHERE id = %s AND deleted_at IS NULL
+                    """
+            cursor.execute(query, (course_id,))
+            result = cursor.fetchone()
+
+            if not result:
+                raise ValueError(f"No course found with id: {course_id}")
+
+            return result[0]
+    except Exception as e:
+        logger.error(f"Error getting semester_id: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def send_exam_email(receiver_email, user_name, exam_title, semester_id, course_id):
+    sender_email = os.environ.get('SES_SENDER_EMAIL', 'noreply@studyaid.academy')
+    frontend_domain = os.environ.get('FRONTEND_DOMAIN', 'https://studyaid.academy')
+
+    # TODO(jin): check correct url
+    exam_url = f"{frontend_domain}/{semester_id}/{course_id}/exam"
 
     subject = f"[Study AID] 🕊️모의시험 생성 완료: '{exam_title}'"
     body_text = f"{user_name}님, 모의시험 '{exam_title}'의 생성이 완료되었어요! {exam_url} 에서 확인하세요."
@@ -417,7 +465,6 @@ def get_reference_lectures(reference_lecture_ids):
         if conn:
             conn.close()
 
-
 def lambda_handler(event, context):
     """Main function to handle the event from SQS"""
     try:
@@ -428,11 +475,17 @@ def lambda_handler(event, context):
 
             # Extract information from the message
             user_id = message.get('user_id')
-            user_email = message.get("user_email")
-            user_name = message.get("user_name")
             course_id = message.get('course_id')
             exam_title = message.get('title')
             referenced_lecture_ids = message.get('referenced_lecture_ids', [])
+
+            # get user info via db
+            user_info = get_user_info(user_id)
+            user_email = user_info['email']
+            user_name = user_info['name']
+
+            # get semester_id via db
+            semester_id = get_semester_id(course_id)
 
             # Exam configuration
             question_counts = {
@@ -464,7 +517,7 @@ def lambda_handler(event, context):
 
             # Send email to user with exam link
             if user_email and user_name and exam_title:
-                send_exam_email(user_email, user_name, exam_title, exam_id)
+                send_exam_email(user_email, user_name, exam_title, semester_id, course_id)
             else:
                 logger.warning("이메일 전송을 위한 정보가 부족합니다. user_email, user_name, exam_title 확인 필요.")
 

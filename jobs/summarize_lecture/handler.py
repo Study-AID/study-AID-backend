@@ -19,12 +19,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Constants and configurations
-# TODO(jin): write default sender email and frontend domain
 # AWS SES configuration
-SES_SENDER_EMAIL=os.environ.get('SES_SENDER_EMAIL')
+SES_SENDER_EMAIL=os.environ.get('SES_SENDER_EMAIL', 'noreply@studyaid.academy')
 
 # Domain configuration
-FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN')
+FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN', 'https://studyaid.academy')
 
 # PDF chunking configuration
 DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
@@ -207,13 +206,85 @@ def update_lecture_parsed_text(lecture_id, parsed_text):
         if conn:
             conn.close()
 
-def send_summary_email(receiver_email, user_name, lecture_title, lecture_id):
-    # TODO(jin): write default sender email and frontend domain
-    sender_email = os.environ.get('SES_SENDER_EMAIL')
-    frontend_domain = os.environ.get('FRONTEND_DOMAIN')
+def get_user_info(user_id):
+    """Get user information from database"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            query = """
+                    SELECT email, name 
+                    FROM app.users 
+                    WHERE id = %s AND deleted_at IS NULL
+                    """
+            cursor.execute(query, (user_id,))
+            user = cursor.fetchone()
 
-    # TODO(jin): write correct url
-    summary_url = f"{frontend_domain}/lectures/{lecture_id}/summary"
+            if not user:
+                raise ValueError(f"No user found with id: {user_id}")
+
+            return dict(user)
+    except Exception as e:
+        logger.error(f"Error getting user info: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def get_lecture_title(lecture_id):
+    """Get lecture title from database"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            query = """
+                    SELECT title 
+                    FROM app.lectures 
+                    WHERE id = %s AND deleted_at IS NULL
+                    """
+            cursor.execute(query, (lecture_id,))
+            result = cursor.fetchone()
+
+            if not result:
+                raise ValueError(f"No lecture found with id: {lecture_id}")
+
+            return result[0]
+    except Exception as e:
+        logger.error(f"Error getting lecture title: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def get_semester_id(course_id):
+    """Get semester_id from course_id"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            query = """
+                    SELECT semester_id 
+                    FROM app.courses 
+                    WHERE id = %s AND deleted_at IS NULL
+                    """
+            cursor.execute(query, (course_id,))
+            result = cursor.fetchone()
+
+            if not result:
+                raise ValueError(f"No course found with id: {course_id}")
+
+            return result[0]
+    except Exception as e:
+        logger.error(f"Error getting semester_id: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def send_summary_email(receiver_email, user_name, lecture_title, semester_id, course_id, lecture_id):
+    sender_email = os.environ.get('SES_SENDER_EMAIL', 'noreply@studyaid.academy')
+    frontend_domain = os.environ.get('FRONTEND_DOMAIN', 'https://studyaid.academy')
+    summary_url = f"{frontend_domain}/{semester_id}/{course_id}/{lecture_id}/note"
 
     subject = f"'[Study AID] 🕊️요약본 생성 완료: {lecture_title}"
     body_text = f"{user_name}님, 강의 '{lecture_title}' 요약이 완료되었어요! {summary_url} 에서 확인하세요."
@@ -301,13 +372,21 @@ def lambda_handler(event, context):
 
             # Extract information from the message
             user_id = message.get('user_id')
-            user_email = message.get("user_email")
-            user_name = message.get("user_name")
             course_id = message.get('course_id')
             lecture_id = message.get('lecture_id')
-            lecture_title = message.get("lecture_title")
             s3_bucket = message.get('s3_bucket')
             s3_key = message.get('s3_key')
+
+            # get user information via db
+            user_info = get_user_info(user_id)
+            user_email = user_info['email']
+            user_name = user_info['name']
+
+            # get lecture title via db
+            lecture_title = get_lecture_title(lecture_id)
+
+            # get semester_id via db
+            semester_id = get_semester_id(course_id)
 
             # Update status to in_progress
             update_lecture_status(lecture_id, 'in_progress')
@@ -348,7 +427,7 @@ def lambda_handler(event, context):
 
             # Send email to user with summary link
             if user_email and user_name and lecture_title:
-                send_summary_email(user_email, user_name, lecture_title, lecture_id)
+                send_summary_email(user_email, user_name, lecture_title, semester_id, course_id, lecture_id)
             else:
                 logger.warning("이메일 전송을 위한 정보가 부족합니다. user_email, user_name, lecture_title 확인 필요.")
 

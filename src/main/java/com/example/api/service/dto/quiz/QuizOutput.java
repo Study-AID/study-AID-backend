@@ -18,10 +18,7 @@ import java.util.UUID;
 public class QuizOutput {
     private UUID id;
     private UUID lectureId;
-    private String lectureTitle;
     private UUID userId;
-    private String userName;
-    private String userEmail;
     private String title;
     private Status status;
     private LocalDateTime contentsGenerateAt;
@@ -33,10 +30,7 @@ public class QuizOutput {
         return new QuizOutput(
                 quiz.getId(),
                 quiz.getLecture().getId(),
-                quiz.getLecture().getTitle(),
                 quiz.getUser().getId(),
-                quiz.getUser().getName(),
-                quiz.getUser().getEmail(),
                 quiz.getTitle(),
                 quiz.getStatus(),
                 quiz.getContentsGenerateAt(),

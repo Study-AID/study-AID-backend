@@ -171,8 +171,6 @@ public class ExamController extends BaseController {
                 .requestId(UUID.randomUUID())
                 .occurredAt(OffsetDateTime.now())
                 .userId(userId)
-                .userName(examOutput.getUserName())
-                .userEmail(examOutput.getUserEmail())
                 .courseId(examOutput.getCourseId())
                 .examId(examOutput.getId())
                 .title(examOutput.getTitle())

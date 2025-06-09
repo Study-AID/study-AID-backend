@@ -17,11 +17,8 @@ public class GenerateSummaryMessage {
     private UUID requestId;
     private OffsetDateTime occurredAt;
     private UUID userId;
-    private String userName;
-    private String userEmail;
     private UUID courseId;
     private UUID lectureId;
-    private String lectureTitle;
     private String s3Bucket;
     private String s3Key;
 }

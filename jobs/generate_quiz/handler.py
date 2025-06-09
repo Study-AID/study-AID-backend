@@ -23,12 +23,11 @@ logger = logging.getLogger(__name__)
 DEFAULT_CHUNK_SIZE = int(os.environ.get('DEFAULT_CHUNK_SIZE', '40'))
 MAX_CONCURRENT_CHUNKS = int(os.environ.get('MAX_CONCURRENT_CHUNKS', '2'))
 
-# TODO(jin): write default sender email and frontend domain
 # AWS SES configuration
-SES_SENDER_EMAIL=os.environ.get('SES_SENDER_EMAIL')
+SES_SENDER_EMAIL=os.environ.get('SES_SENDER_EMAIL', 'noreply@studyaid.academy')
 
 # Domain configuration
-FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN')
+FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN', 'https://studyaid.academy')
 
 # Database configuration
 DB_CONFIG = {
@@ -317,13 +316,60 @@ def update_quiz_in_db(quiz_id, lecture_id, user_id, quiz_data, title=None):
         if conn:
             conn.close()
 
-def send_quiz_email(receiver_email, user_name, lecture_title, lecture_id, quiz_title):
-    # TODO(jin): write default sender email and frontend domain
-    sender_email = os.environ.get('SES_SENDER_EMAIL')
-    frontend_domain = os.environ.get('FRONTEND_DOMAIN')
+def get_user_info(user_id):
+    """Get user information from database"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            query = """
+                    SELECT email, name 
+                    FROM app.users 
+                    WHERE id = %s AND deleted_at IS NULL
+                    """
+            cursor.execute(query, (user_id,))
+            user = cursor.fetchone()
 
-    # TODO(jin): write correct url
-    quiz_url = f"{frontend_domain}/quizzes/lecture/{lecture_id}"
+            if not user:
+                raise ValueError(f"No user found with id: {user_id}")
+
+            return dict(user)
+    except Exception as e:
+        logger.error(f"Error getting user info: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def get_semester_id(course_id):
+    """Get semester_id from course_id"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            query = """
+                    SELECT semester_id 
+                    FROM app.courses 
+                    WHERE id = %s AND deleted_at IS NULL
+                    """
+            cursor.execute(query, (course_id,))
+            result = cursor.fetchone()
+
+            if not result:
+                raise ValueError(f"No course found with id: {course_id}")
+
+            return result[0]
+    except Exception as e:
+        logger.error(f"Error getting semester_id: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def send_quiz_email(receiver_email, user_name, lecture_title, semester_id, course_id, lecture_id, quiz_title):
+    sender_email = os.environ.get('SES_SENDER_EMAIL', 'noreply@studyaid.academy')
+    frontend_domain = os.environ.get('FRONTEND_DOMAIN', 'https://studyaid.academy')
+    quiz_url = f"{frontend_domain}/{semester_id}/{course_id}/{lecture_id}/quiz"
 
     subject = f"[Study AID] 🕊️퀴즈 생성 완료: '{lecture_title}'의 '{quiz_title}'"
     body_text = f"{user_name}님, 강의 '{lecture_title}' 퀴즈 '{quiz_title}'의 생성이 완료되었어요! {quiz_url} 에서 확인하세요."
@@ -411,14 +457,23 @@ def lambda_handler(event, context):
 
             # Extract information from the message
             user_id = message.get('user_id')
-            user_email = message.get("user_email")
-            user_name = message.get("user_name")
             course_id = message.get('course_id')
             lecture_id = message.get('lecture_id')
-            lecture_title = message.get("lecture_title")
             quiz_title = message.get('title')
             quiz_id = message.get('quiz_id')  # Get the quiz_id for update
             language = message.get('language', '한국어')  # Default to Korean if not specified
+
+            # get user information via db
+            user_info = get_user_info(user_id)
+            user_email = user_info['email']
+            user_name = user_info['name']
+
+            # get lecture title via db
+            lecture_info = get_lecture_info(lecture_id)
+            lecture_title = lecture_info['title']
+
+            # get semester_id via db
+            semester_id = get_semester_id(course_id)
 
             # Get question counts by type with default values
             question_counts = {
@@ -471,7 +526,7 @@ def lambda_handler(event, context):
 
             # Send email to user with quiz link
             if user_email and user_name and lecture_title and quiz_title:
-                send_quiz_email(user_email, user_name, lecture_title, lecture_id, quiz_title)
+                send_quiz_email(user_email, user_name, lecture_title, semester_id, course_id, lecture_id, quiz_title)
             else:
                 logger.warning("이메일 전송을 위한 정보가 부족합니다. user_email, user_name, lecture_title, quiz_title 확인 필요.")
 
