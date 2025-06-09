@@ -1,15 +1,16 @@
 package com.example.api.service.dto.quiz;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
-public class CreateQuizResultInput {
+public class ToggleLikeQuizItemInput {
     private UUID quizId;
+    private UUID quizItemId;
     private UUID userId;
-    private Float score;
-    private Float maxScore;
 }

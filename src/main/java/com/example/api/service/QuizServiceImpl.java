@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -317,5 +316,65 @@ public class QuizServiceImpl implements QuizService {
         }
 
         return count > 0 ? totalScore / count : 0f;
+    }
+
+    @Override
+    public QuizItemListOutput findLikedQuizItemByLectureId(UUID lectureId) {
+        List<Quiz> quizzes = quizRepo.findByLectureId(lectureId);
+        if (quizzes.isEmpty()) {
+            return new QuizItemListOutput(new ArrayList<>());
+        }
+
+        List<UUID> quizIds = quizzes.stream().map(Quiz::getId).toList();
+
+        List<QuizItemOutput> quizItemOutputs = new ArrayList<>();
+        for (UUID quizId : quizIds) {
+            List<QuizItem> quizItems = quizItemRepo.findByQuizId(quizId);
+            if (quizItems.isEmpty()) {
+                continue;
+            }
+            for (QuizItem quizItem : quizItems) {
+                if (quizItem.getIsLiked() != null && quizItem.getIsLiked()) {
+                    // 좋아요가 있는 퀴즈 아이템만 추가
+                    QuizItemOutput quizItemOutput = QuizItemOutput.fromEntity(quizItem);
+                    quizItemOutputs.add(quizItemOutput);
+                }
+            }
+        }
+        
+        return new QuizItemListOutput(quizItemOutputs);
+    }
+
+    @Override
+    @Transactional
+    public QuizItemOutput toggleLikeQuizItem(ToggleLikeQuizItemInput input) {
+        // 퀴즈 존재 확인
+        QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
+
+        // 퀴즈 문제가 해당 퀴즈에 속하는지 확인
+        if (!quizItem.getQuiz().getId().equals(input.getQuizId())) {
+            throw new IllegalArgumentException("Quiz item does not belong to the specified quiz");
+        }
+
+        // 좋아요 토글을 위한 기존 좋아요 조회
+        Optional<QuizItem> existingQuizItem = quizItemRepo.findById(input.getQuizItemId());
+        if (existingQuizItem.isEmpty()) {
+            throw new IllegalArgumentException("Quiz item not found");
+        }
+        
+        if (existingQuizItem.get().getIsLiked() != null && existingQuizItem.get().getIsLiked()) {
+            // 이미 좋아요가 눌려져 있다면 좋아요 취소
+            existingQuizItem.get().setIsLiked(false);
+        } else {
+            // 좋아요가 눌려져 있지 않다면 좋아요 추가
+            existingQuizItem.get().setIsLiked(true);
+        }
+
+        // 퀴즈 아이템의 좋아요 상태를 업데이트
+        QuizItem updatedQuizItem = quizItemRepo.updateQuizItem(existingQuizItem.get());
+        if (updatedQuizItem == null) {
+            throw new RuntimeException("Failed to update quiz item like status");
+        }
+        return QuizItemOutput.fromEntity(updatedQuizItem);
     }
 }
