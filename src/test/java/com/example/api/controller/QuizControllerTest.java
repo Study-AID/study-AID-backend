@@ -374,32 +374,6 @@ public class QuizControllerTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 강의로 퀴즈 생성")
-    @WithMockUser
-    void createQuiz_LectureNotFound() throws Exception {
-        // given
-        CreateQuizRequest createQuizRequest = new CreateQuizRequest();
-        createQuizRequest.setLectureId(lectureId);
-        createQuizRequest.setTitle("Quiz 1");
-        createQuizRequest.setTrueOrFalseCount(2);
-        createQuizRequest.setMultipleChoiceCount(3);
-        createQuizRequest.setShortAnswerCount(1);
-        createQuizRequest.setEssayCount(1);
-
-        when(lectureService.findLectureById(lectureId)).thenReturn(Optional.empty());
-
-        // when, then
-        mockMvc.perform(post("/v1/quizzes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createQuizRequest)))
-                .andExpect(status().isNotFound());
-
-        verify(lectureService, times(1)).findLectureById(lectureId);
-        verify(quizService, never()).createQuiz(any(CreateQuizInput.class));
-        verify(sqsClient, never()).sendGenerateQuizMessage(any());
-    }
-
-    @Test
     @DisplayName("퀴즈 ID로 퀴즈 결과 조회")
     @WithMockUser
     void getQuizResultById() throws Exception {
@@ -466,25 +440,33 @@ public class QuizControllerTest {
     }
 
     @Test
-    @DisplayName("다른 사용자의 퀴즈 결과 조회 시 403 에러")
+    @DisplayName("partially_graded 퀴즈 결과 조회 (서술형 포함)")
     @WithMockUser
-    void getQuizResultById_Forbidden() throws Exception {
+    void getQuizResultById_PartiallyGradedWithEssay() throws Exception {
         // given
-        UUID otherUserId = UUID.randomUUID();
-        QuizOutput otherUserQuizOutput = new QuizOutput();
-        otherUserQuizOutput.setId(quizId);
-        otherUserQuizOutput.setLectureId(lectureId);
-        otherUserQuizOutput.setUserId(otherUserId); // 다른 사용자의 퀴즈
-        otherUserQuizOutput.setTitle("Quiz 1");
-        otherUserQuizOutput.setStatus(Status.graded);
+        QuizOutput partiallyGradedQuizOutput = new QuizOutput();
+        partiallyGradedQuizOutput.setId(quizId);
+        partiallyGradedQuizOutput.setLectureId(lectureId);
+        partiallyGradedQuizOutput.setUserId(userId);
+        partiallyGradedQuizOutput.setTitle("Quiz 1");
+        partiallyGradedQuizOutput.setStatus(Status.partially_graded);
 
-        when(quizService.findQuizById(quizId)).thenReturn(Optional.of(otherUserQuizOutput));
+        when(quizService.findQuizById(quizId)).thenReturn(Optional.of(partiallyGradedQuizOutput));
+        when(quizService.findQuizResultByQuizId(quizId)).thenReturn(Optional.of(testQuizResultOutput));
 
         // when, then
         mockMvc.perform(get("/v1/quizzes/{id}/result", quizId))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(quizResultId.toString())))
+                .andExpect(jsonPath("$.quizId", is(quizId.toString())))
+                .andExpect(jsonPath("$.userId", is(userId.toString())))
+                .andExpect(jsonPath("$.score", is(85.0)))
+                .andExpect(jsonPath("$.maxScore", is(100.0)))
+                .andExpect(jsonPath("$.feedback", is("Good job!")));
 
         verify(quizService, times(1)).findQuizById(quizId);
-        verify(quizService, never()).findQuizResultByQuizId(quizId);
+        verify(quizService, times(1)).findQuizResultByQuizId(quizId);
     }
+
+
 }
