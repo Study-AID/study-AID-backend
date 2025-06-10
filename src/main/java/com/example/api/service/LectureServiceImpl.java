@@ -20,6 +20,7 @@ import com.example.api.service.dto.lecture.LectureListOutput;
 import com.example.api.service.dto.lecture.LectureOutput;
 import com.example.api.service.dto.lecture.UpdateLectureDisplayOrderLexInput;
 import com.example.api.service.dto.lecture.UpdateLectureInput;
+import com.example.api.service.dto.lecture.UpdateLectureNoteInput;
 
 
 @Service
@@ -96,6 +97,17 @@ public class LectureServiceImpl implements LectureService {
         Lecture lecture = new Lecture();
         lecture.setId(input.getId());
         lecture.setDisplayOrderLex(input.getDisplayOrderLex());
+
+        Lecture updatedLecture = lectureRepo.updateLecture(lecture);
+        return LectureOutput.fromEntity(updatedLecture);
+    }
+
+    @Override
+    @Transactional
+    public LectureOutput updateLectureNote(UpdateLectureNoteInput input) {
+        Lecture lecture = lectureRepo.findById(input.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Lecture not found with id: " + input.getId()));
+        lecture.setNote(input.getNote());
 
         Lecture updatedLecture = lectureRepo.updateLecture(lecture);
         return LectureOutput.fromEntity(updatedLecture);

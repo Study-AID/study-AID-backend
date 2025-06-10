@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -532,4 +533,80 @@ public class LectureController extends BaseController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PutMapping("/{id}/note")
+    @Operation(
+            summary = "Update lecture note",
+            description = "Updates the note of a lecture",
+            parameters = {
+                    @Parameter(
+                            name = "id",
+                            description = "ID of the lecture to update",
+                            required = true
+                    )
+            },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Updated lecture note",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = UpdateLectureNoteRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully updated lecture note",
+                            content = @Content(schema = @Schema(implementation = LectureResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid input data"
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "User does not have access to this lecture"
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Lecture not found"
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<LectureResponse> updateLectureNote(
+            @PathVariable @Parameter(name = "id", description = "ID of the lecture to update", required = true) UUID id,
+            @RequestBody UpdateLectureNoteRequest request) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // Check if the lecture exists
+            Optional<LectureOutput> lectureOutput = lectureService.findLectureById(id);
+            if (lectureOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!lectureOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            // Validate note
+            if (request.getNote() == null || request.getNote().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            UpdateLectureNoteInput updateLectureInput = new UpdateLectureNoteInput();
+            updateLectureInput.setId(id);
+            // Convert String to Map<String, String>
+            updateLectureInput.setNote(Map.of("content", request.getNote())); // Assuming note is a simple key-value pair
+
+            LectureOutput updatedLectureOutput = lectureService.updateLectureNote(updateLectureInput);
+            return ResponseEntity.ok(LectureResponse.fromServiceDto(updatedLectureOutput, storageConfig));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }        
 }
