@@ -625,4 +625,143 @@ public class QuizController extends BaseController {
 
         return ResponseEntity.ok(quizResultResponses);
     }
+
+    @GetMapping("/lecture/{lectureId}/items/liked")
+    @Operation(
+            summary = "Get liked quiz items by lecture ID",
+            description = "Retrieve all liked quiz items associated with a specific lecture ID.",
+            parameters = {
+                    @Parameter(
+                        name = "lectureId", 
+                        description = "Lecture ID", 
+                        required = true
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200", 
+                        description = "Liked quiz items retrieved successfully",
+                        content = @Content(schema = @Schema(implementation = QuizItemListResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this quiz"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404", 
+                        description = "Lecture not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<QuizItemListResponse> getLikedQuizItemsByLecture(
+            @PathVariable UUID lectureId
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        // Check if the lecture exists
+        var lectureOutput = lectureService.findLectureById(lectureId);
+        if (lectureOutput.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Check if the user is same as the quiz owner
+        if (!lectureOutput.get().getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Retrieve liked quiz items associated with the lecture
+        QuizItemListOutput quizItemListOutput = quizService.findLikedQuizItemByLectureId(lectureId);
+
+        List<QuizItemResponse> quizItemListResponse = quizItemListOutput.getQuizItems().stream()
+                .map(quizItem -> QuizItemResponse.fromServiceDto(quizItem))
+                .toList();
+
+        return ResponseEntity.ok(new QuizItemListResponse(quizItemListResponse));
+    }
+
+    @PostMapping("/{id}/items/{quizItemId}/toggle-like")
+    @Operation(
+            summary = "Toggle like for quiz item",
+            description = "Toggle like status for a specific quiz item. If already liked, removes the like. If not liked, adds a like.",
+            parameters = {
+                    @Parameter(
+                        name = "id", 
+                        description = "Quiz ID", 
+                        required = true
+                    ),
+                    @Parameter(
+                        name = "quizItemId", 
+                        description = "Quiz Item ID", 
+                        required = true
+                    )
+            },
+            requestBody = @RequestBody(
+                    description = "Toggle like request (empty body)",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ToggleLikeQuizItemRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200", 
+                        description = "Like status toggled successfully",
+                        content = @Content(schema = @Schema(implementation = QuizItemResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "400",
+                        description = "Invalid request parameters"
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this quiz"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404", 
+                        description = "Quiz or Quiz Item not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<QuizItemResponse> toggleLikeQuizItem(
+            @PathVariable UUID id,
+            @PathVariable UUID quizItemId,
+            @org.springframework.web.bind.annotation.RequestBody ToggleLikeQuizItemRequest request
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // 퀴즈 존재 여부 확인
+            Optional<QuizOutput> quizOutput = quizService.findQuizById(id);
+            if (quizOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // 사용자가 퀴즈 소유자인지 확인
+            if (!quizOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            // 좋아요 토글 서비스 호출
+            ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
+            input.setQuizId(id);
+            input.setQuizItemId(quizItemId);
+            input.setUserId(userId);
+
+            QuizItemOutput output = quizService.toggleLikeQuizItem(input);
+
+            // 응답 DTO 변환
+            QuizItemResponse response = QuizItemResponse.fromServiceDto(output);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

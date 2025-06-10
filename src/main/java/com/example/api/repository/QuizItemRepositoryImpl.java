@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 import com.example.api.entity.QuizItem;
+import com.example.api.entity.enums.QuestionType;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -33,6 +34,16 @@ public class QuizItemRepositoryImpl implements QuizItemRepositoryCustom {
                 QuizItem.class)
                 .setParameter("quizId", quizId)
                 .getResultList();
+    }
+
+    public boolean existsByQuizIdAndQuestionTypeAndDeletedAtIsNull(UUID quizId, QuestionType questionType) {
+        Long count = entityManager.createQuery(
+                "SELECT COUNT(qi) FROM QuizItem qi WHERE qi.quiz.id = :quizId AND qi.questionType = :questionType AND qi.deletedAt IS NULL",
+                Long.class)
+                .setParameter("quizId", quizId)
+                .setParameter("questionType", questionType)
+                .getSingleResult();
+        return count > 0;
     }
 
     @Transactional

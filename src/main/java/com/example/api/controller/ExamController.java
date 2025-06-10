@@ -599,4 +599,137 @@ public class ExamController extends BaseController {
 
         return ResponseEntity.ok(examResultListResponse);
     }
+
+    @GetMapping("/course/{courseId}/items/liked")
+    @Operation(
+            summary = "Get liked exam items by course ID",
+            description = "Retrieve a list of liked exam items associated with a specific course ID.",
+            parameters = {
+                    @Parameter(
+                        name = "courseId",
+                        description = "ID of the course to retrieve liked exam items for",
+                        required = true
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200",
+                        description = "Liked exam items found",
+                        content = @Content(schema = @Schema(implementation = ExamItemListResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this course"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404",
+                        description = "Course not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<ExamItemListResponse> getLikedExamItemsByCourseId(
+            @PathVariable UUID courseId
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        // Check if the course exists and if the user has access to it
+        var courseOutput = courseService.findCourseById(courseId);
+        if (courseOutput.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!courseOutput.get().getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Retrieve the liked exam items associated with the course
+        ExamItemListOutput examItemListOutput = examService.findLikedExamItemByCourseId(courseId);
+
+        List<ExamItemResponse> likedExamItems = examItemListOutput.getExamItems().stream()
+                .map(ExamItemResponse::fromServiceDto)
+                .toList();
+
+        return ResponseEntity.ok(new ExamItemListResponse(likedExamItems));
+    }
+
+    @PostMapping("/{id}/items/{examItemId}/toggle-like")
+    @Operation(
+            summary = "Toggle like for exam item",
+            description = "Toggle like status for a specific exam item. If already liked, removes the like. If not liked, adds a like.",
+            parameters = {
+                    @Parameter(
+                        name = "id",
+                        description = "ID of the exam",
+                        required = true
+                    ),
+                    @Parameter(
+                        name = "examItemId",
+                        description = "ID of the exam item to toggle like for",
+                        required = true
+                    )
+            },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Toggle like request (empty body)",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ToggleLikeExamItemRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                        responseCode = "200",
+                        description = "Like toggled successfully",
+                        content = @Content(schema = @Schema(implementation = ExamItemResponse.class))
+                    ),
+                    @ApiResponse(
+                        responseCode = "403",
+                        description = "User does not have access to this exam"
+                    ),
+                    @ApiResponse(
+                        responseCode = "404",
+                        description = "Exam or exam item not found"
+                    ),
+                    @ApiResponse(
+                        responseCode = "500",
+                        description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<ExamItemResponse> toggleLikeExamItem(
+            @PathVariable UUID id,
+            @PathVariable UUID examItemId,
+            @org.springframework.web.bind.annotation.RequestBody ToggleLikeExamItemRequest request
+    ) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // Check if the exam exists and if the user has access to it
+            Optional<ExamOutput> examOutput = examService.findExamById(id);
+            if (examOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (!examOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
+            input.setExamId(id);
+            input.setExamItemId(examItemId);
+            input.setUserId(userId);
+            
+            ExamItemOutput output = examService.toggleLikeExamItem(input);
+
+            ExamItemResponse response = ExamItemResponse.fromServiceDto(output);
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error toggling like for exam item with ID: " + examItemId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
