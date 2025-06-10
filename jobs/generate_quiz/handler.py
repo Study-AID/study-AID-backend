@@ -367,8 +367,8 @@ def get_semester_id(course_id):
             conn.close()
 
 def send_quiz_email(receiver_email, user_name, lecture_title, semester_id, course_id, lecture_id, quiz_title):
-    sender_email = os.environ.get('SES_SENDER_EMAIL', 'noreply@studyaid.academy')
-    frontend_domain = os.environ.get('FRONTEND_DOMAIN', 'https://studyaid.academy')
+    sender_email = SES_SENDER_EMAIL
+    frontend_domain = FRONTEND_DOMAIN
     quiz_url = f"{frontend_domain}/{semester_id}/{course_id}/{lecture_id}/quiz"
 
     subject = f"[Study AID] 🕊️퀴즈 생성 완료: '{lecture_title}'의 '{quiz_title}'"
