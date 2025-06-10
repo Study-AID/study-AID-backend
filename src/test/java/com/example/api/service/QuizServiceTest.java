@@ -1,5 +1,7 @@
 package com.example.api.service;
 
+import com.example.api.adapters.sqs.GradeQuizEssayMessage;
+import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.entity.*;
 import com.example.api.entity.enums.QuestionType;
 import com.example.api.entity.enums.Status;
@@ -45,6 +47,9 @@ public class QuizServiceTest {
 
     @Mock
     private LectureRepository lectureRepository;
+
+    @Mock
+    private SQSClient sqsClient;
 
     @InjectMocks
     private QuizServiceImpl quizService;
@@ -344,7 +349,7 @@ public class QuizServiceTest {
     @DisplayName("퀴즈 채점 테스트 - 모든 답이 정확한 경우")
     void gradeQuizWithAllCorrectAnswers() {
         // given
-        testQuiz.setStatus(Status.submitted); // 채점을 위해 상태 변경
+        testQuiz.setStatus(Status.not_started); // 채점을 위해 상태 변경
 
         when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
         when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
@@ -395,7 +400,7 @@ public class QuizServiceTest {
     @DisplayName("퀴즈 채점 테스트 - 일부 답이 틀린 경우")
     void gradeQuizWithSomeIncorrectAnswers() {
         // given
-        testQuiz.setStatus(Status.submitted); // 채점을 위해 상태 변경
+        testQuiz.setStatus(Status.not_started); // 채점을 위해 상태 변경
 
         // Modify responses to have incorrect answers
         testQuizResponses.get(0).setSelectedBool(false); // Wrong answer for true/false
@@ -571,6 +576,434 @@ public class QuizServiceTest {
         verify(quizResultRepository, times(1)).findByQuizId(quizId);
         verify(quizItemRepository, times(1)).findByQuizId(quizId);
         verify(quizResponseRepository, times(4)).findByQuizItemId(any(UUID.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 제출 및 채점 - 서술형 문제가 없는 경우")
+    void submitAndGradeQuizWithStatus_NoEssayQuestions() {
+        // given
+        List<CreateQuizResponseInput> inputs = new ArrayList<>();
+        
+        // True/False 문제 응답
+        CreateQuizResponseInput input1 = new CreateQuizResponseInput();
+        input1.setQuizId(quizId);
+        input1.setQuizItemId(quizItemId1);
+        input1.setUserId(userId);
+        input1.setSelectedBool(true);
+        inputs.add(input1);
+        
+        // Multiple choice 문제 응답
+        CreateQuizResponseInput input2 = new CreateQuizResponseInput();
+        input2.setQuizId(quizId);
+        input2.setQuizItemId(quizItemId2);
+        input2.setUserId(userId);
+        input2.setSelectedIndices(new Integer[]{0, 1});
+        inputs.add(input2);
+        
+        // Short answer 문제 응답
+        CreateQuizResponseInput input3 = new CreateQuizResponseInput();
+        input3.setQuizId(quizId);
+        input3.setQuizItemId(quizItemId3);
+        input3.setUserId(userId);
+        input3.setTextAnswer("Java Virtual Machine");
+        inputs.add(input3);
+
+        // Mock 설정
+        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
+        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
+        
+        // QuizItem 참조 설정
+        QuizItem item1 = testQuizResponses.get(0).getQuizItem();
+        QuizItem item2 = testQuizResponses.get(1).getQuizItem();
+        QuizItem item3 = testQuizResponses.get(2).getQuizItem();
+        
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(item1);
+        when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(item2);
+        when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(item3);
+        
+        // QuizResponse 생성 반환 설정
+        when(quizResponseRepository.createQuizResponse(any(QuizResponse.class)))
+            .thenAnswer(invocation -> {
+                QuizResponse response = invocation.getArgument(0);
+                response.setId(UUID.randomUUID());
+                response.setCreatedAt(LocalDateTime.now());
+                response.setUpdatedAt(LocalDateTime.now());
+                return response;
+            });
+        
+        // 서술형 문제 없음
+        when(quizItemRepository.existsByQuizIdAndQuestionTypeAndDeletedAtIsNull(quizId, QuestionType.essay))
+            .thenReturn(false);
+        
+        // gradeNonEssayQuestions 메서드를 위한 설정
+        when(quizResponseRepository.findByQuizId(quizId)).thenReturn(testQuizResponses);
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(Arrays.asList(item1, item2, item3));
+        when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
+        when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
+        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+
+        // when
+        QuizResponseListOutput result = quizService.submitAndGradeQuizWithStatus(inputs);
+
+        // then
+        assertNotNull(result);
+        assertEquals(3, result.getQuizResponseOutputs().size());
+        
+        // QuizResponse 생성 검증
+        verify(quizResponseRepository, times(3)).createQuizResponse(any(QuizResponse.class));
+        
+        // 서술형 문제 확인
+        verify(quizItemRepository).existsByQuizIdAndQuestionTypeAndDeletedAtIsNull(quizId, QuestionType.essay);
+        
+        // 채점 메서드 호출 확인
+        verify(quizResponseRepository).findByQuizId(quizId);
+        verify(quizResultRepository).createQuizResult(any(QuizResult.class));
+        
+        // 퀴즈 상태가 graded로 업데이트되었는지 확인
+        verify(quizRepository).updateQuiz(quizCaptor.capture());
+        assertEquals(Status.graded, quizCaptor.getValue().getStatus());
+        
+        // SQS 메시지 전송되지 않았는지 확인
+        verify(sqsClient, never()).sendGradeQuizEssayMessage(any());
+    }
+
+    @Test
+    @DisplayName("퀴즈 제출 및 채점 - 서술형 문제가 있는 경우")
+    void submitAndGradeQuizWithStatus_WithEssayQuestions() {
+        // given
+        List<CreateQuizResponseInput> inputs = new ArrayList<>();
+        
+        // True/False 문제 응답
+        CreateQuizResponseInput input1 = new CreateQuizResponseInput();
+        input1.setQuizId(quizId);
+        input1.setQuizItemId(quizItemId1);
+        input1.setUserId(userId);
+        input1.setSelectedBool(true);
+        inputs.add(input1);
+        
+        // Essay 문제 응답 추가
+        UUID essayItemId = UUID.randomUUID();
+        CreateQuizResponseInput essayInput = new CreateQuizResponseInput();
+        essayInput.setQuizId(quizId);
+        essayInput.setQuizItemId(essayItemId);
+        essayInput.setUserId(userId);
+        essayInput.setTextAnswer("운영체제는 하드웨어와 소프트웨어 사이의 중개자 역할을 합니다.");
+        inputs.add(essayInput);
+    
+        // Essay QuizItem 생성
+        QuizItem essayItem = new QuizItem();
+        essayItem.setId(essayItemId);
+        essayItem.setQuiz(testQuiz);
+        essayItem.setQuestionType(QuestionType.essay);
+        essayItem.setQuestion("운영체제의 역할에 대해 설명하시오.");
+    
+        // Mock 설정
+        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
+        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
+        
+        QuizItem item1 = testQuizResponses.get(0).getQuizItem();
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(item1);
+        when(quizItemRepository.getReferenceById(essayItemId)).thenReturn(essayItem);
+        
+        // QuizResponse 생성 반환 설정
+        when(quizResponseRepository.createQuizResponse(any(QuizResponse.class)))
+            .thenAnswer(invocation -> {
+                QuizResponse response = invocation.getArgument(0);
+                response.setId(UUID.randomUUID());
+                response.setCreatedAt(LocalDateTime.now());
+                response.setUpdatedAt(LocalDateTime.now());
+                return response;
+            });
+        
+        // 서술형 문제 있음
+        when(quizItemRepository.existsByQuizIdAndQuestionTypeAndDeletedAtIsNull(quizId, QuestionType.essay))
+            .thenReturn(true);
+    
+        // gradeNonEssayQuestions 메서드를 위한 설정
+        // True/False 문제에 대한 응답만 생성 (서술형은 아직 채점 안 됨)
+        QuizResponse tfResponse = new QuizResponse();
+        tfResponse.setQuizItem(item1);
+        tfResponse.setSelectedBool(true);
+        tfResponse.setUser(testUser);
+        
+        // Essay 응답도 생성
+        QuizResponse essayResponse = new QuizResponse();
+        essayResponse.setQuizItem(essayItem);
+        essayResponse.setTextAnswer("운영체제는 하드웨어와 소프트웨어 사이의 중개자 역할을 합니다.");
+        essayResponse.setUser(testUser);
+        
+        when(quizResponseRepository.findByQuizId(quizId)).thenReturn(Arrays.asList(tfResponse, essayResponse));
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(Arrays.asList(item1, essayItem));
+        when(quizItemRepository.getReferenceById(item1.getId())).thenReturn(item1);
+        when(quizItemRepository.getReferenceById(essayItem.getId())).thenReturn(essayItem);
+        when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
+        when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
+        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+    
+        // when
+        QuizResponseListOutput result = quizService.submitAndGradeQuizWithStatus(inputs);
+    
+        // then
+        assertNotNull(result);
+        assertEquals(2, result.getQuizResponseOutputs().size());
+        
+        // QuizResponse 생성 검증
+        verify(quizResponseRepository, times(2)).createQuizResponse(any(QuizResponse.class));
+        
+        // 서술형 문제 확인
+        verify(quizItemRepository).existsByQuizIdAndQuestionTypeAndDeletedAtIsNull(quizId, QuestionType.essay);
+        
+        // 퀴즈 상태가 partially_graded로 업데이트되었는지 확인
+        verify(quizRepository).updateQuiz(quizCaptor.capture());
+        assertEquals(Status.partially_graded, quizCaptor.getValue().getStatus());
+        
+        // SQS 메시지 전송 확인
+        verify(sqsClient).sendGradeQuizEssayMessage(any(GradeQuizEssayMessage.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 제출 및 채점 - 일부 문제 답변이 null인 경우")
+    void submitAndGradeQuizWithStatus_WithNullAnswers() {
+        // given
+        List<CreateQuizResponseInput> inputs = new ArrayList<>();
+        
+        // True/False 문제 응답 - selectedBool이 null
+        CreateQuizResponseInput input1 = new CreateQuizResponseInput();
+        input1.setQuizId(quizId);
+        input1.setQuizItemId(quizItemId1);
+        input1.setUserId(userId);
+        input1.setSelectedBool(null); // null 답변
+        inputs.add(input1);
+        
+        // Multiple choice 문제 응답 - selectedIndices가 null
+        CreateQuizResponseInput input2 = new CreateQuizResponseInput();
+        input2.setQuizId(quizId);
+        input2.setQuizItemId(quizItemId2);
+        input2.setUserId(userId);
+        input2.setSelectedIndices(null); // null 답변
+        inputs.add(input2);
+        
+        // Short answer 문제 응답 - textAnswer가 null
+        CreateQuizResponseInput input3 = new CreateQuizResponseInput();
+        input3.setQuizId(quizId);
+        input3.setQuizItemId(quizItemId3);
+        input3.setUserId(userId);
+        input3.setTextAnswer(null); // null 답변
+        inputs.add(input3);
+
+        // Mock 설정
+        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
+        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
+        
+        QuizItem item1 = testQuizResponses.get(0).getQuizItem();
+        QuizItem item2 = testQuizResponses.get(1).getQuizItem();
+        QuizItem item3 = testQuizResponses.get(2).getQuizItem();
+        
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(item1);
+        when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(item2);
+        when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(item3);
+        
+        // QuizResponse 생성 반환 설정
+        when(quizResponseRepository.createQuizResponse(any(QuizResponse.class)))
+            .thenAnswer(invocation -> {
+                QuizResponse response = invocation.getArgument(0);
+                response.setId(UUID.randomUUID());
+                response.setCreatedAt(LocalDateTime.now());
+                response.setUpdatedAt(LocalDateTime.now());
+                return response;
+            });
+        
+        // 서술형 문제 없음
+        when(quizItemRepository.existsByQuizIdAndQuestionTypeAndDeletedAtIsNull(quizId, QuestionType.essay))
+            .thenReturn(false);
+        
+        // null 답변을 가진 QuizResponse 생성
+        List<QuizResponse> nullResponses = new ArrayList<>();
+        QuizResponse nullResponse1 = new QuizResponse();
+        nullResponse1.setQuizItem(item1);
+        nullResponse1.setSelectedBool(null);
+        nullResponse1.setUser(testUser);
+        nullResponses.add(nullResponse1);
+        
+        QuizResponse nullResponse2 = new QuizResponse();
+        nullResponse2.setQuizItem(item2);
+        nullResponse2.setSelectedIndices(null);
+        nullResponse2.setUser(testUser);
+        nullResponses.add(nullResponse2);
+        
+        QuizResponse nullResponse3 = new QuizResponse();
+        nullResponse3.setQuizItem(item3);
+        nullResponse3.setTextAnswer(null);
+        nullResponse3.setUser(testUser);
+        nullResponses.add(nullResponse3);
+        
+        when(quizResponseRepository.findByQuizId(quizId)).thenReturn(nullResponses);
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(Arrays.asList(item1, item2, item3));
+        when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
+        when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
+        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+
+        // when
+        QuizResponseListOutput result = quizService.submitAndGradeQuizWithStatus(inputs);
+
+        // then
+        assertNotNull(result);
+        assertEquals(3, result.getQuizResponseOutputs().size());
+        
+        // QuizResponse 생성 시 null 값은 set되지 않음을 확인
+        verify(quizResponseRepository, times(3)).createQuizResponse(quizResponseCaptor.capture());
+        List<QuizResponse> capturedResponses = quizResponseCaptor.getAllValues();
+        
+        // null 값들이 set되지 않았는지 확인 (기본값 또는 null 상태 유지)
+        for (QuizResponse response : capturedResponses) {
+            // Entity가 생성되었는지만 확인 (null 값은 set되지 않음)
+            assertNotNull(response.getQuiz());
+            assertNotNull(response.getQuizItem());
+            assertNotNull(response.getUser());
+        }
+        
+        // 채점은 정상적으로 진행되어야 함 (null 답변은 틀린 것으로 처리)
+        verify(quizResultRepository).createQuizResult(any(QuizResult.class));
+    }
+
+    @Test
+    @DisplayName("퀴즈 제출 및 채점 - QuizResponse 생성 실패 시 예외 발생")
+    void submitAndGradeQuizWithStatus_FailedToCreateResponse() {
+        // given
+        List<CreateQuizResponseInput> inputs = new ArrayList<>();
+        
+        CreateQuizResponseInput input1 = new CreateQuizResponseInput();
+        input1.setQuizId(quizId);
+        input1.setQuizItemId(quizItemId1);
+        input1.setUserId(userId);
+        input1.setSelectedBool(true);
+        inputs.add(input1);
+
+        // Mock 설정
+        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
+        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(testQuizResponses.get(0).getQuizItem());
+        
+        // QuizResponse 생성 실패 시뮬레이션
+        when(quizResponseRepository.createQuizResponse(any(QuizResponse.class))).thenReturn(null);
+
+        // when & then
+        RuntimeException exception = assertThrows(RuntimeException.class, 
+            () -> quizService.submitAndGradeQuizWithStatus(inputs));
+        
+        assertEquals("Failed to create quiz response", exception.getMessage());
+        
+        // 실패 시 채점 메서드가 호출되지 않아야 함
+        verify(quizResponseRepository, never()).findByQuizId(any());
+        verify(quizResultRepository, never()).createQuizResult(any());
+        verify(quizRepository, never()).updateQuiz(any());
+        verify(sqsClient, never()).sendGradeQuizEssayMessage(any());
+    }
+
+    @Test
+    @DisplayName("퀴즈 제출 및 채점 - 빈 입력 리스트")
+    void submitAndGradeQuizWithStatus_EmptyInputList() {
+        // given
+        List<CreateQuizResponseInput> inputs = new ArrayList<>();
+
+        // when & then
+        // 빈 리스트로 인해 IndexOutOfBoundsException 발생
+        assertThrows(IndexOutOfBoundsException.class, 
+            () -> quizService.submitAndGradeQuizWithStatus(inputs));
+    }
+
+    @Test
+    @DisplayName("퀴즈 제출 및 채점 - 다양한 문제 유형 혼합")
+    void submitAndGradeQuizWithStatus_MixedQuestionTypes() {
+        // given
+        List<CreateQuizResponseInput> inputs = new ArrayList<>();
+        
+        // 각 문제 유형별로 정답과 오답 혼합
+        CreateQuizResponseInput input1 = new CreateQuizResponseInput();
+        input1.setQuizId(quizId);
+        input1.setQuizItemId(quizItemId1);
+        input1.setUserId(userId);
+        input1.setSelectedBool(false); // 오답
+        inputs.add(input1);
+        
+        CreateQuizResponseInput input2 = new CreateQuizResponseInput();
+        input2.setQuizId(quizId);
+        input2.setQuizItemId(quizItemId2);
+        input2.setUserId(userId);
+        input2.setSelectedIndices(new Integer[]{0, 1}); // 정답
+        inputs.add(input2);
+        
+        CreateQuizResponseInput input3 = new CreateQuizResponseInput();
+        input3.setQuizId(quizId);
+        input3.setQuizItemId(quizItemId3);
+        input3.setUserId(userId);
+        input3.setTextAnswer("Wrong Answer"); // 오답
+        inputs.add(input3);
+
+        // Mock 설정
+        when(quizRepository.getReferenceById(quizId)).thenReturn(testQuiz);
+        when(userRepository.getReferenceById(userId)).thenReturn(testUser);
+        
+        QuizItem item1 = testQuizResponses.get(0).getQuizItem();
+        QuizItem item2 = testQuizResponses.get(1).getQuizItem();
+        QuizItem item3 = testQuizResponses.get(2).getQuizItem();
+        
+        when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(item1);
+        when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(item2);
+        when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(item3);
+        
+        when(quizResponseRepository.createQuizResponse(any(QuizResponse.class)))
+            .thenAnswer(invocation -> {
+                QuizResponse response = invocation.getArgument(0);
+                response.setId(UUID.randomUUID());
+                response.setCreatedAt(LocalDateTime.now());
+                response.setUpdatedAt(LocalDateTime.now());
+                return response;
+            });
+        
+        when(quizItemRepository.existsByQuizIdAndQuestionTypeAndDeletedAtIsNull(quizId, QuestionType.essay))
+            .thenReturn(false);
+        
+        // 혼합된 답변을 가진 QuizResponse 설정
+        List<QuizResponse> mixedResponses = new ArrayList<>();
+        QuizResponse response1 = new QuizResponse();
+        response1.setQuizItem(item1);
+        response1.setSelectedBool(false); // 오답
+        response1.setUser(testUser);
+        mixedResponses.add(response1);
+        
+        QuizResponse response2 = new QuizResponse();
+        response2.setQuizItem(item2);
+        response2.setSelectedIndices(new Integer[]{0, 1}); // 정답
+        response2.setUser(testUser);
+        mixedResponses.add(response2);
+        
+        QuizResponse response3 = new QuizResponse();
+        response3.setQuizItem(item3);
+        response3.setTextAnswer("Wrong Answer"); // 오답
+        response3.setUser(testUser);
+        mixedResponses.add(response3);
+        
+        when(quizResponseRepository.findByQuizId(quizId)).thenReturn(mixedResponses);
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(Arrays.asList(item1, item2, item3));
+        when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
+        when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
+        when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+
+        // when
+        QuizResponseListOutput result = quizService.submitAndGradeQuizWithStatus(inputs);
+
+        // then
+        assertNotNull(result);
+        assertEquals(3, result.getQuizResponseOutputs().size());
+        
+        // 채점 결과 확인을 위한 QuizResult 캡처
+        verify(quizResultRepository).createQuizResult(quizResultCaptor.capture());
+        QuizResult capturedResult = quizResultCaptor.getValue();
+        
+        // 점수 확인 (1점 + 3점 + 5점 = 9점 중 3점만 획득)
+        assertEquals(3.0f, capturedResult.getScore());
+        assertEquals(9.0f, capturedResult.getMaxScore());
     }
 
     @Test

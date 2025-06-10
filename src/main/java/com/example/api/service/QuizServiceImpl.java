@@ -96,7 +96,7 @@ public class QuizServiceImpl implements QuizService {
     @Override
     @Transactional
     public QuizResponseListOutput submitAndGradeQuizWithStatus(List<CreateQuizResponseInput> inputs) {
-        QuizResponseListOutput quizResponseListOutput = (QuizResponseListOutput) inputs.stream()
+        List<QuizResponseOutput> quizResponseOutputs  = inputs.stream()
                 .map(input -> {
                     Quiz quiz = quizRepo.getReferenceById(input.getQuizId());
                     QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
@@ -127,13 +127,12 @@ public class QuizServiceImpl implements QuizService {
 
                     return QuizResponseOutput.fromEntity(createdQuizResponse);
                 }).toList();
+        
+        QuizResponseListOutput quizResponseListOutput = new QuizResponseListOutput(quizResponseOutputs);
+    
         UUID quizId = inputs.get(0).getQuizId();
         UUID userId = inputs.get(0).getUserId();
         Quiz quiz = quizRepo.getReferenceById(quizId);
-
-        // 퀴즈 상태 'submitted'로 업데이트
-        quiz.setStatus(Status.submitted);
-        quizRepo.updateQuiz(quiz);
 
         // 서술형 문제 유무 확인
         boolean hasEssay = hasEssayQuestions(quizId);

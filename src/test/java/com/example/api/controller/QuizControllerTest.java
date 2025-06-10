@@ -414,7 +414,7 @@ public class QuizControllerTest {
         notGradedQuizOutput.setLectureId(lectureId);
         notGradedQuizOutput.setUserId(userId);
         notGradedQuizOutput.setTitle("Quiz 1");
-        notGradedQuizOutput.setStatus(Status.submitted); // 제출됨 상태 (채점 전)
+        notGradedQuizOutput.setStatus(Status.not_started); // 제출됨 상태 (채점 전)
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.of(notGradedQuizOutput));
 

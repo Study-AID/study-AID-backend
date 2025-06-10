@@ -17,6 +17,15 @@ psycopg2.extras.register_uuid()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# AWS S3 configuration
+s3_endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
+
+# AWS SES configuration
+SES_SENDER_EMAIL = os.environ.get('SES_SENDER_EMAIL', 'noreply@studyaid.academy')
+
+# Domain configuration
+FRONTEND_DOMAIN = os.environ.get('FRONTEND_DOMAIN', 'https://studyaid.academy')
+
 # Database configuration
 DB_CONFIG = {
     'host': os.environ.get('DB_HOST'),
@@ -26,8 +35,9 @@ DB_CONFIG = {
     'port': int(os.environ.get('DB_PORT'))
 }
 
+# Initialize clients
 s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
-
+ses_client = boto3.client('ses', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
 
 def get_db_connection():
     try:
@@ -256,6 +266,106 @@ def save_exam_to_db(course_id, user_id, exam_data, title=None, referenced_lectur
         if conn:
             conn.close()
 
+def get_user_info(user_id):
+    """Get user information from database"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            query = """
+                    SELECT email, name 
+                    FROM app.users 
+                    WHERE id = %s AND deleted_at IS NULL
+                    """
+            cursor.execute(query, (user_id,))
+            user = cursor.fetchone()
+
+            if not user:
+                raise ValueError(f"No user found with id: {user_id}")
+
+            return dict(user)
+    except Exception as e:
+        logger.error(f"Error getting user info: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def get_semester_id(course_id):
+    """Get semester_id from course_id"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            query = """
+                    SELECT semester_id 
+                    FROM app.courses 
+                    WHERE id = %s AND deleted_at IS NULL
+                    """
+            cursor.execute(query, (course_id,))
+            result = cursor.fetchone()
+
+            if not result:
+                raise ValueError(f"No course found with id: {course_id}")
+
+            return result[0]
+    except Exception as e:
+        logger.error(f"Error getting semester_id: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def send_exam_email(receiver_email, user_name, exam_title, semester_id, course_id):
+    sender_email = SES_SENDER_EMAIL
+    frontend_domain = FRONTEND_DOMAIN
+
+    # TODO(jin): check correct url
+    exam_url = f"{frontend_domain}/{semester_id}/{course_id}/exam"
+
+    subject = f"[Study AID] 🕊️모의시험 생성 완료: '{exam_title}'"
+    body_text = f"{user_name}님, 모의시험 '{exam_title}'의 생성이 완료되었어요! {exam_url} 에서 확인하세요."
+
+    body_html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; text-align: center;">
+        <p>안녕하세요, {user_name}님. 기다려주셔서 감사합니다.</p>
+    
+        <p>
+          요청하신 모의시험 '<strong>{exam_title}</strong>' 생성이
+          완료되었습니다.<br/>아래 버튼을 눌러 모의시험을 풀어보세요!
+        </p>
+    
+        <p>
+          <a href="{exam_url}" style="
+              display: inline-block;
+              padding: 12px 20px;
+              background-color: #007BFF;
+              color: white;
+              text-decoration: none;
+              border-radius: 5px;
+              font-weight: bold;
+            ">
+            모의시험 풀이 바로가기
+          </a>
+        </p>
+    
+        <p>감사합니다.<br/>Study AID 팀 드림</p>
+      </body>
+    </html>
+    """
+
+    ses_client.send_email(
+        Source=sender_email,
+        Destination={'ToAddresses': [receiver_email]},
+        Message={
+            'Subject': {'Data': subject, 'Charset': 'UTF-8'},
+            'Body': {
+                'Text': {'Data': body_text, 'Charset': 'UTF-8'},
+                'Html': {'Data': body_html, 'Charset': 'UTF-8'}
+            }
+        }
+    )
 
 def log_activity(course_id, user_id, activity_type, contents_type, details):
     """Log activity for the course"""
@@ -355,7 +465,6 @@ def get_reference_lectures(reference_lecture_ids):
         if conn:
             conn.close()
 
-
 def lambda_handler(event, context):
     """Main function to handle the event from SQS"""
     try:
@@ -369,6 +478,14 @@ def lambda_handler(event, context):
             course_id = message.get('course_id')
             exam_title = message.get('title')
             referenced_lecture_ids = message.get('referenced_lecture_ids', [])
+
+            # get user info via db
+            user_info = get_user_info(user_id)
+            user_email = user_info['email']
+            user_name = user_info['name']
+
+            # get semester_id via db
+            semester_id = get_semester_id(course_id)
 
             # Exam configuration
             question_counts = {
@@ -397,6 +514,12 @@ def lambda_handler(event, context):
 
             # Save exam to database
             exam_id = save_exam_to_db(course_id, user_id, exam_data, exam_title, referenced_lecture_ids)
+
+            # Send email to user with exam link
+            if user_email and user_name and exam_title:
+                send_exam_email(user_email, user_name, exam_title, semester_id, course_id)
+            else:
+                logger.warning("이메일 전송을 위한 정보가 부족합니다. user_email, user_name, exam_title 확인 필요.")
 
             # Log the activity
             activity_details = {
