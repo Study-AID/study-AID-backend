@@ -3,6 +3,7 @@ package com.example.api.controller;
 import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.config.StorageConfig;
 import com.example.api.config.TestSecurityConfig;
+import com.example.api.controller.dto.lecture.UpdateLectureNoteRequest;
 import com.example.api.controller.dto.lecture.UpdateLectureRequest;
 import com.example.api.entity.ParsedPage;
 import com.example.api.entity.ParsedText;
@@ -18,6 +19,7 @@ import com.example.api.service.dto.lecture.CreateLectureInput;
 import com.example.api.service.dto.lecture.LectureListOutput;
 import com.example.api.service.dto.lecture.LectureOutput;
 import com.example.api.service.dto.lecture.UpdateLectureInput;
+import com.example.api.service.dto.lecture.UpdateLectureNoteInput;
 import com.example.api.service.dto.semester.SemesterOutput;
 import com.example.api.util.WithMockUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -134,6 +136,7 @@ class LectureControllerTest {
         testLectureOutput.setParsedText(testParsedText);
         testLectureOutput.setMaterialPath("test-key.pdf");
         testLectureOutput.setMaterialType("pdf");
+        testLectureOutput.setNote(Map.of("content", "Test note content"));
 
         // Configure StorageConfig mock
         when(storageConfig.getFullMaterialUrl(anyString()))
@@ -390,6 +393,46 @@ class LectureControllerTest {
         verify(lectureService).updateLecture(argThat(input ->
                 input.getTitle().equals("Updated Lecture Title")
         ));
+    }
+    
+    @Test
+    @DisplayName("강의 정보 업데이트 - Note 업데이트")
+    @WithMockUser
+    void updateLectureNoteTest() throws Exception {
+        // Given
+        UpdateLectureNoteRequest updateLectureNoteRequest = new UpdateLectureNoteRequest();
+        updateLectureNoteRequest.setNote("새로운 노트 내용");
+
+        LectureOutput updatedLectureOutput = new LectureOutput();
+        updatedLectureOutput.setId(lectureId);
+        updatedLectureOutput.setUserId(userId);
+        updatedLectureOutput.setCourseId(courseId);
+        updatedLectureOutput.setTitle(testLectureOutput.getTitle());
+        updatedLectureOutput.setMaterialPath(testLectureOutput.getMaterialPath());
+        updatedLectureOutput.setMaterialType(testLectureOutput.getMaterialType());
+        updatedLectureOutput.setParsedText(testParsedText);
+        updatedLectureOutput.setNote(Map.of("content", "새로운 노트 내용"));
+
+        when(lectureService.findLectureById(lectureId))
+                .thenReturn(Optional.of(testLectureOutput));
+        when(lectureService.updateLectureNote(any(UpdateLectureNoteInput.class)))
+                .thenReturn(updatedLectureOutput);
+
+        // When & Then
+        mockMvc.perform(put("/v1/lectures/{id}/note", lectureId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateLectureNoteRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testLectureOutput.getId().toString()))
+                .andExpect(jsonPath("$.title").value(testLectureOutput.getTitle()))
+                .andExpect(jsonPath("$.note.content").value("새로운 노트 내용"));
+
+        verify(lectureService).findLectureById(lectureId);
+        verify(lectureService).updateLectureNote(argThat(input ->
+                input.getId().equals(lectureId) &&
+                        input.getNote().equals(Map.of("content", "새로운 노트 내용"))
+        ));
+                
     }
 
     @Test

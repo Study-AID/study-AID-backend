@@ -9,6 +9,8 @@ import com.example.api.service.dto.lecture.CreateLectureInput;
 import com.example.api.service.dto.lecture.LectureListOutput;
 import com.example.api.service.dto.lecture.LectureOutput;
 import com.example.api.service.dto.lecture.UpdateLectureInput;
+import com.example.api.service.dto.lecture.UpdateLectureNoteInput;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -217,5 +219,45 @@ public class LectureServiceTest {
 
         // Then
         verify(lectureRepository).deleteLecture(lectureId);
+    }
+
+    @Test
+    @DisplayName("강의 업데이트 - 강의 노트")
+    void updateLectureNote() {
+        // Given
+        UpdateLectureNoteInput input = new UpdateLectureNoteInput();
+        input.setId(lectureId);
+        input.setNote(Map.of("key", "업데이트된 노트 내용"));
+
+        // updatedLecture is a clone of testLecture to avoid modifying the original
+        Lecture updatedLecture = new Lecture();
+        updatedLecture.setId(lectureId);
+        updatedLecture.setUser(testLecture.getUser());
+        updatedLecture.setCourse(testLecture.getCourse());
+        updatedLecture.setTitle(testLecture.getTitle());
+        updatedLecture.setMaterialPath(testLecture.getMaterialPath());
+        updatedLecture.setMaterialType(testLecture.getMaterialType());
+        updatedLecture.setDisplayOrderLex(testLecture.getDisplayOrderLex());
+        // Set the note to the new value
+        updatedLecture.setNote(input.getNote());
+        updatedLecture.setParsedText(testLecture.getParsedText());
+        updatedLecture.setSummary(testLecture.getSummary());
+        updatedLecture.setSummaryStatus(testLecture.getSummaryStatus());
+        updatedLecture.setCreatedAt(testLecture.getCreatedAt());
+        updatedLecture.setUpdatedAt(LocalDateTime.now());
+
+        when(lectureRepository.findById(lectureId)).thenReturn(Optional.of(testLecture));
+        when(lectureRepository.updateLecture(any(Lecture.class))).thenReturn(updatedLecture);
+
+        // When
+        LectureOutput output = lectureService.updateLectureNote(input);
+
+        // Then
+        assertNotNull(output);
+        assertEquals(testLectureOutput.getId(), output.getId());
+        assertEquals("업데이트된 노트 내용", output.getNote().get("key"));
+        assertEquals(testLectureOutput.getTitle(), output.getTitle());
+        assertEquals(testLectureOutput.getMaterialPath(), output.getMaterialPath());
+        assertEquals(testLectureOutput.getMaterialType(), output.getMaterialType());
     }
 }

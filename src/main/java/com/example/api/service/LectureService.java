@@ -25,5 +25,8 @@ public interface LectureService {
     LectureOutput updateLectureDisplayOrderLex(UpdateLectureDisplayOrderLexInput input);
 
     @Transactional
+    LectureOutput updateLectureNote(UpdateLectureNoteInput input);
+
+    @Transactional
     void deleteLecture(UUID lectureId);
 }
