@@ -652,6 +652,10 @@ public class QuizController extends BaseController {
                         description = "Lecture not found"
                     ),
                     @ApiResponse(
+                        responseCode = "404", 
+                        description = "No liked quiz items found for this lecture"
+                    ),
+                    @ApiResponse(
                         responseCode = "500",
                         description = "Internal server error"
                     )
@@ -676,6 +680,10 @@ public class QuizController extends BaseController {
         // Retrieve liked quiz items associated with the lecture
         QuizItemListOutput quizItemListOutput = quizService.findLikedQuizItemByLectureId(lectureId);
 
+        if (quizItemListOutput.getQuizItems().isEmpty() || quizItemListOutput == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new QuizItemListResponse(List.of()));
+        }
+
         List<QuizItemResponse> quizItemListResponse = quizItemListOutput.getQuizItems().stream()
                 .map(quizItem -> QuizItemResponse.fromServiceDto(quizItem))
                 .toList();
@@ -699,11 +707,6 @@ public class QuizController extends BaseController {
                         required = true
                     )
             },
-            requestBody = @RequestBody(
-                    description = "Toggle like request (empty body)",
-                    required = true,
-                    content = @Content(schema = @Schema(implementation = ToggleLikeQuizItemRequest.class))
-            ),
             responses = {
                     @ApiResponse(
                         responseCode = "200", 
@@ -730,8 +733,7 @@ public class QuizController extends BaseController {
     )
     public ResponseEntity<QuizItemResponse> toggleLikeQuizItem(
             @PathVariable UUID id,
-            @PathVariable UUID quizItemId,
-            @org.springframework.web.bind.annotation.RequestBody ToggleLikeQuizItemRequest request
+            @PathVariable UUID quizItemId
     ) {
         UUID userId = getAuthenticatedUserId();
 

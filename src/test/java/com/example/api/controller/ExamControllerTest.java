@@ -5,7 +5,6 @@ import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.exam.CreateExamRequest;
 import com.example.api.controller.dto.exam.SubmitExamItem;
 import com.example.api.controller.dto.exam.SubmitExamRequest;
-import com.example.api.controller.dto.exam.ToggleLikeExamItemRequest;
 import com.example.api.controller.dto.exam.UpdateExamRequest;
 import com.example.api.entity.Exam;
 import com.example.api.entity.ExamItem;
@@ -605,7 +604,6 @@ public class ExamControllerTest {
     void toggleLikeExamItem_AddLike() throws Exception {
         // given
         UUID examItemId = UUID.randomUUID();
-        ToggleLikeExamItemRequest request = new ToggleLikeExamItemRequest();
         
         ExamItemOutput toggledExamItem = new ExamItemOutput();
         toggledExamItem.setId(examItemId);
@@ -620,8 +618,7 @@ public class ExamControllerTest {
 
         // when, then
         mockMvc.perform(post("/v1/exams/{id}/items/{examItemId}/toggle-like", examId, examItemId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(examItemId.toString())))
                 .andExpect(jsonPath("$.question", is("What is polymorphism?")))
@@ -641,7 +638,6 @@ public class ExamControllerTest {
     void toggleLikeExamItem_RemoveLike() throws Exception {
         // given
         UUID examItemId = UUID.randomUUID();
-        ToggleLikeExamItemRequest request = new ToggleLikeExamItemRequest();
         
         ExamItemOutput toggledExamItem = new ExamItemOutput();
         toggledExamItem.setId(examItemId);
@@ -656,8 +652,7 @@ public class ExamControllerTest {
 
         // when, then
         mockMvc.perform(post("/v1/exams/{id}/items/{examItemId}/toggle-like", examId, examItemId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(examItemId.toString())))
                 .andExpect(jsonPath("$.question", is("What is encapsulation?")))
@@ -674,14 +669,12 @@ public class ExamControllerTest {
     void toggleLikeExamItem_ExamNotFound() throws Exception {
         // given
         UUID examItemId = UUID.randomUUID();
-        ToggleLikeExamItemRequest request = new ToggleLikeExamItemRequest();
 
         when(examService.findExamById(examId)).thenReturn(Optional.empty());
 
         // when, then
         mockMvc.perform(post("/v1/exams/{id}/items/{examItemId}/toggle-like", examId, examItemId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
         verify(examService, times(1)).findExamById(examId);
@@ -694,7 +687,6 @@ public class ExamControllerTest {
     void toggleLikeExamItem_Forbidden() throws Exception {
         // given
         UUID examItemId = UUID.randomUUID();
-        ToggleLikeExamItemRequest request = new ToggleLikeExamItemRequest();
         
         ExamOutput otherUserExam = new ExamOutput();
         otherUserExam.setId(examId);
@@ -706,8 +698,7 @@ public class ExamControllerTest {
 
         // when, then
         mockMvc.perform(post("/v1/exams/{id}/items/{examItemId}/toggle-like", examId, examItemId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
 
         verify(examService, times(1)).findExamById(examId);

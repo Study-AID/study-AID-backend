@@ -5,7 +5,6 @@ import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.quiz.CreateQuizRequest;
 import com.example.api.controller.dto.quiz.SubmitQuizItem;
 import com.example.api.controller.dto.quiz.SubmitQuizRequest;
-import com.example.api.controller.dto.quiz.ToggleLikeQuizItemRequest;
 import com.example.api.controller.dto.quiz.UpdateQuizRequest;
 import com.example.api.entity.Quiz;
 import com.example.api.entity.QuizItem;
@@ -557,7 +556,6 @@ public class QuizControllerTest {
     void toggleLikeQuizItem_AddLike() throws Exception {
         // given
         UUID quizItemId = UUID.randomUUID();
-        ToggleLikeQuizItemRequest request = new ToggleLikeQuizItemRequest();
         
         QuizItemOutput toggledQuizItem = new QuizItemOutput();
         toggledQuizItem.setId(quizItemId);
@@ -572,8 +570,7 @@ public class QuizControllerTest {
 
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/items/{quizItemId}/toggle-like", quizId, quizItemId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(quizItemId.toString())))
                 .andExpect(jsonPath("$.question", is("What is polymorphism?")))
@@ -593,7 +590,6 @@ public class QuizControllerTest {
     void toggleLikeQuizItem_RemoveLike() throws Exception {
         // given
         UUID quizItemId = UUID.randomUUID();
-        ToggleLikeQuizItemRequest request = new ToggleLikeQuizItemRequest();
         
         QuizItemOutput toggledQuizItem = new QuizItemOutput();
         toggledQuizItem.setId(quizItemId);
@@ -608,8 +604,7 @@ public class QuizControllerTest {
 
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/items/{quizItemId}/toggle-like", quizId, quizItemId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(quizItemId.toString())))
                 .andExpect(jsonPath("$.question", is("What is encapsulation?")))
@@ -626,14 +621,12 @@ public class QuizControllerTest {
     void toggleLikeQuizItem_QuizNotFound() throws Exception {
         // given
         UUID quizItemId = UUID.randomUUID();
-        ToggleLikeQuizItemRequest request = new ToggleLikeQuizItemRequest();
 
         when(quizService.findQuizById(quizId)).thenReturn(Optional.empty());
 
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/items/{quizItemId}/toggle-like", quizId, quizItemId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
         verify(quizService, times(1)).findQuizById(quizId);
@@ -646,7 +639,6 @@ public class QuizControllerTest {
     void toggleLikeQuizItem_Forbidden() throws Exception {
         // given
         UUID quizItemId = UUID.randomUUID();
-        ToggleLikeQuizItemRequest request = new ToggleLikeQuizItemRequest();
         
         QuizOutput otherUserQuiz = new QuizOutput();
         otherUserQuiz.setId(quizId);
@@ -658,8 +650,7 @@ public class QuizControllerTest {
 
         // when, then
         mockMvc.perform(post("/v1/quizzes/{id}/items/{quizItemId}/toggle-like", quizId, quizItemId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
 
         verify(quizService, times(1)).findQuizById(quizId);

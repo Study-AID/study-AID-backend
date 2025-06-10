@@ -649,6 +649,10 @@ public class ExamController extends BaseController {
         // Retrieve the liked exam items associated with the course
         ExamItemListOutput examItemListOutput = examService.findLikedExamItemByCourseId(courseId);
 
+        if (examItemListOutput == null || examItemListOutput.getExamItems().isEmpty()) {
+            return ResponseEntity.ok(new ExamItemListResponse(List.of()));
+        }
+
         List<ExamItemResponse> likedExamItems = examItemListOutput.getExamItems().stream()
                 .map(ExamItemResponse::fromServiceDto)
                 .toList();
@@ -672,11 +676,6 @@ public class ExamController extends BaseController {
                         required = true
                     )
             },
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Toggle like request (empty body)",
-                    required = true,
-                    content = @Content(schema = @Schema(implementation = ToggleLikeExamItemRequest.class))
-            ),
             responses = {
                     @ApiResponse(
                         responseCode = "200",
@@ -699,8 +698,7 @@ public class ExamController extends BaseController {
     )
     public ResponseEntity<ExamItemResponse> toggleLikeExamItem(
             @PathVariable UUID id,
-            @PathVariable UUID examItemId,
-            @org.springframework.web.bind.annotation.RequestBody ToggleLikeExamItemRequest request
+            @PathVariable UUID examItemId
     ) {
         UUID userId = getAuthenticatedUserId();
 
