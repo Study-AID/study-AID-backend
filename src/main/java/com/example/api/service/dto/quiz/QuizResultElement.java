@@ -41,25 +41,18 @@ public class QuizResultElement {
         element.setQuestion(quizItem.getQuestion());
         element.setQuestionType(quizItem.getQuestionType());
         element.setExplanation(quizItem.getExplanation());
-        element.setIsTrueAnswer(quizItem.getIsTrueAnswer());
-        element.setChoices(null);
-        element.setAnswerIndices(null);
-        element.setTextAnswer(null);
-        element.setPoints(null);
+        element.setPoints(quizItem.getPoints());
 
         element.setQuizResponseId(quizResponse.getId());
         element.setIsCorrect(quizResponse.getIsCorrect());
-        element.setSelectedBool(null);
-        element.setSelectedIndices(null);
-        element.setTextAnswerOfUser(null);
-        element.setScore(null);
-        element.setEssayCriteriaAnalysis(quizResponse.getEssayCriteriaAnalysis());
+        element.setScore(quizResponse.getScore());
         
         if (quizItem.getQuestionType() == QuestionType.true_or_false) {
-            element.setChoices(quizItem.getChoices());
+            element.setIsTrueAnswer(quizItem.getIsTrueAnswer());
             element.setSelectedBool(quizResponse.getSelectedBool());
         } else if (quizItem.getQuestionType() == QuestionType.multiple_choice) {
             element.setChoices(quizItem.getChoices());
+            element.setAnswerIndices(quizItem.getAnswerIndices());
             element.setSelectedIndices(quizResponse.getSelectedIndices());
         } else if (quizItem.getQuestionType() == QuestionType.short_answer) {
             element.setTextAnswer(quizItem.getTextAnswer());

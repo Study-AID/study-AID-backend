@@ -457,11 +457,30 @@ public class QuizServiceTest {
         // given
         when(quizResultRepository.findByQuizId(quizId)).thenReturn(Optional.of(testQuizResult));
 
+        // QuizItem과 QuizResponse 설정
+        QuizItem quizItem1 = testQuizResponses.get(0).getQuizItem();
+        QuizItem quizItem2 = testQuizResponses.get(1).getQuizItem();
+        QuizItem quizItem3 = testQuizResponses.get(2).getQuizItem();
+
+        List<QuizItem> quizItems = Arrays.asList(quizItem1, quizItem2, quizItem3);
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(quizItems);
+
+        // 각 QuizItem에 대한 QuizResponse 설정
+        when(quizResponseRepository.findByQuizItemId(quizItem1.getId())).thenReturn(Optional.of(testQuizResponses.get(0)));
+        when(quizResponseRepository.findByQuizItemId(quizItem2.getId())).thenReturn(Optional.of(testQuizResponses.get(1)));
+        when(quizResponseRepository.findByQuizItemId(quizItem3.getId())).thenReturn(Optional.of(testQuizResponses.get(2)));
+
+        when(quizItemRepository.getReferenceById(quizItem1.getId())).thenReturn(quizItem1);
+        when(quizItemRepository.getReferenceById(quizItem2.getId())).thenReturn(quizItem2);
+        when(quizItemRepository.getReferenceById(quizItem3.getId())).thenReturn(quizItem3);
+
         // when
         Optional<QuizResultOutput> result = quizService.findQuizResultByQuizId(quizId);
 
         // then
         assertTrue(result.isPresent());
+
+        // QuizResult 기본 필드 검증
         assertEquals(testQuizResult.getId(), result.get().getId());
         assertEquals(testQuizResult.getQuiz().getId(), result.get().getQuizId());
         assertEquals(testQuizResult.getUser().getId(), result.get().getUserId());
@@ -471,7 +490,45 @@ public class QuizServiceTest {
         assertEquals(testQuizResult.getStartTime(), result.get().getStartTime());
         assertEquals(testQuizResult.getEndTime(), result.get().getEndTime());
 
+        // QuizResultElements 검증
+        assertNotNull(result.get().getQuizResultElements());
+        assertEquals(3, result.get().getQuizResultElements().size());
+
+        // 첫 번째 QuizResultElement 검증 (True/False 문제)
+        QuizResultElement element1 = result.get().getQuizResultElements().get(0);
+        assertEquals(quizItem1.getId(), element1.getQuizItemId());
+        assertEquals(quizItem1.getQuestion(), element1.getQuestion());
+        assertEquals(QuestionType.true_or_false, element1.getQuestionType());
+        assertEquals(testQuizResponses.get(0).getId(), element1.getQuizResponseId());
+        assertEquals(testQuizResponses.get(0).getIsCorrect(), element1.getIsCorrect());
+        assertEquals(quizItem1.getIsTrueAnswer(), element1.getIsTrueAnswer());
+        assertEquals(testQuizResponses.get(0).getSelectedBool(), element1.getSelectedBool());
+
+        // 두 번째 QuizResultElement 검증 (Multiple Choice 문제)
+        QuizResultElement element2 = result.get().getQuizResultElements().get(1);
+        assertEquals(quizItem2.getId(), element2.getQuizItemId());
+        assertEquals(quizItem2.getQuestion(), element2.getQuestion());
+        assertEquals(QuestionType.multiple_choice, element2.getQuestionType());
+        assertEquals(testQuizResponses.get(1).getId(), element2.getQuizResponseId());
+        assertEquals(testQuizResponses.get(1).getIsCorrect(), element2.getIsCorrect());
+        assertArrayEquals(quizItem2.getChoices(), element2.getChoices());
+        assertArrayEquals(quizItem2.getAnswerIndices(), element2.getAnswerIndices());
+        assertArrayEquals(testQuizResponses.get(1).getSelectedIndices(), element2.getSelectedIndices());
+
+        // 세 번째 QuizResultElement 검증 (Short Answer 문제)
+        QuizResultElement element3 = result.get().getQuizResultElements().get(2);
+        assertEquals(quizItem3.getId(), element3.getQuizItemId());
+        assertEquals(quizItem3.getQuestion(), element3.getQuestion());
+        assertEquals(QuestionType.short_answer, element3.getQuestionType());
+        assertEquals(testQuizResponses.get(2).getId(), element3.getQuizResponseId());
+        assertEquals(testQuizResponses.get(2).getIsCorrect(), element3.getIsCorrect());
+        assertEquals(quizItem3.getTextAnswer(), element3.getTextAnswer());
+        assertEquals(testQuizResponses.get(2).getTextAnswer(), element3.getTextAnswerOfUser());
+
         verify(quizResultRepository, times(1)).findByQuizId(quizId);
+        verify(quizItemRepository, times(1)).findByQuizId(quizId);
+        verify(quizResponseRepository, times(3)).findByQuizItemId(any(UUID.class));
+        verify(quizItemRepository, times(3)).getReferenceById(any(UUID.class));
     }
 
     @Test
@@ -487,6 +544,56 @@ public class QuizServiceTest {
         // then
         assertFalse(result.isPresent());
         verify(quizResultRepository, times(1)).findByQuizId(nonExistentQuizId);
+    }
+
+    @Test
+    @DisplayName("퀴즈 ID로 퀴즈 결과 조회 - QuizResponse가 없는 QuizItem이 있는 경우")
+    void findQuizResultByQuizIdTest_WithMissingQuizResponse() {
+        // given
+        when(quizResultRepository.findByQuizId(quizId)).thenReturn(Optional.of(testQuizResult));
+
+        // QuizItem 설정 (답변이 없는 문제 포함)
+        QuizItem quizItem1 = testQuizResponses.get(0).getQuizItem();
+        QuizItem quizItem2 = testQuizResponses.get(1).getQuizItem();
+        QuizItem itemWithoutResponse = new QuizItem();
+        itemWithoutResponse.setId(UUID.randomUUID());
+        itemWithoutResponse.setQuiz(testQuiz);
+        itemWithoutResponse.setQuestionType(QuestionType.true_or_false);
+        itemWithoutResponse.setQuestion("답변이 없는 문제");
+
+        List<QuizItem> quizItems = Arrays.asList(quizItem1, quizItem2, itemWithoutResponse);
+        when(quizItemRepository.findByQuizId(quizId)).thenReturn(quizItems);
+
+        // 첫 번째와 두 번째 QuizItem에만 QuizResponse 존재
+        when(quizResponseRepository.findByQuizItemId(quizItem1.getId())).thenReturn(Optional.of(testQuizResponses.get(0)));
+        when(quizResponseRepository.findByQuizItemId(quizItem2.getId())).thenReturn(Optional.of(testQuizResponses.get(1)));
+        when(quizResponseRepository.findByQuizItemId(itemWithoutResponse.getId())).thenReturn(Optional.empty());
+
+        when(quizItemRepository.getReferenceById(quizItem1.getId())).thenReturn(quizItem1);
+        when(quizItemRepository.getReferenceById(quizItem2.getId())).thenReturn(quizItem2);
+
+        // when
+        Optional<QuizResultOutput> result = quizService.findQuizResultByQuizId(quizId);
+
+        // then
+        assertTrue(result.isPresent());
+
+        // QuizResultElements 검증 - 답변이 있는 2개의 문제만 포함되어야 함
+        assertNotNull(result.get().getQuizResultElements());
+        assertEquals(2, result.get().getQuizResultElements().size());
+
+        // 답변이 있는 문제들의 ID 확인
+        List<UUID> resultItemIds = result.get().getQuizResultElements().stream()
+                .map(QuizResultElement::getQuizItemId)
+                .toList();
+        assertTrue(resultItemIds.contains(quizItem1.getId()));
+        assertTrue(resultItemIds.contains(quizItem2.getId()));
+        assertFalse(resultItemIds.contains(itemWithoutResponse.getId()));
+
+        verify(quizResultRepository, times(1)).findByQuizId(quizId);
+        verify(quizItemRepository, times(1)).findByQuizId(quizId);
+        verify(quizResponseRepository, times(3)).findByQuizItemId(any(UUID.class));
+        verify(quizItemRepository, times(2)).getReferenceById(any(UUID.class)); // 답변이 있는 2개만
     }
 
     @Test
