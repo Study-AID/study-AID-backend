@@ -39,6 +39,11 @@ make test-job-grade-quiz-essay
 make test-job-grade-exam-essay
 ```
 
+6. **과목 약점 분석 및 학습 제안 레포트 생성 기능 테스트** (generate_course_weakness_analysis):
+```bash
+make test-job-generate-course-weakness-analysis
+```
+
 ### OpenAI API 키 설정
 
 테스트에 실제 OpenAI API 키를 사용하려면:

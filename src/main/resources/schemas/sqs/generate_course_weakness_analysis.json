@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://study-aid.dev/schemas/generate_course_weakness_analysis.json",
+  "title": "GenerateCourseWeaknessAnalysis",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_id",
+    "occurred_at",
+    "user_id",
+    "course_id"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "course_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "quiz_id": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "exam_id": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    }
+  },
+  "additionalProperties": false
+}
