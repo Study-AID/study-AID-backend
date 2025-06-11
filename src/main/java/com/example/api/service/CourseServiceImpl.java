@@ -1,8 +1,10 @@
 package com.example.api.service;
 
 import com.example.api.entity.Course;
+import com.example.api.entity.CourseAssessment;
 import com.example.api.entity.Semester;
 import com.example.api.entity.User;
+import com.example.api.repository.CourseAssessmentRepository;
 import com.example.api.repository.CourseRepository;
 import com.example.api.repository.SemesterRepository;
 import com.example.api.repository.UserRepository;
@@ -20,22 +22,56 @@ public class CourseServiceImpl implements CourseService {
     private UserRepository userRepo;
     private SemesterRepository semesterRepo;
     private CourseRepository courseRepo;
+    private CourseAssessmentRepository courseAssessmentRepo;
 
     @Autowired
     public void CourseService(
             UserRepository userRepo,
             SemesterRepository semesterRepo,
-            CourseRepository courseRepo
+            CourseRepository courseRepo,
+            CourseAssessmentRepository courseAssessmentRepo
     ) {
         this.userRepo = userRepo;
         this.semesterRepo = semesterRepo;
         this.courseRepo = courseRepo;
+        this.courseAssessmentRepo = courseAssessmentRepo;
     }
 
     @Override
     public Optional<CourseOutput> findCourseById(UUID courseId) {
-        return courseRepo.findById(courseId)
-                .map(CourseOutput::fromEntity);
+        Optional<CourseOutput> course = courseRepo.findById(courseId).map(CourseOutput::fromEntity);
+        if (course.get().getEarnedGrade() == null) {
+            List<CourseAssessment> courseAssessments = courseAssessmentRepo.findByCourseId(courseId);
+            if (courseAssessments.isEmpty()) {
+                return course;
+            }
+            float totalScore = 0f;
+            float totalMaxScore = 0f;
+            for (CourseAssessment assessment : courseAssessments) {
+                totalScore += assessment.getScore();
+                totalMaxScore += assessment.getMaxScore();
+            }
+            float earnedGrade = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0f;
+            if (earnedGrade > 90f)
+                course.get().setEarnedGrade(4.5f);
+            else if (earnedGrade > 80f)
+                course.get().setEarnedGrade(4.0f);
+            else if (earnedGrade > 70f)
+                course.get().setEarnedGrade(3.5f);
+            else if (earnedGrade > 60f)
+                course.get().setEarnedGrade(3.0f);
+            else if (earnedGrade > 50f)
+                course.get().setEarnedGrade(2.5f);
+            else if (earnedGrade > 40f)
+                course.get().setEarnedGrade(2.0f);
+            else if (earnedGrade > 30f)
+                course.get().setEarnedGrade(1.5f);
+            else if (earnedGrade > 20f)
+                course.get().setEarnedGrade(1.0f);
+            else
+                course.get().setEarnedGrade(0.0f);
+        }
+        return course;
     }
 
     @Override
@@ -79,9 +115,17 @@ public class CourseServiceImpl implements CourseService {
         // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
         Course course = courseRepo.findById(input.getId())
                 .orElseThrow(() -> new RuntimeException("Course not found: " + input.getId()));
-        course.setTargetGrade(input.getTargetGrade());
-        course.setEarnedGrade(input.getEarnedGrade());
-        course.setCompletedCredits(input.getCompletedCredits());
+
+        if (input.getTargetGrade() != null) {
+            course.setTargetGrade(input.getTargetGrade());
+        }
+        if (input.getEarnedGrade() != null) {
+            course.setEarnedGrade(input.getEarnedGrade());
+        }
+        if (input.getCompletedCredits() != null) {
+            course.setCompletedCredits(input.getCompletedCredits());
+        }
+
         Course updatedCourse = courseRepo.updateCourse(course);
         return CourseOutput.fromEntity(updatedCourse);
     }
