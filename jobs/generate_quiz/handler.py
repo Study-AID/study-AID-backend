@@ -371,7 +371,7 @@ def send_quiz_email(receiver_email, user_name, lecture_title, semester_id, cours
     frontend_domain = FRONTEND_DOMAIN
     quiz_url = f"{frontend_domain}/{semester_id}/{course_id}/{lecture_id}/quiz"
 
-    subject = f"[Study AID] 🕊️퀴즈 생성 완료: '{lecture_title}'의 '{quiz_title}'"
+    subject = f"[Study AID] 🪄퀴즈 생성 완료: '{lecture_title}'의 '{quiz_title}'"
     body_text = f"{user_name}님, 강의 '{lecture_title}' 퀴즈 '{quiz_title}'의 생성이 완료되었어요! {quiz_url} 에서 확인하세요."
 
     body_html = f"""
@@ -399,6 +399,8 @@ def send_quiz_email(receiver_email, user_name, lecture_title, semester_id, cours
         </p>
     
         <p>감사합니다.<br/>Study AID 팀 드림</p>
+        <p>문의: studyaiddev@gmail.com</p>
+        <p style="color: gray; font-size: 10px;"><br/>Unsubscribe</p>
       </body>
     </html>
     """
