@@ -182,7 +182,6 @@ public class QuizControllerTest {
         testQuizResultOutput.setUserId(userId);
         testQuizResultOutput.setScore(85.0f);
         testQuizResultOutput.setMaxScore(100.0f);
-        testQuizResultOutput.setFeedback("Good job!");
         testQuizResultOutput.setStartTime(LocalDateTime.now().minusHours(1));
         testQuizResultOutput.setEndTime(LocalDateTime.now());
 
@@ -396,8 +395,7 @@ public class QuizControllerTest {
                 .andExpect(jsonPath("$.quizId", is(quizId.toString())))
                 .andExpect(jsonPath("$.userId", is(userId.toString())))
                 .andExpect(jsonPath("$.score", is(85.0)))
-                .andExpect(jsonPath("$.maxScore", is(100.0)))
-                .andExpect(jsonPath("$.feedback", is("Good job!")));
+                .andExpect(jsonPath("$.maxScore", is(100.0)));
 
         verify(quizService, times(1)).findQuizById(quizId);
         verify(quizService, times(1)).findQuizResultByQuizId(quizId);
@@ -462,8 +460,7 @@ public class QuizControllerTest {
                 .andExpect(jsonPath("$.quizId", is(quizId.toString())))
                 .andExpect(jsonPath("$.userId", is(userId.toString())))
                 .andExpect(jsonPath("$.score", is(85.0)))
-                .andExpect(jsonPath("$.maxScore", is(100.0)))
-                .andExpect(jsonPath("$.feedback", is("Good job!")));
+                .andExpect(jsonPath("$.maxScore", is(100.0)));
 
         verify(quizService, times(1)).findQuizById(quizId);
         verify(quizService, times(1)).findQuizResultByQuizId(quizId);

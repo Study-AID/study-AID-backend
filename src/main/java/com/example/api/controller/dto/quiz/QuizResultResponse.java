@@ -32,9 +32,6 @@ public class QuizResultResponse {
     @Schema(description = "Maximum Score")
     private Float maxScore;
 
-    @Schema(description = "Feedback")
-    private String feedback;
-
     @Schema(description = "Start Time")
     private LocalDateTime startTime;
 
@@ -57,7 +54,6 @@ public class QuizResultResponse {
                 quizResultOutput.getUserId(),
                 quizResultOutput.getScore(),
                 quizResultOutput.getMaxScore(),
-                quizResultOutput.getFeedback(),
                 quizResultOutput.getStartTime(),
                 quizResultOutput.getEndTime(),
                 quizResultOutput.getCreatedAt(),

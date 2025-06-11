@@ -38,9 +38,6 @@ public class QuizResult {
     @Column(name = "max_score", nullable = false)
     private Float maxScore;
 
-    @Column()
-    private String feedback;
-
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 

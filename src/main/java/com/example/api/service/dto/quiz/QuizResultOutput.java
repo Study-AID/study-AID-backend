@@ -19,7 +19,6 @@ public class QuizResultOutput {
     private UUID userId;
     private Float score;
     private Float maxScore;
-    private String feedback;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private LocalDateTime createdAt;
@@ -34,7 +33,6 @@ public class QuizResultOutput {
                 quizResult.getUser().getId(),
                 quizResult.getScore(),
                 quizResult.getMaxScore(),
-                quizResult.getFeedback(),
                 quizResult.getStartTime(),
                 quizResult.getEndTime(),
                 quizResult.getCreatedAt(),
@@ -50,7 +48,6 @@ public class QuizResultOutput {
                 quizResult.getUser().getId(),
                 quizResult.getScore(),
                 quizResult.getMaxScore(),
-                quizResult.getFeedback(),
                 quizResult.getStartTime(),
                 quizResult.getEndTime(),
                 quizResult.getCreatedAt(),
