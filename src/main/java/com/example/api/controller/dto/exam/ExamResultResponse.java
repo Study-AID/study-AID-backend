@@ -30,9 +30,6 @@ public class ExamResultResponse {
     @Schema(description = "Maximum Score")
     private Float maxScore;
 
-    @Schema(description = "Feedback")
-    private String feedback;
-
     @Schema(description = "Start Time")
     private LocalDateTime startTime;
 
@@ -52,7 +49,6 @@ public class ExamResultResponse {
                 examResultOutput.getUserId(),
                 examResultOutput.getScore(),
                 examResultOutput.getMaxScore(),
-                examResultOutput.getFeedback(),
                 examResultOutput.getStartTime(),
                 examResultOutput.getEndTime(),
                 examResultOutput.getCreatedAt(),

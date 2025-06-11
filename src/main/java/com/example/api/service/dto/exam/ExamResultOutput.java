@@ -19,7 +19,6 @@ public class ExamResultOutput {
     private UUID userId;
     private Float score;
     private Float maxScore;
-    private String feedback;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private LocalDateTime createdAt;
@@ -34,7 +33,6 @@ public class ExamResultOutput {
                 examResult.getUser().getId(),
                 examResult.getScore(),
                 examResult.getMaxScore(),
-                examResult.getFeedback(),
                 examResult.getStartTime(),
                 examResult.getEndTime(),
                 examResult.getCreatedAt(),
@@ -50,7 +48,6 @@ public class ExamResultOutput {
                 examResult.getUser().getId(),
                 examResult.getScore(),
                 examResult.getMaxScore(),
-                examResult.getFeedback(),
                 examResult.getStartTime(),
                 examResult.getEndTime(),
                 examResult.getCreatedAt(),
