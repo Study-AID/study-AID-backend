@@ -1,4 +1,4 @@
-.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win open-test-report open-coverage-report migrate migration-info test-env-start test-env-setup test-job-summarize test-job-quiz test-job-exam test-job-shell test-env-stop test-env-clean
+.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win open-test-report open-coverage-report migrate migration-info test-env-start test-env-setup test-job-summarize test-job-quiz test-job-exam test-job-grade-quiz-essay test-job-grade-exam-essay test-job-shell test-env-stop test-env-clean
 
 # Default target
 help:
@@ -29,6 +29,7 @@ help:
 	@echo "  make test-job-quiz             - Test generate_quiz job"
 	@echo "  make test-job-exam             - Test generate_exam job"
 	@echo "  make test-job-grade-quiz-essay - Test grade_quiz_essay job"
+	@echo "  make test-job-grade-exam-essay - Test grade_exam_essay job"
 	@echo "  make test-job-shell            - Start a shell in test container for debugging"
 	@echo "  make test-env-stop             - Stop test environment containers"
 	@echo "  make test-env-clean            - Remove test environment including volumes"
@@ -158,10 +159,15 @@ test-job-exam:
 	@echo "Testing generate_exam job..."
 	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile exam up --build
 
-# 서술형 채점 기능 테스트
+# 퀴즈 서술형 채점 기능 테스트
 test-job-grade-quiz-essay:
 	@echo "Testing grade_quiz_essay job..."
 	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile grade-quiz-essay up --build
+
+# 시험 서술형 채점 기능 테스트
+test-job-grade-exam-essay:
+	@echo "Testing grade_exam_essay job..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile grade-exam-essay up --build
 
 # 테스트용 셸 실행 (디버깅용)
 test-job-shell:

@@ -128,4 +128,31 @@ public class SQSClientImpl implements SQSClient {
             throw new RuntimeException("Failed to send SQS message", e);
         }
     }
+
+    @Async
+    @Override
+    public void sendGradeExamEssayMessage(GradeExamEssayMessage message) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
+            String messageBody = mapper.writeValueAsString(message);
+
+            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
+                    .queueUrl(sqsMessageConfig.getGradeExamEssay().getQueueUrl())
+                    .messageGroupId(message.getExamId().toString())
+                    .messageBody(messageBody)
+                    .build();
+
+            SendMessageResponse response = sqsClient.sendMessage(sendMessageRequest);
+
+            logger.info("Successfully sent grade exam essay message with requestId: {} and messageId: {}",
+                    message.getRequestId(), response.messageId());
+
+        } catch (Exception e) {
+            logger.error("Failed to send grade exam essay message for examId: {}", message.getExamId(), e);
+            throw new RuntimeException("Failed to send SQS message", e);
+        }
+    }
 }
