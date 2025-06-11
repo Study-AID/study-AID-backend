@@ -3,7 +3,7 @@ name: Dev - Deploy dev-generate-course-weakness-analysis Lambda Job
 on:
   push:
     tags:
-      - 'deploy-job-generate-generate-course-weakness-analysis-[0-9]+.[0-9]+.[0-9]+-dev'
+      - 'deploy-job-generate-course-weakness-analysis-[0-9]+.[0-9]+.[0-9]+-dev'
 
 env:
   LAMBDA_FUNCTION_NAME: dev-generate-course-weakness-analysis
