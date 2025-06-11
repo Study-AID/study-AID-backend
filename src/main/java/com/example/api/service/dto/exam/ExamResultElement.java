@@ -1,14 +1,14 @@
 package com.example.api.service.dto.exam;
 
+import com.example.api.entity.EssayCriteriaAnalysis;
+import com.example.api.entity.ExamItem;
+import com.example.api.entity.ExamResponse;
+import com.example.api.entity.enums.QuestionType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
-
-import com.example.api.entity.ExamItem;
-import com.example.api.entity.ExamResponse;
-import com.example.api.entity.enums.QuestionType;
 
 @Data
 @NoArgsConstructor
@@ -31,6 +31,7 @@ public class ExamResultElement {
     private Boolean selectedBool;
     private Integer[] selectedIndices;
     private String textAnswerOfUser;
+    private EssayCriteriaAnalysis essayCriteriaAnalysis;
     private Float score;
 
     public static ExamResultElement fromExamItemAndResponse(ExamItem examItem, ExamResponse examResponse) {
@@ -39,30 +40,26 @@ public class ExamResultElement {
         element.setQuestion(examItem.getQuestion());
         element.setQuestionType(examItem.getQuestionType());
         element.setExplanation(examItem.getExplanation());
-        element.setIsTrueAnswer(examItem.getIsTrueAnswer());
-        element.setChoices(null);
-        element.setAnswerIndices(null);
-        element.setTextAnswer(null);
-        element.setPoints(null);
+        element.setPoints(examItem.getPoints());
 
         element.setExamResponseId(examResponse.getId());
         element.setIsCorrect(examResponse.getIsCorrect());
-        element.setSelectedBool(null);
-        element.setSelectedIndices(null);
-        element.setTextAnswerOfUser(null);
-        element.setScore(null);
+        element.setScore(examResponse.getScore());
 
         if (examItem.getQuestionType() == QuestionType.true_or_false) {
-            element.setChoices(examItem.getChoices());
+            element.setIsTrueAnswer(examItem.getIsTrueAnswer());
             element.setSelectedBool(examResponse.getSelectedBool());
         } else if (examItem.getQuestionType() == QuestionType.multiple_choice) {
             element.setChoices(examItem.getChoices());
+            element.setAnswerIndices(examItem.getAnswerIndices());
             element.setSelectedIndices(examResponse.getSelectedIndices());
-        } else if (examItem.getQuestionType() == QuestionType.short_answer || examItem.getQuestionType() == QuestionType.essay) {
+        } else if (examItem.getQuestionType() == QuestionType.short_answer) {
             element.setTextAnswer(examItem.getTextAnswer());
             element.setTextAnswerOfUser(examResponse.getTextAnswer());
-            // Points can be set based on the grading logic
-            // For now, we leave it as null
+        } else if (examItem.getQuestionType() == QuestionType.essay) {
+            element.setTextAnswer(examItem.getTextAnswer());
+            element.setTextAnswerOfUser(examResponse.getTextAnswer());
+            element.setEssayCriteriaAnalysis(examResponse.getEssayCriteriaAnalysis());
         }
 
         return element;

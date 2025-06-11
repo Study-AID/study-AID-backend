@@ -93,11 +93,20 @@ def insert_test_data(conn):
     test_semester_id = "d993e3bc-f563-457e-a8b4-8f8d83a889cd"
     test_course_id = "d993e3bc-f563-457e-a8b4-8f8d83a889cd"
     test_lecture_id = "743b2baa-16a5-4982-aa21-010ba83ca283"
+
+    # Quiz related IDs
     test_quiz_id = "a82f7c3e-5a9d-4e2a-b48f-32fc4539d6d0"
     test_quiz_item1_id = "b1234567-8901-2345-6789-012345678901"
     test_quiz_item2_id = "c2345678-9012-3456-7890-123456789012"
     test_quiz_response1_id = "d3456789-0123-4567-8901-234567890123"
     test_quiz_response2_id = "e4567890-1234-5678-9012-345678901234"
+    
+    # Exam related IDs
+    test_exam_id = "b93e4f3a-6c8d-4f1a-a59f-43d65639e7e1"
+    test_exam_item1_id = "f5678901-2345-6789-0123-456789012345"
+    test_exam_item2_id = "b6789012-3456-4789-9234-567890123456"
+    test_exam_response1_id = "c7890123-4567-4789-8234-678901234567"
+    test_exam_response2_id = "d8901234-5678-4789-9234-789012345678"
 
     # Sample parsed_text data with 5 pages
     sample_parsed_text = json.dumps({
@@ -131,6 +140,7 @@ def insert_test_data(conn):
     os.environ['TEST_COURSE_ID'] = test_course_id
     os.environ['TEST_LECTURE_ID'] = test_lecture_id
     os.environ['TEST_QUIZ_ID'] = test_quiz_id
+    os.environ['TEST_EXAM_ID'] = test_exam_id
 
     try:
         with conn.cursor() as cursor:
@@ -240,6 +250,78 @@ def insert_test_data(conn):
                 """, (
                 test_quiz_response2_id, test_quiz_id, test_quiz_item2_id, test_user_id,
                 "캡슐화, 상속, 다형성이 있습니다. 캡슐화는 데이터를 숨기는 것이고, 상속은 부모 클래스의 기능을 받는 것이고, 다형성은 여러 형태를 가질 수 있다는 것입니다."
+            ))
+
+            # ========================
+            # EXAM 관련 테스트 데이터
+            # ========================
+            
+            # Insert test exam
+            cursor.execute("""
+                INSERT INTO app.exams (id, course_id, user_id, title, status, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                ON CONFLICT (id) DO NOTHING
+                """, (test_exam_id, test_course_id, test_user_id, 'Test Exam', 'not_started'))
+
+            # Insert test exam results
+            cursor.execute("""
+                INSERT INTO app.exam_results (id, exam_id, user_id, score, max_score, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_user_id, test_exam_id, test_user_id, 0.0, 30.0
+            ))
+
+            # Insert test exam items
+            # 시험 서술형 문제 1 (더 복잡하고 포괄적)
+            cursor.execute("""
+                INSERT INTO app.exam_items (id, exam_id, user_id, question, question_type, 
+                                           explanation, text_answer, points)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_exam_item1_id, test_exam_id, test_user_id,
+                "데이터베이스 정규화 과정에서 1NF, 2NF, 3NF의 개념과 특징을 설명하고, 각 단계별 정규화의 목적과 장단점을 비교 분석하시오. 실제 사례를 들어 정규화 전후의 테이블 구조 변화를 보여주시오.",
+                "essay",
+                "이 문제는 데이터베이스 설계의 핵심인 정규화에 대한 심화 이해를 평가합니다. 단순한 정의를 넘어서 각 정규형의 특징, 목적, 장단점을 비교분석하고 실제 적용 사례를 제시할 수 있는지 종합적으로 평가합니다.",
+                "1NF(제1정규형)는 각 속성이 원자값을 가져야 하며 반복 그룹이 없어야 합니다. 2NF(제2정규형)는 1NF를 만족하면서 부분적 함수 종속이 제거되어야 하며, 모든 비키 속성이 기본키에 완전 함수 종속되어야 합니다. 3NF(제3정규형)는 2NF를 만족하면서 이행적 함수 종속이 제거되어야 합니다. 정규화의 장점은 데이터 중복 최소화, 일관성 유지, 저장공간 절약이며, 단점은 조인 연산 증가로 인한 성능 저하입니다. 예를 들어, 학생-과목-성적 테이블에서 학생정보와 과목정보가 중복되는 경우, 정규화를 통해 학생 테이블, 과목 테이블, 수강 테이블로 분리할 수 있습니다.",
+                15.0
+            ))
+
+            # 시험 서술형 문제 2 (더 복잡하고 포괄적)
+            cursor.execute("""
+                INSERT INTO app.exam_items (id, exam_id, user_id, question, question_type, 
+                                           explanation, text_answer, points)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_exam_item2_id, test_exam_id, test_user_id,
+                "객체지향 프로그래밍의 SOLID 원칙 5가지를 설명하고, 각 원칙이 소프트웨어 설계에 미치는 영향과 위반 시 발생할 수 있는 문제점을 구체적인 예시와 함께 논하시오. 또한 이러한 원칙들이 현대 소프트웨어 개발에서 어떻게 적용되는지 설명하시오.",
+                "essay",
+                "이 문제는 객체지향 설계의 핵심 원칙인 SOLID에 대한 깊이 있는 이해를 평가합니다. 각 원칙의 정의를 넘어서 실제 소프트웨어 설계에 미치는 영향, 위반 시 문제점, 현대 개발에서의 적용 사례까지 종합적으로 분석할 수 있는지 확인합니다.",
+                "SOLID 원칙은 다음과 같습니다: 1) SRP(단일책임원칙): 클래스는 하나의 책임만 가져야 하며, 변경 이유도 하나여야 합니다. 2) OCP(개방폐쇄원칙): 확장에는 열려있고 수정에는 닫혀있어야 합니다. 3) LSP(리스코프치환원칙): 상위 타입의 객체를 하위 타입의 객체로 치환 가능해야 합니다. 4) ISP(인터페이스분리원칙): 클라이언트는 사용하지 않는 인터페이스에 의존하면 안 됩니다. 5) DIP(의존성역전원칙): 고수준 모듈은 저수준 모듈에 의존하면 안 되며, 추상화에 의존해야 합니다. 이러한 원칙들은 코드의 유지보수성, 확장성, 재사용성을 높이며, 현대의 프레임워크와 디자인 패턴에서 광범위하게 적용됩니다.",
+                15.0
+            ))
+
+            # Insert test exam responses
+            # 시험 사용자 답변 1 (퀴즈보다 더 상세하지만 불완전)
+            cursor.execute("""
+                INSERT INTO app.exam_responses (id, exam_id, question_id, user_id, text_answer, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_exam_response1_id, test_exam_id, test_exam_item1_id, test_user_id,
+                "1NF는 원자값을 가져야 하고 반복그룹이 없어야 합니다. 2NF는 1NF를 만족하면서 부분 함수 종속이 제거되어야 합니다. 3NF는 2NF를 만족하면서 이행적 함수 종속이 제거되어야 합니다. 정규화의 장점은 중복 제거와 일관성 유지입니다. 단점은 조인이 많아져서 성능이 저하될 수 있습니다. 학생 테이블에서 학번, 이름, 과목명, 성적이 모두 들어있다면 과목별로 학생 정보가 중복됩니다. 이를 학생 테이블과 수강 테이블로 나누면 중복이 제거됩니다."
+            ))
+
+            # 시험 사용자 답변 2 (일부 원칙만 정확히 설명)
+            cursor.execute("""
+                INSERT INTO app.exam_responses (id, exam_id, question_id, user_id, text_answer, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                ON CONFLICT (id) DO NOTHING
+                """, (
+                test_exam_response2_id, test_exam_id, test_exam_item2_id, test_user_id,
+                "SOLID 원칙 중에서 SRP는 단일 책임 원칙으로 하나의 클래스는 하나의 책임만 가져야 한다는 것입니다. OCP는 개방 폐쇄 원칙으로 확장에는 열려있고 수정에는 닫혀있어야 합니다. LSP는 상위 클래스를 하위 클래스로 바꿔도 동작해야 한다는 것입니다. 나머지 두 원칙은 잘 기억나지 않습니다. 이런 원칙들을 지키면 코드가 더 좋아진다고 배웠습니다."
             ))
 
         conn.commit()

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://study-aid.dev/schemas/grade_exam_essay.json",
+  "title": "GradeExamEssay",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_id",
+    "occurred_at",
+    "user_id",
+    "exam_id"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Schema version in semantic versioning format"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this grade exam essay request"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the request occurred"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier of the user who submitted the exam"
+    },
+    "exam_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier of the exam to be graded"
+    }
+  },
+  "additionalProperties": false
+}

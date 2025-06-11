@@ -1,17 +1,22 @@
 package com.example.api.service;
 
+import com.example.api.adapters.sqs.GradeExamEssayMessage;
+import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.entity.*;
 import com.example.api.entity.enums.QuestionType;
 import com.example.api.entity.enums.Status;
 import com.example.api.repository.*;
 import com.example.api.service.dto.exam.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 
 @Service
+@Slf4j
 public class ExamServiceImpl implements ExamService {
     private UserRepository userRepo;
     private CourseRepository courseRepo;
@@ -19,6 +24,7 @@ public class ExamServiceImpl implements ExamService {
     private ExamItemRepository examItemRepo;
     private ExamResponseRepository examResponseRepo;
     private ExamResultRepository examResultRepo;
+    private SQSClient sqsClient;
 
     @Autowired
     public void ExamService(
@@ -27,7 +33,8 @@ public class ExamServiceImpl implements ExamService {
             ExamRepository examRepo,
             ExamItemRepository examItemRepo,
             ExamResponseRepository examResponseRepo,
-            ExamResultRepository examResultRepo
+            ExamResultRepository examResultRepo,
+            SQSClient sqsClient
     ) {
         this.userRepo = userRepo;
         this.courseRepo = courseRepo;
@@ -35,6 +42,7 @@ public class ExamServiceImpl implements ExamService {
         this.examItemRepo = examItemRepo;
         this.examResponseRepo = examResponseRepo;
         this.examResultRepo = examResultRepo;
+        this.sqsClient = sqsClient;
     }
 
     @Override
@@ -122,6 +130,7 @@ public class ExamServiceImpl implements ExamService {
         ExamResponseListOutput examResponseListOutput = new ExamResponseListOutput(examResponseOutputs);
 
         UUID examId = inputs.get(0).getExamId();
+        UUID userId = inputs.get(0).getUserId();
         Exam exam = examRepo.getReferenceById(examId);
 
         // 서술형 문제 유무 확인
@@ -132,7 +141,7 @@ public class ExamServiceImpl implements ExamService {
         } else {
             gradeNonEssayQuestions(examId);
             exam.setStatus(Status.partially_graded);
-            // TODO(jin): 서술형 채점 함수 (gradeEssayQuestions) 작성 및 서술형 채점 SQS 메시지 전송
+            sendGradeExamEssayMessage(userId, examId);
         }
         examRepo.updateExam(exam);
 
@@ -142,6 +151,23 @@ public class ExamServiceImpl implements ExamService {
     // 서술형 문제 존재 여부 확인 함수
     private boolean hasEssayQuestions(UUID examId) {
         return examItemRepo.existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay);
+    }
+
+    private void sendGradeExamEssayMessage(UUID userId, UUID examId) {
+        GradeExamEssayMessage message = GradeExamEssayMessage.builder()
+                .schemaVersion("1.0.0")
+                .requestId(UUID.randomUUID())
+                .occurredAt(OffsetDateTime.now())
+                .userId(userId)
+                .examId(examId)
+                .build();
+
+        try {
+            sqsClient.sendGradeExamEssayMessage(message);
+            log.info("Successfully sent grade exam essay message to SQS: examId={}, userId={}", examId, userId);
+        } catch (Exception e) {
+            log.error("Failed to send grade exam essay message to SQS: examId={}, userId={}, error={}", examId, userId, e.getMessage());
+        }
     }
 
     @Override

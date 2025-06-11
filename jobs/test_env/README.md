@@ -34,6 +34,11 @@ make test-job-exam
 make test-job-grade-quiz-essay
 ```
 
+5. **시험 서술형 채점 기능 테스트** (grade_exam_essay):
+```bash
+make test-job-grade-exam-essay
+```
+
 ### OpenAI API 키 설정
 
 테스트에 실제 OpenAI API 키를 사용하려면:
