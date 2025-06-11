@@ -1,15 +1,14 @@
 package com.example.api.service.dto.exam;
 
 import com.example.api.entity.EssayCriteriaAnalysis;
+import com.example.api.entity.ExamItem;
+import com.example.api.entity.ExamResponse;
+import com.example.api.entity.enums.QuestionType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
-
-import com.example.api.entity.ExamItem;
-import com.example.api.entity.ExamResponse;
-import com.example.api.entity.enums.QuestionType;
 
 @Data
 @NoArgsConstructor
@@ -41,19 +40,23 @@ public class ExamResultElement {
         element.setQuestion(examItem.getQuestion());
         element.setQuestionType(examItem.getQuestionType());
         element.setExplanation(examItem.getExplanation());
-        element.setIsTrueAnswer(examItem.getIsTrueAnswer());
+        element.setPoints(examItem.getPoints());
 
         element.setExamResponseId(examResponse.getId());
         element.setIsCorrect(examResponse.getIsCorrect());
-        element.setEssayCriteriaAnalysis(examResponse.getEssayCriteriaAnalysis());
+        element.setScore(examResponse.getScore());
 
         if (examItem.getQuestionType() == QuestionType.true_or_false) {
-            element.setChoices(examItem.getChoices());
+            element.setIsTrueAnswer(examItem.getIsTrueAnswer());
             element.setSelectedBool(examResponse.getSelectedBool());
         } else if (examItem.getQuestionType() == QuestionType.multiple_choice) {
             element.setChoices(examItem.getChoices());
+            element.setAnswerIndices(examItem.getAnswerIndices());
             element.setSelectedIndices(examResponse.getSelectedIndices());
-        } else if (examItem.getQuestionType() == QuestionType.short_answer || examItem.getQuestionType() == QuestionType.essay) {
+        } else if (examItem.getQuestionType() == QuestionType.short_answer) {
+            element.setTextAnswer(examItem.getTextAnswer());
+            element.setTextAnswerOfUser(examResponse.getTextAnswer());
+        } else if (examItem.getQuestionType() == QuestionType.essay) {
             element.setTextAnswer(examItem.getTextAnswer());
             element.setTextAnswerOfUser(examResponse.getTextAnswer());
             element.setEssayCriteriaAnalysis(examResponse.getEssayCriteriaAnalysis());

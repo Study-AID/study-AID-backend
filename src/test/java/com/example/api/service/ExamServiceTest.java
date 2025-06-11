@@ -5,17 +5,7 @@ import com.example.api.entity.*;
 import com.example.api.entity.enums.QuestionType;
 import com.example.api.entity.enums.Status;
 import com.example.api.repository.*;
-import com.example.api.service.dto.exam.CreateExamInput;
-import com.example.api.service.dto.exam.CreateExamResponseInput;
-import com.example.api.service.dto.exam.ExamItemListOutput;
-import com.example.api.service.dto.exam.ExamItemOutput;
-import com.example.api.service.dto.exam.ExamListOutput;
-import com.example.api.service.dto.exam.ExamOutput;
-import com.example.api.service.dto.exam.ExamResponseListOutput;
-import com.example.api.service.dto.exam.ExamResultListOutput;
-import com.example.api.service.dto.exam.ExamResultOutput;
-import com.example.api.service.dto.exam.ToggleLikeExamItemInput;
-import com.example.api.service.dto.exam.UpdateExamInput;
+import com.example.api.service.dto.exam.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,12 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,7 +45,7 @@ public class ExamServiceTest {
 
     @Mock
     private ExamResultRepository examResultRepo;
-    
+
     @Mock
     private SQSClient sqsClient;
 
@@ -84,7 +69,7 @@ public class ExamServiceTest {
     private UUID examItemId3;
     private UUID examItemId4;
     private UUID examResultId;
-    
+
     private UUID likedExamItemId1;
     private UUID likedExamItemId2;
     private UUID anotherExamId;
@@ -98,7 +83,7 @@ public class ExamServiceTest {
     private ExamResult testExamResult;
     private List<ExamResult> testExamResults;
     private ExamItem testExamItem;
-    
+
     private Exam anotherExam;
     private ExamItem likedExamItem1;
     private ExamItem likedExamItem2;
@@ -114,7 +99,7 @@ public class ExamServiceTest {
         examItemId3 = UUID.randomUUID();
         examItemId4 = UUID.randomUUID(); // like exam item
         examResultId = UUID.randomUUID();
-        
+
         likedExamItemId1 = UUID.randomUUID();
         likedExamItemId2 = UUID.randomUUID();
         anotherExamId = UUID.randomUUID();
@@ -142,7 +127,7 @@ public class ExamServiceTest {
         testExam.setStatus(Status.not_started);
         testExam.setCreatedAt(LocalDateTime.now());
         testExam.setUpdatedAt(LocalDateTime.now());
-        testExam.setReferencedLectures(new UUID[] { UUID.randomUUID() });
+        testExam.setReferencedLectures(new UUID[]{UUID.randomUUID()});
 
         // Create basic exam items for basic tests
         ExamItem basicItem1 = new ExamItem();
@@ -169,8 +154,8 @@ public class ExamServiceTest {
         multipleChoiceItem.setExam(testExam);
         multipleChoiceItem.setQuestionType(QuestionType.multiple_choice);
         multipleChoiceItem.setQuestion("Which of these are JVM languages?");
-        multipleChoiceItem.setChoices(new String[] { "Java", "Kotlin", "C++", "Python" });
-        multipleChoiceItem.setAnswerIndices(new Integer[] { 0, 1 });
+        multipleChoiceItem.setChoices(new String[]{"Java", "Kotlin", "C++", "Python"});
+        multipleChoiceItem.setAnswerIndices(new Integer[]{0, 1});
 
         ExamItem shortAnswerItem = new ExamItem();
         shortAnswerItem.setId(examItemId3);
@@ -193,7 +178,7 @@ public class ExamServiceTest {
         multipleChoiceResponse.setExam(testExam);
         multipleChoiceResponse.setExamItem(multipleChoiceItem);
         multipleChoiceResponse.setUser(testUser);
-        multipleChoiceResponse.setSelectedIndices(new Integer[] { 0, 1 }); // Correct answer
+        multipleChoiceResponse.setSelectedIndices(new Integer[]{0, 1}); // Correct answer
         multipleChoiceResponse.setCreatedAt(LocalDateTime.now());
 
         ExamResponse shortAnswerResponse = new ExamResponse();
@@ -296,7 +281,7 @@ public class ExamServiceTest {
         input.setUserId(userId);
         input.setCourseId(courseId);
         input.setTitle("New Exam");
-        input.setReferencedLectures(new UUID[] { UUID.randomUUID() });
+        input.setReferencedLectures(new UUID[]{UUID.randomUUID()});
 
         when(userRepo.getReferenceById(userId)).thenReturn(testUser);
         when(courseRepo.getReferenceById(courseId)).thenReturn(testCourse);
@@ -400,7 +385,7 @@ public class ExamServiceTest {
 
         // Modify responses to have incorrect answers
         testExamResponses.get(0).setSelectedBool(false); // Wrong answer for true/false
-        testExamResponses.get(1).setSelectedIndices(new Integer[] { 0, 2 }); // Wrong answer for multiple choice
+        testExamResponses.get(1).setSelectedIndices(new Integer[]{0, 2}); // Wrong answer for multiple choice
 
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(examResponseRepo.findByExamId(examId)).thenReturn(testExamResponses);
@@ -481,11 +466,30 @@ public class ExamServiceTest {
         // given
         when(examResultRepo.findByExamId(examId)).thenReturn(Optional.of(testExamResult));
 
+        // ExamItem과 ExamResponse 설정
+        ExamItem examItem1 = testExamResponses.get(0).getExamItem();
+        ExamItem examItem2 = testExamResponses.get(1).getExamItem();
+        ExamItem examItem3 = testExamResponses.get(2).getExamItem();
+
+        List<ExamItem> examItems = Arrays.asList(examItem1, examItem2, examItem3);
+        when(examItemRepo.findByExamId(examId)).thenReturn(examItems);
+
+        // 각 ExamItem에 대한 ExamResponse 설정
+        when(examResponseRepo.findByExamItemId(examItem1.getId())).thenReturn(Optional.of(testExamResponses.get(0)));
+        when(examResponseRepo.findByExamItemId(examItem2.getId())).thenReturn(Optional.of(testExamResponses.get(1)));
+        when(examResponseRepo.findByExamItemId(examItem3.getId())).thenReturn(Optional.of(testExamResponses.get(2)));
+
+        when(examItemRepo.getReferenceById(examItem1.getId())).thenReturn(examItem1);
+        when(examItemRepo.getReferenceById(examItem2.getId())).thenReturn(examItem2);
+        when(examItemRepo.getReferenceById(examItem3.getId())).thenReturn(examItem3);
+
         // when
         Optional<ExamResultOutput> result = examService.findExamResultByExamId(examId);
 
         // then
         assertTrue(result.isPresent());
+
+        // ExamResult 기본 필드 검증
         assertEquals(testExamResult.getId(), result.get().getId());
         assertEquals(testExamResult.getExam().getId(), result.get().getExamId());
         assertEquals(testExamResult.getUser().getId(), result.get().getUserId());
@@ -495,7 +499,45 @@ public class ExamServiceTest {
         assertEquals(testExamResult.getStartTime(), result.get().getStartTime());
         assertEquals(testExamResult.getEndTime(), result.get().getEndTime());
 
+        // ExamResultElements 검증
+        assertNotNull(result.get().getExamResultElements());
+        assertEquals(3, result.get().getExamResultElements().size());
+
+        // 첫 번째 ExamResultElement 검증 (True/False 문제)
+        ExamResultElement element1 = result.get().getExamResultElements().get(0);
+        assertEquals(examItem1.getId(), element1.getExamItemId());
+        assertEquals(examItem1.getQuestion(), element1.getQuestion());
+        assertEquals(QuestionType.true_or_false, element1.getQuestionType());
+        assertEquals(testExamResponses.get(0).getId(), element1.getExamResponseId());
+        assertEquals(testExamResponses.get(0).getIsCorrect(), element1.getIsCorrect());
+        assertEquals(examItem1.getIsTrueAnswer(), element1.getIsTrueAnswer());
+        assertEquals(testExamResponses.get(0).getSelectedBool(), element1.getSelectedBool());
+
+        // 두 번째 ExamResultElement 검증 (Multiple Choice 문제)
+        ExamResultElement element2 = result.get().getExamResultElements().get(1);
+        assertEquals(examItem2.getId(), element2.getExamItemId());
+        assertEquals(examItem2.getQuestion(), element2.getQuestion());
+        assertEquals(QuestionType.multiple_choice, element2.getQuestionType());
+        assertEquals(testExamResponses.get(1).getId(), element2.getExamResponseId());
+        assertEquals(testExamResponses.get(1).getIsCorrect(), element2.getIsCorrect());
+        assertArrayEquals(examItem2.getChoices(), element2.getChoices());
+        assertArrayEquals(examItem2.getAnswerIndices(), element2.getAnswerIndices());
+        assertArrayEquals(testExamResponses.get(1).getSelectedIndices(), element2.getSelectedIndices());
+
+        // 세 번째 ExamResultElement 검증 (Short Answer 문제)
+        ExamResultElement element3 = result.get().getExamResultElements().get(2);
+        assertEquals(examItem3.getId(), element3.getExamItemId());
+        assertEquals(examItem3.getQuestion(), element3.getQuestion());
+        assertEquals(QuestionType.short_answer, element3.getQuestionType());
+        assertEquals(testExamResponses.get(2).getId(), element3.getExamResponseId());
+        assertEquals(testExamResponses.get(2).getIsCorrect(), element3.getIsCorrect());
+        assertEquals(examItem3.getTextAnswer(), element3.getTextAnswer());
+        assertEquals(testExamResponses.get(2).getTextAnswer(), element3.getTextAnswerOfUser());
+
         verify(examResultRepo, times(1)).findByExamId(examId);
+        verify(examItemRepo, times(1)).findByExamId(examId);
+        verify(examResponseRepo, times(3)).findByExamItemId(any(UUID.class));
+        verify(examItemRepo, times(3)).getReferenceById(any(UUID.class));
     }
 
     @Test
@@ -511,6 +553,56 @@ public class ExamServiceTest {
         // then
         assertFalse(result.isPresent());
         verify(examResultRepo, times(1)).findByExamId(nonExistentExamId);
+    }
+
+    @Test
+    @DisplayName("시험 ID로 시험 결과 조회 - ExamResponse가 없는 ExamItem이 있는 경우")
+    void findExamResultByExamIdTest_WithMissingExamResponse() {
+        // given
+        when(examResultRepo.findByExamId(examId)).thenReturn(Optional.of(testExamResult));
+
+        // ExamItem 설정 (답변이 없는 문제 포함)
+        ExamItem examItem1 = testExamResponses.get(0).getExamItem();
+        ExamItem examItem2 = testExamResponses.get(1).getExamItem();
+        ExamItem itemWithoutResponse = new ExamItem();
+        itemWithoutResponse.setId(UUID.randomUUID());
+        itemWithoutResponse.setExam(testExam);
+        itemWithoutResponse.setQuestionType(QuestionType.true_or_false);
+        itemWithoutResponse.setQuestion("답변이 없는 문제");
+
+        List<ExamItem> examItems = Arrays.asList(examItem1, examItem2, itemWithoutResponse);
+        when(examItemRepo.findByExamId(examId)).thenReturn(examItems);
+
+        // 첫 번째와 두 번째 ExamItem에만 ExamResponse 존재
+        when(examResponseRepo.findByExamItemId(examItem1.getId())).thenReturn(Optional.of(testExamResponses.get(0)));
+        when(examResponseRepo.findByExamItemId(examItem2.getId())).thenReturn(Optional.of(testExamResponses.get(1)));
+        when(examResponseRepo.findByExamItemId(itemWithoutResponse.getId())).thenReturn(Optional.empty());
+
+        when(examItemRepo.getReferenceById(examItem1.getId())).thenReturn(examItem1);
+        when(examItemRepo.getReferenceById(examItem2.getId())).thenReturn(examItem2);
+
+        // when
+        Optional<ExamResultOutput> result = examService.findExamResultByExamId(examId);
+
+        // then
+        assertTrue(result.isPresent());
+
+        // ExamResultElements 검증 - 답변이 있는 2개의 문제만 포함되어야 함
+        assertNotNull(result.get().getExamResultElements());
+        assertEquals(2, result.get().getExamResultElements().size());
+
+        // 답변이 있는 문제들의 ID 확인
+        List<UUID> resultItemIds = result.get().getExamResultElements().stream()
+                .map(ExamResultElement::getExamItemId)
+                .toList();
+        assertTrue(resultItemIds.contains(examItem1.getId()));
+        assertTrue(resultItemIds.contains(examItem2.getId()));
+        assertFalse(resultItemIds.contains(itemWithoutResponse.getId()));
+
+        verify(examResultRepo, times(1)).findByExamId(examId);
+        verify(examItemRepo, times(1)).findByExamId(examId);
+        verify(examResponseRepo, times(3)).findByExamItemId(any(UUID.class));
+        verify(examItemRepo, times(2)).getReferenceById(any(UUID.class)); // 답변이 있는 2개만
     }
 
     @Test
@@ -691,7 +783,7 @@ public class ExamServiceTest {
     void submitAndGradeExamWithStatus_NoEssayQuestions() {
         // given
         List<CreateExamResponseInput> inputs = new ArrayList<>();
-        
+
         // True/False 문제 응답
         CreateExamResponseInput input1 = new CreateExamResponseInput();
         input1.setExamId(examId);
@@ -699,7 +791,7 @@ public class ExamServiceTest {
         input1.setUserId(userId);
         input1.setSelectedBool(true);
         inputs.add(input1);
-        
+
         // Multiple choice 문제 응답
         CreateExamResponseInput input2 = new CreateExamResponseInput();
         input2.setExamId(examId);
@@ -707,7 +799,7 @@ public class ExamServiceTest {
         input2.setUserId(userId);
         input2.setSelectedIndices(new Integer[]{0, 1});
         inputs.add(input2);
-        
+
         // Short answer 문제 응답
         CreateExamResponseInput input3 = new CreateExamResponseInput();
         input3.setExamId(examId);
@@ -719,30 +811,30 @@ public class ExamServiceTest {
         // Mock 설정
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(userRepo.getReferenceById(userId)).thenReturn(testUser);
-        
+
         // ExamItem 참조 설정
         ExamItem item1 = testExamResponses.get(0).getExamItem();
         ExamItem item2 = testExamResponses.get(1).getExamItem();
         ExamItem item3 = testExamResponses.get(2).getExamItem();
-        
+
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(item1);
         when(examItemRepo.getReferenceById(examItemId2)).thenReturn(item2);
         when(examItemRepo.getReferenceById(examItemId3)).thenReturn(item3);
-        
+
         // ExamResponse 생성 반환 설정
         when(examResponseRepo.createExamResponse(any(ExamResponse.class)))
-            .thenAnswer(invocation -> {
-                ExamResponse response = invocation.getArgument(0);
-                response.setId(UUID.randomUUID());
-                response.setCreatedAt(LocalDateTime.now());
-                response.setUpdatedAt(LocalDateTime.now());
-                return response;
-            });
-        
+                .thenAnswer(invocation -> {
+                    ExamResponse response = invocation.getArgument(0);
+                    response.setId(UUID.randomUUID());
+                    response.setCreatedAt(LocalDateTime.now());
+                    response.setUpdatedAt(LocalDateTime.now());
+                    return response;
+                });
+
         // 서술형 문제 없음
         when(examItemRepo.existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay))
-            .thenReturn(false);
-        
+                .thenReturn(false);
+
         // gradeNonEssayQuestions 메서드를 위한 설정
         when(examResponseRepo.findByExamId(examId)).thenReturn(testExamResponses);
         when(examItemRepo.findByExamId(examId)).thenReturn(Arrays.asList(item1, item2, item3));
@@ -756,17 +848,17 @@ public class ExamServiceTest {
         // then
         assertNotNull(result);
         assertEquals(3, result.getExamResponseOutputs().size());
-        
+
         // ExamResponse 생성 검증
         verify(examResponseRepo, times(3)).createExamResponse(any(ExamResponse.class));
-        
+
         // 서술형 문제 확인
         verify(examItemRepo).existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay);
-        
+
         // 채점 메서드 호출 확인
         verify(examResponseRepo).findByExamId(examId);
         verify(examResultRepo).createExamResult(any(ExamResult.class));
-        
+
         // 시험 상태가 graded로 업데이트되었는지 확인
         verify(examRepo).updateExam(examCaptor.capture());
         assertEquals(Status.graded, examCaptor.getValue().getStatus());
@@ -777,7 +869,7 @@ public class ExamServiceTest {
     void submitAndGradeExamWithStatus_WithEssayQuestions() {
         // given
         List<CreateExamResponseInput> inputs = new ArrayList<>();
-        
+
         // True/False 문제 응답
         CreateExamResponseInput input1 = new CreateExamResponseInput();
         input1.setExamId(examId);
@@ -785,7 +877,7 @@ public class ExamServiceTest {
         input1.setUserId(userId);
         input1.setSelectedBool(true);
         inputs.add(input1);
-        
+
         // Essay 문제 응답 추가
         UUID essayItemId = UUID.randomUUID();
         CreateExamResponseInput essayInput = new CreateExamResponseInput();
@@ -805,24 +897,24 @@ public class ExamServiceTest {
         // Mock 설정
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(userRepo.getReferenceById(userId)).thenReturn(testUser);
-        
+
         ExamItem item1 = testExamResponses.get(0).getExamItem();
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(item1);
         when(examItemRepo.getReferenceById(essayItemId)).thenReturn(essayItem);
-        
+
         // ExamResponse 생성 반환 설정
         when(examResponseRepo.createExamResponse(any(ExamResponse.class)))
-            .thenAnswer(invocation -> {
-                ExamResponse response = invocation.getArgument(0);
-                response.setId(UUID.randomUUID());
-                response.setCreatedAt(LocalDateTime.now());
-                response.setUpdatedAt(LocalDateTime.now());
-                return response;
-            });
-        
+                .thenAnswer(invocation -> {
+                    ExamResponse response = invocation.getArgument(0);
+                    response.setId(UUID.randomUUID());
+                    response.setCreatedAt(LocalDateTime.now());
+                    response.setUpdatedAt(LocalDateTime.now());
+                    return response;
+                });
+
         // 서술형 문제 있음
         when(examItemRepo.existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay))
-            .thenReturn(true);
+                .thenReturn(true);
 
         // gradeNonEssayQuestions 메서드를 위한 설정
         // True/False 문제에 대한 응답만 생성
@@ -830,13 +922,13 @@ public class ExamServiceTest {
         tfResponse.setExamItem(item1);
         tfResponse.setSelectedBool(true);
         tfResponse.setUser(testUser);
-        
+
         // Essay 응답도 생성
         ExamResponse essayResponse = new ExamResponse();
         essayResponse.setExamItem(essayItem);
         essayResponse.setTextAnswer("운영체제는 하드웨어와 소프트웨어 사이의 중개자 역할을 합니다.");
         essayResponse.setUser(testUser);
-        
+
         when(examResponseRepo.findByExamId(examId)).thenReturn(Arrays.asList(tfResponse, essayResponse));
         when(examItemRepo.findByExamId(examId)).thenReturn(Arrays.asList(item1, essayItem));
         when(examItemRepo.getReferenceById(item1.getId())).thenReturn(item1);
@@ -851,17 +943,17 @@ public class ExamServiceTest {
         // then
         assertNotNull(result);
         assertEquals(2, result.getExamResponseOutputs().size());
-        
+
         // ExamResponse 생성 검증
         verify(examResponseRepo, times(2)).createExamResponse(any(ExamResponse.class));
-        
+
         // 서술형 문제 확인
         verify(examItemRepo).existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay);
-        
+
         // 시험 상태가 partially_graded로 업데이트되었는지 확인
         verify(examRepo).updateExam(examCaptor.capture());
         assertEquals(Status.partially_graded, examCaptor.getValue().getStatus());
-        
+
         // TODO: SQS 메시지 전송은 아직 구현되지 않았으므로 검증하지 않음
     }
 
@@ -870,7 +962,7 @@ public class ExamServiceTest {
     void submitAndGradeExamWithStatus_WithNullAnswers() {
         // given
         List<CreateExamResponseInput> inputs = new ArrayList<>();
-        
+
         // True/False 문제 응답 - selectedBool이 null
         CreateExamResponseInput input1 = new CreateExamResponseInput();
         input1.setExamId(examId);
@@ -878,7 +970,7 @@ public class ExamServiceTest {
         input1.setUserId(userId);
         input1.setSelectedBool(null); // null 답변
         inputs.add(input1);
-        
+
         // Multiple choice 문제 응답 - selectedIndices가 null
         CreateExamResponseInput input2 = new CreateExamResponseInput();
         input2.setExamId(examId);
@@ -886,7 +978,7 @@ public class ExamServiceTest {
         input2.setUserId(userId);
         input2.setSelectedIndices(null); // null 답변
         inputs.add(input2);
-        
+
         // Short answer 문제 응답 - textAnswer가 null
         CreateExamResponseInput input3 = new CreateExamResponseInput();
         input3.setExamId(examId);
@@ -898,29 +990,29 @@ public class ExamServiceTest {
         // Mock 설정
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(userRepo.getReferenceById(userId)).thenReturn(testUser);
-        
+
         ExamItem item1 = testExamResponses.get(0).getExamItem();
         ExamItem item2 = testExamResponses.get(1).getExamItem();
         ExamItem item3 = testExamResponses.get(2).getExamItem();
-        
+
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(item1);
         when(examItemRepo.getReferenceById(examItemId2)).thenReturn(item2);
         when(examItemRepo.getReferenceById(examItemId3)).thenReturn(item3);
-        
+
         // ExamResponse 생성 반환 설정
         when(examResponseRepo.createExamResponse(any(ExamResponse.class)))
-            .thenAnswer(invocation -> {
-                ExamResponse response = invocation.getArgument(0);
-                response.setId(UUID.randomUUID());
-                response.setCreatedAt(LocalDateTime.now());
-                response.setUpdatedAt(LocalDateTime.now());
-                return response;
-            });
-        
+                .thenAnswer(invocation -> {
+                    ExamResponse response = invocation.getArgument(0);
+                    response.setId(UUID.randomUUID());
+                    response.setCreatedAt(LocalDateTime.now());
+                    response.setUpdatedAt(LocalDateTime.now());
+                    return response;
+                });
+
         // 서술형 문제 없음
         when(examItemRepo.existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay))
-            .thenReturn(false);
-        
+                .thenReturn(false);
+
         // null 답변을 가진 ExamResponse 생성
         List<ExamResponse> nullResponses = new ArrayList<>();
         ExamResponse nullResponse1 = new ExamResponse();
@@ -928,19 +1020,19 @@ public class ExamServiceTest {
         nullResponse1.setSelectedBool(null);
         nullResponse1.setUser(testUser);
         nullResponses.add(nullResponse1);
-        
+
         ExamResponse nullResponse2 = new ExamResponse();
         nullResponse2.setExamItem(item2);
         nullResponse2.setSelectedIndices(null);
         nullResponse2.setUser(testUser);
         nullResponses.add(nullResponse2);
-        
+
         ExamResponse nullResponse3 = new ExamResponse();
         nullResponse3.setExamItem(item3);
         nullResponse3.setTextAnswer(null);
         nullResponse3.setUser(testUser);
         nullResponses.add(nullResponse3);
-        
+
         when(examResponseRepo.findByExamId(examId)).thenReturn(nullResponses);
         when(examItemRepo.findByExamId(examId)).thenReturn(Arrays.asList(item1, item2, item3));
         when(examResponseRepo.updateExamResponse(any(ExamResponse.class))).thenReturn(new ExamResponse());
@@ -953,11 +1045,11 @@ public class ExamServiceTest {
         // then
         assertNotNull(result);
         assertEquals(3, result.getExamResponseOutputs().size());
-        
+
         // ExamResponse 생성 시 null 값은 set되지 않음을 확인
         verify(examResponseRepo, times(3)).createExamResponse(examResponseCaptor.capture());
         List<ExamResponse> capturedResponses = examResponseCaptor.getAllValues();
-        
+
         // null 값들이 set되지 않았는지 확인 (기본값 또는 null 상태 유지)
         for (ExamResponse response : capturedResponses) {
             // Entity가 생성되었는지만 확인 (null 값은 set되지 않음)
@@ -965,7 +1057,7 @@ public class ExamServiceTest {
             assertNotNull(response.getExamItem());
             assertNotNull(response.getUser());
         }
-        
+
         // 채점은 정상적으로 진행되어야 함 (null 답변은 틀린 것으로 처리)
         verify(examResultRepo).createExamResult(any(ExamResult.class));
     }
@@ -975,7 +1067,7 @@ public class ExamServiceTest {
     void submitAndGradeExamWithStatus_FailedToCreateResponse() {
         // given
         List<CreateExamResponseInput> inputs = new ArrayList<>();
-        
+
         CreateExamResponseInput input1 = new CreateExamResponseInput();
         input1.setExamId(examId);
         input1.setExamItemId(examItemId1);
@@ -987,16 +1079,16 @@ public class ExamServiceTest {
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(userRepo.getReferenceById(userId)).thenReturn(testUser);
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(testExamResponses.get(0).getExamItem());
-        
+
         // ExamResponse 생성 실패 시뮬레이션
         when(examResponseRepo.createExamResponse(any(ExamResponse.class))).thenReturn(null);
 
         // when & then
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> examService.submitAndGradeExamWithStatus(inputs));
-        
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> examService.submitAndGradeExamWithStatus(inputs));
+
         assertEquals("Failed to create exam response", exception.getMessage());
-        
+
         // 실패 시 채점 메서드가 호출되지 않아야 함
         verify(examResponseRepo, never()).findByExamId(any());
         verify(examResultRepo, never()).createExamResult(any());
@@ -1011,8 +1103,8 @@ public class ExamServiceTest {
 
         // when & then
         // 빈 리스트로 인해 IndexOutOfBoundsException 발생
-        assertThrows(IndexOutOfBoundsException.class, 
-            () -> examService.submitAndGradeExamWithStatus(inputs));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> examService.submitAndGradeExamWithStatus(inputs));
     }
 
     @Test
@@ -1020,7 +1112,7 @@ public class ExamServiceTest {
     void submitAndGradeExamWithStatus_MixedQuestionTypes() {
         // given
         List<CreateExamResponseInput> inputs = new ArrayList<>();
-        
+
         // 각 문제 유형별로 정답과 오답 혼합
         CreateExamResponseInput input1 = new CreateExamResponseInput();
         input1.setExamId(examId);
@@ -1028,14 +1120,14 @@ public class ExamServiceTest {
         input1.setUserId(userId);
         input1.setSelectedBool(false); // 오답
         inputs.add(input1);
-        
+
         CreateExamResponseInput input2 = new CreateExamResponseInput();
         input2.setExamId(examId);
         input2.setExamItemId(examItemId2);
         input2.setUserId(userId);
         input2.setSelectedIndices(new Integer[]{0, 1}); // 정답
         inputs.add(input2);
-        
+
         CreateExamResponseInput input3 = new CreateExamResponseInput();
         input3.setExamId(examId);
         input3.setExamItemId(examItemId3);
@@ -1046,27 +1138,27 @@ public class ExamServiceTest {
         // Mock 설정
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(userRepo.getReferenceById(userId)).thenReturn(testUser);
-        
+
         ExamItem item1 = testExamResponses.get(0).getExamItem();
         ExamItem item2 = testExamResponses.get(1).getExamItem();
         ExamItem item3 = testExamResponses.get(2).getExamItem();
-        
+
         when(examItemRepo.getReferenceById(examItemId1)).thenReturn(item1);
         when(examItemRepo.getReferenceById(examItemId2)).thenReturn(item2);
         when(examItemRepo.getReferenceById(examItemId3)).thenReturn(item3);
-        
+
         when(examResponseRepo.createExamResponse(any(ExamResponse.class)))
-            .thenAnswer(invocation -> {
-                ExamResponse response = invocation.getArgument(0);
-                response.setId(UUID.randomUUID());
-                response.setCreatedAt(LocalDateTime.now());
-                response.setUpdatedAt(LocalDateTime.now());
-                return response;
-            });
-        
+                .thenAnswer(invocation -> {
+                    ExamResponse response = invocation.getArgument(0);
+                    response.setId(UUID.randomUUID());
+                    response.setCreatedAt(LocalDateTime.now());
+                    response.setUpdatedAt(LocalDateTime.now());
+                    return response;
+                });
+
         when(examItemRepo.existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay))
-            .thenReturn(false);
-        
+                .thenReturn(false);
+
         // 혼합된 답변을 가진 ExamResponse 설정
         List<ExamResponse> mixedResponses = new ArrayList<>();
         ExamResponse response1 = new ExamResponse();
@@ -1074,19 +1166,19 @@ public class ExamServiceTest {
         response1.setSelectedBool(false); // 오답
         response1.setUser(testUser);
         mixedResponses.add(response1);
-        
+
         ExamResponse response2 = new ExamResponse();
         response2.setExamItem(item2);
         response2.setSelectedIndices(new Integer[]{0, 1}); // 정답
         response2.setUser(testUser);
         mixedResponses.add(response2);
-        
+
         ExamResponse response3 = new ExamResponse();
         response3.setExamItem(item3);
         response3.setTextAnswer("Wrong Answer"); // 오답
         response3.setUser(testUser);
         mixedResponses.add(response3);
-        
+
         when(examResponseRepo.findByExamId(examId)).thenReturn(mixedResponses);
         when(examItemRepo.findByExamId(examId)).thenReturn(Arrays.asList(item1, item2, item3));
         when(examResponseRepo.updateExamResponse(any(ExamResponse.class))).thenReturn(new ExamResponse());
@@ -1099,11 +1191,11 @@ public class ExamServiceTest {
         // then
         assertNotNull(result);
         assertEquals(3, result.getExamResponseOutputs().size());
-        
+
         // 채점 결과 확인을 위한 ExamResult 캡처
         verify(examResultRepo).createExamResult(examResultCaptor.capture());
         ExamResult capturedResult = examResultCaptor.getValue();
-        
+
         // 점수 확인 (1점 + 3점 + 5점 = 9점 중 3점만 획득)
         assertEquals(3.0f, capturedResult.getScore());
         assertEquals(9.0f, capturedResult.getMaxScore());
@@ -1114,7 +1206,7 @@ public class ExamServiceTest {
     void submitAndGradeExamWithStatus_OnlyEssayQuestions() {
         // given
         List<CreateExamResponseInput> inputs = new ArrayList<>();
-        
+
         // Essay 문제 응답만 추가
         UUID essayItemId = UUID.randomUUID();
         CreateExamResponseInput essayInput = new CreateExamResponseInput();
@@ -1135,26 +1227,26 @@ public class ExamServiceTest {
         when(examRepo.getReferenceById(examId)).thenReturn(testExam);
         when(userRepo.getReferenceById(userId)).thenReturn(testUser);
         when(examItemRepo.getReferenceById(essayItemId)).thenReturn(essayItem);
-        
+
         when(examResponseRepo.createExamResponse(any(ExamResponse.class)))
-            .thenAnswer(invocation -> {
-                ExamResponse response = invocation.getArgument(0);
-                response.setId(UUID.randomUUID());
-                response.setCreatedAt(LocalDateTime.now());
-                response.setUpdatedAt(LocalDateTime.now());
-                return response;
-            });
-        
+                .thenAnswer(invocation -> {
+                    ExamResponse response = invocation.getArgument(0);
+                    response.setId(UUID.randomUUID());
+                    response.setCreatedAt(LocalDateTime.now());
+                    response.setUpdatedAt(LocalDateTime.now());
+                    return response;
+                });
+
         // 서술형 문제만 있음
         when(examItemRepo.existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay))
-            .thenReturn(true);
+                .thenReturn(true);
 
         // gradeNonEssayQuestions 메서드를 위한 설정
         ExamResponse essayResponse = new ExamResponse();
         essayResponse.setExamItem(essayItem);
         essayResponse.setTextAnswer("운영체제는 컴퓨터 시스템의 자원을 효율적으로 관리합니다.");
         essayResponse.setUser(testUser);
-        
+
         when(examResponseRepo.findByExamId(examId)).thenReturn(Arrays.asList(essayResponse));
         when(examItemRepo.findByExamId(examId)).thenReturn(Arrays.asList(essayItem));
         when(examItemRepo.getReferenceById(essayItem.getId())).thenReturn(essayItem);
@@ -1167,15 +1259,15 @@ public class ExamServiceTest {
         // then
         assertNotNull(result);
         assertEquals(1, result.getExamResponseOutputs().size());
-        
+
         // 서술형 문제는 채점되지 않음
         verify(examResponseRepo, never()).updateExamResponse(any());
-        
+
         // ExamResult의 점수는 0이어야 함 (서술형만 있으므로)
         verify(examResultRepo).createExamResult(examResultCaptor.capture());
         assertEquals(0.0f, examResultCaptor.getValue().getScore());
         assertEquals(10.0f, examResultCaptor.getValue().getMaxScore()); // 서술형 1문제 = 10점
-        
+
         // 시험 상태가 partially_graded로 업데이트되었는지 확인
         verify(examRepo).updateExam(examCaptor.capture());
         assertEquals(Status.partially_graded, examCaptor.getValue().getStatus());
@@ -1194,7 +1286,7 @@ public class ExamServiceTest {
 
         // then
         assertEquals(2, result.getExamItems().size());
-        
+
         ExamItemOutput firstLikedItem = result.getExamItems().get(0);
         assertEquals(likedExamItemId1, firstLikedItem.getId());
         assertEquals("What is inheritance?", firstLikedItem.getQuestion());
@@ -1253,7 +1345,7 @@ public class ExamServiceTest {
         input.setUserId(userId);
 
         // testExamItem의 현재 상태는 setUp()에서 false로 설정됨
-        
+
         ExamItem updatedExamItem = new ExamItem();
         updatedExamItem.setId(examItemId4);
         updatedExamItem.setExam(testExam);
@@ -1277,7 +1369,7 @@ public class ExamServiceTest {
         assertEquals(Boolean.TRUE, result.getIsLiked());
 
         verify(examItemRepo, times(1)).findById(examItemId4);
-        verify(examItemRepo, times(1)).updateExamItem(argThat(item -> 
+        verify(examItemRepo, times(1)).updateExamItem(argThat(item ->
                 item.getId().equals(examItemId4) && Boolean.TRUE.equals(item.getIsLiked())));
     }
 
@@ -1291,7 +1383,7 @@ public class ExamServiceTest {
         input.setUserId(userId);
 
         testExamItem.setIsLiked(true); // 현재 좋아요 상태를 true로 설정
-        
+
         ExamItem updatedExamItem = new ExamItem();
         updatedExamItem.setId(examItemId4);
         updatedExamItem.setExam(testExam);
@@ -1315,7 +1407,7 @@ public class ExamServiceTest {
         assertEquals(Boolean.FALSE, result.getIsLiked());
 
         verify(examItemRepo, times(1)).findById(examItemId4);
-        verify(examItemRepo, times(1)).updateExamItem(argThat(item -> 
+        verify(examItemRepo, times(1)).updateExamItem(argThat(item ->
                 item.getId().equals(examItemId4) && Boolean.FALSE.equals(item.getIsLiked())));
     }
 
@@ -1331,9 +1423,9 @@ public class ExamServiceTest {
         when(examItemRepo.findById(examItemId4)).thenReturn(Optional.empty());
 
         // when, then
-        NoSuchElementException exception = assertThrows(NoSuchElementException.class, 
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
                 () -> examService.toggleLikeExamItem(input));
-        
+
         assertEquals("Exam item not found", exception.getMessage());
 
         verify(examItemRepo, times(1)).findById(examItemId4);
@@ -1353,9 +1445,9 @@ public class ExamServiceTest {
         when(examItemRepo.updateExamItem(any(ExamItem.class))).thenReturn(null); // 업데이트 실패
 
         // when, then
-        RuntimeException exception = assertThrows(RuntimeException.class, 
+        RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> examService.toggleLikeExamItem(input));
-        
+
         assertEquals("Failed to update exam item like status", exception.getMessage());
 
         verify(examItemRepo, times(1)).findById(examItemId4);
