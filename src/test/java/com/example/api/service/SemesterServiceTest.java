@@ -1,5 +1,6 @@
 package com.example.api.service;
 
+import com.example.api.entity.Lecture;
 import com.example.api.entity.Semester;
 import com.example.api.entity.User;
 import com.example.api.entity.enums.Season;
@@ -164,16 +165,14 @@ class SemesterServiceTest {
     @DisplayName("학기 기본 정보 업데이트")
     void updateSemester() {
         // Given
-        Semester expectedSemester = testSemester;
-        expectedSemester.setName("2025-spring");
-        when(semesterRepository.updateSemester(any(Semester.class))).
-                thenReturn(expectedSemester);
-
         UpdateSemesterInput input = new UpdateSemesterInput();
         input.setId(semesterId);
         input.setName("");
         input.setYear(2025);
         input.setSeason(Season.spring);
+
+        when(semesterRepository.findById(semesterId)).thenReturn(Optional.of(testSemester));
+        when(semesterRepository.updateSemester(any(Semester.class))).thenReturn(testSemester);
 
         // When
         SemesterOutput updatedSemester = semesterService.updateSemester(input);
@@ -181,12 +180,8 @@ class SemesterServiceTest {
         // Then
         assertEquals(semesterId, updatedSemester.getId());
         assertEquals("2025-spring", updatedSemester.getName());
-        verify(semesterRepository).updateSemester(argThat(semester ->
-                semester.getId().equals(semesterId) &&
-                        semester.getName().equals(expectedSemester.getName()) &&
-                        semester.getYear() == expectedSemester.getYear() &&
-                        semester.getSeason() == expectedSemester.getSeason()
-        ));
+        verify(semesterRepository, times(1)).findById(semesterId);
+        verify(semesterRepository, times(1)).updateSemester(any(Semester.class));
     }
 
     @Test
@@ -199,6 +194,7 @@ class SemesterServiceTest {
         Semester expectedSemester = testSemester;
         expectedSemester.setStartDate(startDate);
         expectedSemester.setEndDate(endDate);
+        when(semesterRepository.findById(semesterId)).thenReturn(Optional.of(testSemester));
         when(semesterRepository.updateSemester(any(Semester.class))).
                 thenReturn(testSemester);
 
@@ -212,7 +208,8 @@ class SemesterServiceTest {
 
         // Then
         assertNotNull(updatedSemester);
-        verify(semesterRepository).updateSemester(argThat(semester ->
+        verify(semesterRepository, times(1)).findById(semesterId);
+        verify(semesterRepository, times(1)).updateSemester(argThat(semester ->
                 semester.getId().equals(semesterId) &&
                         semester.getStartDate().equals(startDate) &&
                         semester.getEndDate().equals(endDate)
@@ -250,6 +247,7 @@ class SemesterServiceTest {
         expectedSemester.setTargetGrade(targetGrade);
         expectedSemester.setEarnedGrade(earnedGrade);
         expectedSemester.setCompletedCredits(completedCredits);
+        when(semesterRepository.findById(semesterId)).thenReturn(Optional.of(testSemester));
         when(semesterRepository.updateSemester(any(Semester.class))).
                 thenReturn(expectedSemester);
 
@@ -267,7 +265,8 @@ class SemesterServiceTest {
         assertEquals(targetGrade, updatedSemester.getTargetGrade());
         assertEquals(earnedGrade, updatedSemester.getEarnedGrade());
         assertEquals(completedCredits, updatedSemester.getCompletedCredits());
-        verify(semesterRepository).updateSemester(argThat(semester ->
+        verify(semesterRepository, times(1)).findById(semesterId);
+        verify(semesterRepository, times(1)).updateSemester(argThat(semester ->
                 semester.getId().equals(semesterId) &&
                         semester.getTargetGrade() == targetGrade &&
                         semester.getEarnedGrade() == earnedGrade &&

@@ -263,11 +263,13 @@ public class ExamServiceTest {
         updatedExam.setTitle("Updated Exam");
         updatedExam.setStatus(Status.not_started);
 
+        when(examRepo.findById(examId)).thenReturn(Optional.of(testExam));
         when(examRepo.updateExam(any(Exam.class))).thenReturn(updatedExam);
         when(examItemRepo.findByExamId(examId)).thenReturn(testExamItems);
 
         ExamOutput result = examService.updateExam(input);
         assertEquals(updatedExam.getTitle(), result.getTitle());
+        verify(examRepo, times(1)).findById(examId);
         verify(examRepo, times(1)).updateExam(any(Exam.class));
     }
 

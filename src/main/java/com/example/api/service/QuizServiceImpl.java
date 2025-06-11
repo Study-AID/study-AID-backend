@@ -79,8 +79,9 @@ public class QuizServiceImpl implements QuizService {
     @Override
     @Transactional
     public QuizOutput updateQuiz(UpdateQuizInput input) {
-        Quiz quiz = new Quiz();
-        quiz.setId(input.getId());
+        // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
+        Quiz quiz = quizRepo.findById(input.getId())
+                .orElseThrow(() -> new RuntimeException("Quiz not found: " + input.getId()));
         quiz.setTitle(input.getTitle());
 
         Quiz updateQuiz = quizRepo.updateQuiz(quiz);

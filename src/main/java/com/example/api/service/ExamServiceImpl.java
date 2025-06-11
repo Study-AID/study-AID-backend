@@ -69,8 +69,9 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional
     public ExamOutput updateExam(UpdateExamInput input) {
-        Exam exam = new Exam();
-        exam.setId(input.getId());
+        // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
+        Exam exam = examRepo.findById(input.getId())
+                .orElseThrow(() -> new RuntimeException("Exam not found: " + input.getId()));
         exam.setTitle(input.getTitle());
 
         Exam updatedExam = examRepo.updateExam(exam);

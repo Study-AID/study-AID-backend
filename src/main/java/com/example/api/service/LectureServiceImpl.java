@@ -83,8 +83,9 @@ public class LectureServiceImpl implements LectureService {
     @Override
     @Transactional
     public LectureOutput updateLecture(UpdateLectureInput input) {
-        Lecture lecture = new Lecture();
-        lecture.setId(input.getId());
+        // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
+        Lecture lecture = lectureRepo.findById(input.getId())
+                .orElseThrow(() -> new RuntimeException("Lecture not found: " + input.getId()));
         lecture.setTitle(input.getTitle());
 
         Lecture updatedLecture = lectureRepo.updateLecture(lecture);
@@ -94,8 +95,9 @@ public class LectureServiceImpl implements LectureService {
     @Override
     @Transactional
     public LectureOutput updateLectureDisplayOrderLex(UpdateLectureDisplayOrderLexInput input) {
-        Lecture lecture = new Lecture();
-        lecture.setId(input.getId());
+        // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
+        Lecture lecture = lectureRepo.findById(input.getId())
+                .orElseThrow(() -> new RuntimeException("Lecture not found: " + input.getId()));
         lecture.setDisplayOrderLex(input.getDisplayOrderLex());
 
         Lecture updatedLecture = lectureRepo.updateLecture(lecture);

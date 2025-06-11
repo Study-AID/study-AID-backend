@@ -273,11 +273,13 @@ public class QuizServiceTest {
         updatedQuiz.setTitle("Updated Quiz");
         updatedQuiz.setStatus(Status.not_started);
 
+        when(quizRepository.findById(quizId)).thenReturn(Optional.of(testQuiz));
         when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(updatedQuiz);
         when(quizItemRepository.findByQuizId(quizId)).thenReturn(testQuizItems);
 
         QuizOutput result = quizService.updateQuiz(input);
         assertEquals(updatedQuiz.getTitle(), result.getTitle());
+        verify(quizRepository, times(1)).findById(quizId);
         verify(quizRepository, times(1)).updateQuiz(any(Quiz.class));
     }
 

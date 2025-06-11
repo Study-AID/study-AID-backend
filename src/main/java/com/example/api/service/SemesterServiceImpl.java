@@ -66,8 +66,9 @@ public class SemesterServiceImpl implements SemesterService {
     @Override
     @Transactional
     public SemesterOutput updateSemester(UpdateSemesterInput input) {
-        Semester semester = new Semester();
-        semester.setId(input.getId());
+        // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
+        Semester semester = semesterRepo.findById(input.getId())
+                .orElseThrow(() -> new RuntimeException("Semester not found: " + input.getId()));
         String name = input.getName();
         if (Objects.equals(name, "")) {
             name = defaultSemesterName(input.getYear(), input.getSeason());
@@ -87,8 +88,9 @@ public class SemesterServiceImpl implements SemesterService {
             throw new IllegalArgumentException("End date cannot be before start date");
         }
 
-        Semester semester = new Semester();
-        semester.setId(input.getId());
+        // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
+        Semester semester = semesterRepo.findById(input.getId())
+                .orElseThrow(() -> new RuntimeException("Semester not found: " + input.getId()));
         semester.setStartDate(input.getStartDate());
         semester.setEndDate(input.getEndDate());
 
@@ -99,8 +101,9 @@ public class SemesterServiceImpl implements SemesterService {
     @Override
     @Transactional
     public SemesterOutput updateSemesterGrades(UpdateSemesterGradesInput input) {
-        Semester semester = new Semester();
-        semester.setId(input.getId());
+        // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
+        Semester semester = semesterRepo.findById(input.getId())
+                .orElseThrow(() -> new RuntimeException("Semester not found: " + input.getId()));
         semester.setTargetGrade(input.getTargetGrade());
         semester.setEarnedGrade(input.getEarnedGrade());
         semester.setCompletedCredits(input.getCompletedCredits());
