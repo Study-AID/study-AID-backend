@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.example.api.entity.QuizItem;
 import com.example.api.entity.enums.QuestionType;
+import com.example.api.service.dto.quiz.QuizItemOutput;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -77,6 +78,24 @@ public class QuizItemResponse {
                 quizItem.getIsLiked(),
                 quizItem.getCreatedAt(),
                 quizItem.getUpdatedAt()
+        );
+    }
+
+    public static QuizItemResponse fromServiceDto(QuizItemOutput quizItemOutput) {
+        return new QuizItemResponse(
+                quizItemOutput.getId(),
+                quizItemOutput.getQuestion(),
+                quizItemOutput.getQuestionType(),
+                quizItemOutput.getExplanation(),
+                quizItemOutput.getIsTrueAnswer(),
+                quizItemOutput.getChoices(),
+                quizItemOutput.getAnswerIndices(),
+                quizItemOutput.getTextAnswer(),
+                quizItemOutput.getDisplayOrder(),
+                quizItemOutput.getPoints(),
+                quizItemOutput.getIsLiked(),
+                quizItemOutput.getCreatedAt(),
+                quizItemOutput.getUpdatedAt()
         );
     }
 }

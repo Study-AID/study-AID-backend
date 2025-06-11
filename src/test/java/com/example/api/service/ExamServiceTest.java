@@ -7,11 +7,14 @@ import com.example.api.entity.enums.Status;
 import com.example.api.repository.*;
 import com.example.api.service.dto.exam.CreateExamInput;
 import com.example.api.service.dto.exam.CreateExamResponseInput;
+import com.example.api.service.dto.exam.ExamItemListOutput;
+import com.example.api.service.dto.exam.ExamItemOutput;
 import com.example.api.service.dto.exam.ExamListOutput;
 import com.example.api.service.dto.exam.ExamOutput;
 import com.example.api.service.dto.exam.ExamResponseListOutput;
 import com.example.api.service.dto.exam.ExamResultListOutput;
 import com.example.api.service.dto.exam.ExamResultOutput;
+import com.example.api.service.dto.exam.ToggleLikeExamItemInput;
 import com.example.api.service.dto.exam.UpdateExamInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,11 +31,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,7 +82,12 @@ public class ExamServiceTest {
     private UUID examItemId1;
     private UUID examItemId2;
     private UUID examItemId3;
+    private UUID examItemId4;
     private UUID examResultId;
+    
+    private UUID likedExamItemId1;
+    private UUID likedExamItemId2;
+    private UUID anotherExamId;
 
     private User testUser;
     private Course testCourse;
@@ -87,6 +97,12 @@ public class ExamServiceTest {
     private ExamOutput testExamOutput;
     private ExamResult testExamResult;
     private List<ExamResult> testExamResults;
+    private ExamItem testExamItem;
+    
+    private Exam anotherExam;
+    private ExamItem likedExamItem1;
+    private ExamItem likedExamItem2;
+    private ExamItem notLikedExamItem;
 
     @BeforeEach
     void setUp() {
@@ -96,7 +112,12 @@ public class ExamServiceTest {
         examItemId1 = UUID.randomUUID();
         examItemId2 = UUID.randomUUID();
         examItemId3 = UUID.randomUUID();
+        examItemId4 = UUID.randomUUID(); // like exam item
         examResultId = UUID.randomUUID();
+        
+        likedExamItemId1 = UUID.randomUUID();
+        likedExamItemId2 = UUID.randomUUID();
+        anotherExamId = UUID.randomUUID();
 
         testUser = new User();
         testUser.setId(userId);
@@ -198,6 +219,46 @@ public class ExamServiceTest {
         testExamResult.setUpdatedAt(LocalDateTime.now());
 
         testExamResults = List.of(testExamResult);
+
+        testExamItem = new ExamItem();
+        testExamItem.setId(examItemId4);
+        testExamItem.setExam(testExam);
+        testExamItem.setUser(testUser);
+        testExamItem.setQuestionType(QuestionType.true_or_false);
+        testExamItem.setQuestion("Is this a liked exam item?");
+        testExamItem.setIsLiked(false);
+
+        anotherExam = new Exam();
+        anotherExam.setId(anotherExamId);
+        anotherExam.setUser(testUser);
+        anotherExam.setCourse(testCourse);
+        anotherExam.setTitle("Another Exam");
+        anotherExam.setStatus(Status.not_started);
+        anotherExam.setReferencedLectures(new UUID[]{UUID.randomUUID()});
+
+        likedExamItem1 = new ExamItem();
+        likedExamItem1.setId(likedExamItemId1);
+        likedExamItem1.setExam(testExam);
+        likedExamItem1.setUser(testUser);
+        likedExamItem1.setQuestion("What is inheritance?");
+        likedExamItem1.setQuestionType(QuestionType.short_answer);
+        likedExamItem1.setIsLiked(true);
+
+        likedExamItem2 = new ExamItem();
+        likedExamItem2.setId(likedExamItemId2);
+        likedExamItem2.setExam(anotherExam);
+        likedExamItem2.setUser(testUser);
+        likedExamItem2.setQuestion("Is Java object-oriented?");
+        likedExamItem2.setQuestionType(QuestionType.true_or_false);
+        likedExamItem2.setIsLiked(true);
+
+        notLikedExamItem = new ExamItem();
+        notLikedExamItem.setId(UUID.randomUUID());
+        notLikedExamItem.setExam(testExam);
+        notLikedExamItem.setUser(testUser);
+        notLikedExamItem.setQuestion("What is abstraction?");
+        notLikedExamItem.setQuestionType(QuestionType.short_answer);
+        notLikedExamItem.setIsLiked(false);
     }
 
     @Test
@@ -1118,5 +1179,186 @@ public class ExamServiceTest {
         // 시험 상태가 partially_graded로 업데이트되었는지 확인
         verify(examRepo).updateExam(examCaptor.capture());
         assertEquals(Status.partially_graded, examCaptor.getValue().getStatus());
+    }
+
+    @Test
+    @DisplayName("코스별 좋아요한 시험 문제 조회 - 좋아요한 문제가 있는 경우")
+    void findLikedExamItemByCourseId_WithLikedItems() {
+        // given
+        when(examRepo.findByCourseId(courseId)).thenReturn(Arrays.asList(testExam, anotherExam));
+        when(examItemRepo.findByExamId(examId)).thenReturn(Arrays.asList(likedExamItem1, notLikedExamItem));
+        when(examItemRepo.findByExamId(anotherExamId)).thenReturn(Arrays.asList(likedExamItem2));
+
+        // when
+        ExamItemListOutput result = examService.findLikedExamItemByCourseId(courseId);
+
+        // then
+        assertEquals(2, result.getExamItems().size());
+        
+        ExamItemOutput firstLikedItem = result.getExamItems().get(0);
+        assertEquals(likedExamItemId1, firstLikedItem.getId());
+        assertEquals("What is inheritance?", firstLikedItem.getQuestion());
+        assertEquals(QuestionType.short_answer, firstLikedItem.getQuestionType());
+        assertEquals(Boolean.TRUE, firstLikedItem.getIsLiked());
+
+        ExamItemOutput secondLikedItem = result.getExamItems().get(1);
+        assertEquals(likedExamItemId2, secondLikedItem.getId());
+        assertEquals("Is Java object-oriented?", secondLikedItem.getQuestion());
+        assertEquals(QuestionType.true_or_false, secondLikedItem.getQuestionType());
+        assertEquals(Boolean.TRUE, secondLikedItem.getIsLiked());
+
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examItemRepo, times(1)).findByExamId(examId);
+        verify(examItemRepo, times(1)).findByExamId(anotherExamId);
+    }
+
+    @Test
+    @DisplayName("코스별 좋아요한 시험 문제 조회 - 시험이 없는 경우")
+    void findLikedExamItemByCourseId_NoExams() {
+        // given
+        when(examRepo.findByCourseId(courseId)).thenReturn(Arrays.asList());
+
+        // when
+        ExamItemListOutput result = examService.findLikedExamItemByCourseId(courseId);
+
+        // then
+        assertEquals(0, result.getExamItems().size());
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examItemRepo, never()).findByExamId(any(UUID.class));
+    }
+
+    @Test
+    @DisplayName("코스별 좋아요한 시험 문제 조회 - 좋아요한 문제가 없는 경우")
+    void findLikedExamItemByCourseId_NoLikedItems() {
+        // given
+        when(examRepo.findByCourseId(courseId)).thenReturn(Arrays.asList(testExam));
+        when(examItemRepo.findByExamId(examId)).thenReturn(Arrays.asList(notLikedExamItem));
+
+        // when
+        ExamItemListOutput result = examService.findLikedExamItemByCourseId(courseId);
+
+        // then
+        assertEquals(0, result.getExamItems().size());
+        verify(examRepo, times(1)).findByCourseId(courseId);
+        verify(examItemRepo, times(1)).findByExamId(examId);
+    }
+
+    @Test
+    @DisplayName("시험 문제 좋아요 토글 - 좋아요 추가 (false -> true)")
+    void toggleLikeExamItem_AddLike() {
+        // given
+        ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
+        input.setExamId(examId);
+        input.setExamItemId(examItemId4);
+        input.setUserId(userId);
+
+        // testExamItem의 현재 상태는 setUp()에서 false로 설정됨
+        
+        ExamItem updatedExamItem = new ExamItem();
+        updatedExamItem.setId(examItemId4);
+        updatedExamItem.setExam(testExam);
+        updatedExamItem.setUser(testUser);
+        updatedExamItem.setQuestion("Is this a liked exam item?");
+        updatedExamItem.setQuestionType(QuestionType.true_or_false);
+        updatedExamItem.setIsLiked(true); // false에서 true로 변경
+
+        when(examItemRepo.findById(examItemId4)).thenReturn(Optional.of(testExamItem));
+        when(examItemRepo.updateExamItem(any(ExamItem.class))).thenReturn(updatedExamItem);
+
+        // when
+        ExamItemOutput result = examService.toggleLikeExamItem(input);
+
+        // then
+        assertEquals(examItemId4, result.getId());
+        assertEquals(examId, result.getExamId());
+        assertEquals(userId, result.getUserId());
+        assertEquals("Is this a liked exam item?", result.getQuestion());
+        assertEquals(QuestionType.true_or_false, result.getQuestionType());
+        assertEquals(Boolean.TRUE, result.getIsLiked());
+
+        verify(examItemRepo, times(1)).findById(examItemId4);
+        verify(examItemRepo, times(1)).updateExamItem(argThat(item -> 
+                item.getId().equals(examItemId4) && Boolean.TRUE.equals(item.getIsLiked())));
+    }
+
+    @Test
+    @DisplayName("시험 문제 좋아요 토글 - 좋아요 제거 (true -> false)")
+    void toggleLikeExamItem_RemoveLike() {
+        // given
+        ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
+        input.setExamId(examId);
+        input.setExamItemId(examItemId4);
+        input.setUserId(userId);
+
+        testExamItem.setIsLiked(true); // 현재 좋아요 상태를 true로 설정
+        
+        ExamItem updatedExamItem = new ExamItem();
+        updatedExamItem.setId(examItemId4);
+        updatedExamItem.setExam(testExam);
+        updatedExamItem.setUser(testUser);
+        updatedExamItem.setQuestion("Is this a liked exam item?");
+        updatedExamItem.setQuestionType(QuestionType.true_or_false);
+        updatedExamItem.setIsLiked(false); // true에서 false로 변경
+
+        when(examItemRepo.findById(examItemId4)).thenReturn(Optional.of(testExamItem));
+        when(examItemRepo.updateExamItem(any(ExamItem.class))).thenReturn(updatedExamItem);
+
+        // when
+        ExamItemOutput result = examService.toggleLikeExamItem(input);
+
+        // then
+        assertEquals(examItemId4, result.getId());
+        assertEquals(examId, result.getExamId());
+        assertEquals(userId, result.getUserId());
+        assertEquals("Is this a liked exam item?", result.getQuestion());
+        assertEquals(QuestionType.true_or_false, result.getQuestionType());
+        assertEquals(Boolean.FALSE, result.getIsLiked());
+
+        verify(examItemRepo, times(1)).findById(examItemId4);
+        verify(examItemRepo, times(1)).updateExamItem(argThat(item -> 
+                item.getId().equals(examItemId4) && Boolean.FALSE.equals(item.getIsLiked())));
+    }
+
+    @Test
+    @DisplayName("시험 문제 좋아요 토글 - 시험 문제가 존재하지 않는 경우 예외 발생")
+    void toggleLikeExamItem_ExamItemNotFound() {
+        // given
+        ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
+        input.setExamId(examId);
+        input.setExamItemId(examItemId4);
+        input.setUserId(userId);
+
+        when(examItemRepo.findById(examItemId4)).thenReturn(Optional.empty());
+
+        // when, then
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, 
+                () -> examService.toggleLikeExamItem(input));
+        
+        assertEquals("Exam item not found", exception.getMessage());
+
+        verify(examItemRepo, times(1)).findById(examItemId4);
+        verify(examItemRepo, never()).updateExamItem(any(ExamItem.class));
+    }
+
+    @Test
+    @DisplayName("시험 문제 좋아요 토글 - 업데이트 실패 시 예외 발생")
+    void toggleLikeExamItem_UpdateFailed() {
+        // given
+        ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
+        input.setExamId(examId);
+        input.setExamItemId(examItemId4);
+        input.setUserId(userId);
+
+        when(examItemRepo.findById(examItemId4)).thenReturn(Optional.of(testExamItem));
+        when(examItemRepo.updateExamItem(any(ExamItem.class))).thenReturn(null); // 업데이트 실패
+
+        // when, then
+        RuntimeException exception = assertThrows(RuntimeException.class, 
+                () -> examService.toggleLikeExamItem(input));
+        
+        assertEquals("Failed to update exam item like status", exception.getMessage());
+
+        verify(examItemRepo, times(1)).findById(examItemId4);
+        verify(examItemRepo, times(1)).updateExamItem(any(ExamItem.class));
     }
 }

@@ -280,4 +280,55 @@ public class ExamServiceImpl implements ExamService {
 
         return count > 0 ? totalScore / count : 0f;
     }
+
+    @Override
+    public ExamItemListOutput findLikedExamItemByCourseId(UUID courseId) {
+        List<Exam> exams = examRepo.findByCourseId(courseId);
+        if (exams.isEmpty()) {
+            return new ExamItemListOutput(Collections.emptyList());
+        }
+
+        List<UUID> examIds = exams.stream()
+                .map(Exam::getId)
+                .toList();
+
+        List<ExamItemOutput> examItemOutputs = new ArrayList<>();
+        for (UUID examId : examIds) {
+            List<ExamItem> examItems = examItemRepo.findByExamId(examId);
+            if (examItems.isEmpty()) {
+                continue;
+            }
+            for (ExamItem examItem : examItems) {
+                if (examItem.getIsLiked() != null && examItem.getIsLiked()) {
+                    ExamItemOutput examItemOutput = ExamItemOutput.fromEntity(examItem);
+                    examItemOutputs.add(examItemOutput);
+                }
+            }
+        }
+
+        return new ExamItemListOutput(examItemOutputs);
+    }
+
+    @Override
+    @Transactional
+    public ExamItemOutput toggleLikeExamItem(ToggleLikeExamItemInput input) {
+        Optional<ExamItem> existingExamItem = examItemRepo.findById(input.getExamItemId());
+        if (existingExamItem.isEmpty()) {
+            throw new NoSuchElementException("Exam item not found");
+        }
+
+        if (existingExamItem.get().getIsLiked() != null && existingExamItem.get().getIsLiked()) {
+            // 이미 좋아요가 눌려져 있다면 좋아요 취소
+            existingExamItem.get().setIsLiked(false);
+        } else {
+            // 좋아요가 눌려져 있지 않다면 좋아요 추가
+            existingExamItem.get().setIsLiked(true);
+        }
+
+        ExamItem updatedExamItem = examItemRepo.updateExamItem(existingExamItem.get());
+        if (updatedExamItem == null) {
+            throw new RuntimeException("Failed to update exam item like status");
+        }
+        return ExamItemOutput.fromEntity(updatedExamItem);
+    }    
 }
