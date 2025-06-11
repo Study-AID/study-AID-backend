@@ -1,6 +1,7 @@
 package com.example.api.controller;
 
 import com.example.api.controller.dto.course.*;
+import com.example.api.entity.CourseWeaknessAnalysis;
 import com.example.api.service.CourseService;
 import com.example.api.service.SemesterService;
 import com.example.api.service.dto.course.*;
@@ -129,6 +130,92 @@ public class CourseController extends BaseController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/{id}/weakness-analysis")
+    @Operation(
+            summary = "Get course weakness analysis",
+            description = "Retrieve weakness analysis for a specific course based on quiz and exam results",
+            parameters = {
+                    @Parameter(
+                            name = "id",
+                            description = "ID of the course to get weakness analysis for",
+                            required = true
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully retrieved weakness analysis",
+                            content = @Content(
+                                    schema = @Schema(implementation = CourseWeaknessAnalysis.class),
+                                    examples = {
+                                            @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                                    name = "With Analysis",
+                                                    description = "When weakness analysis is available",
+                                                    value = """
+                                                {
+                                                  "weaknesses": "SQL 기본 문법에 대한 이해가 부족합니다. 특히 SELECT 문의 사용법과 WHERE 절의 개념이 명확하지 않으며, JOIN 연산에 대한 이해도 불충분합니다. 또한 데이터 타입 변환과 함수 사용에서도 실수가 자주 발생하고 있습니다.",
+                                                  "suggestions": "SQL 기본 문법을 체계적으로 학습하고, 간단한 쿼리부터 차근차근 연습해보세요. JOIN 개념을 확실히 이해하기 위해 다양한 예제를 풀어보는 것을 추천합니다. 온라인 SQL 연습 사이트(예: SQLBolt, W3Schools)를 활용하여 실습 위주로 학습하시고, 특히 WHERE 절과 함수 사용법을 집중적으로 연습해보세요.",
+                                                  "analyzed_at": "2024-06-11T15:30:45"
+                                                }
+                                                """
+                                            ),
+                                            @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                                    name = "No Analysis",
+                                                    description = "When no weakness analysis is available yet",
+                                                    value = """
+                                                {
+                                                  "weaknesses": null,
+                                                  "suggestions": null,
+                                                  "analyzed_at": null
+                                                }
+                                                """
+                                            )
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "User does not have access to this course"
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Course not found"
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal server error"
+                    )
+            }
+    )
+    public ResponseEntity<CourseWeaknessAnalysis> getCourseWeaknessAnalysis(@PathVariable UUID id) {
+        UUID userId = getAuthenticatedUserId();
+
+        try {
+            // 과목 존재 여부 및 권한 확인
+            Optional<CourseOutput> courseOutput = courseService.findCourseById(id);
+            if (courseOutput.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!courseOutput.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            // 약점 분석 조회
+            CourseWeaknessAnalysis weaknessAnalysis = courseService.findCourseWeaknessAnalysis(id);
+
+            // 약점 분석이 없으면 null 값들로 구성된 빈 객체 반환
+            if (weaknessAnalysis == null) {
+                CourseWeaknessAnalysis emptyAnalysis = new CourseWeaknessAnalysis();
+                return ResponseEntity.ok(emptyAnalysis);
+            }
+
+            return ResponseEntity.ok(weaknessAnalysis);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 
     @PostMapping
     @Operation(

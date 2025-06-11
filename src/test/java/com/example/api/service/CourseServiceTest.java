@@ -1,6 +1,7 @@
 package com.example.api.service;
 
 import com.example.api.entity.Course;
+import com.example.api.entity.CourseWeaknessAnalysis;
 import com.example.api.entity.Semester;
 import com.example.api.entity.User;
 import com.example.api.repository.CourseRepository;
@@ -109,6 +110,45 @@ class CourseServiceTest {
         assertEquals(testCourseOutput.getId(), output.getCourses().get(0).getId());
         assertEquals(testCourseOutput.getName(), output.getCourses().get(0).getName());
         verify(courseRepository).findBySemesterId(semesterId);
+    }
+
+    @Test
+    @DisplayName("과목 약점 분석 조회 - 분석 데이터 있음")
+    void findCourseWeaknessAnalysis_WithData() {
+        // Given
+        CourseWeaknessAnalysis weaknessAnalysis = new CourseWeaknessAnalysis();
+        weaknessAnalysis.setWeaknesses("프로그래밍 기초 개념이 부족합니다.");
+        weaknessAnalysis.setSuggestions("기본기를 다시 한번 점검해보세요.");
+        weaknessAnalysis.setAnalyzedAt(LocalDateTime.now());
+
+        testCourse.setCourseWeaknessAnalysis(weaknessAnalysis);
+
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
+
+        // When
+        CourseWeaknessAnalysis result = courseService.findCourseWeaknessAnalysis(courseId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals("프로그래밍 기초 개념이 부족합니다.", result.getWeaknesses());
+        assertEquals("기본기를 다시 한번 점검해보세요.", result.getSuggestions());
+        assertNotNull(result.getAnalyzedAt());
+        verify(courseRepository).findById(courseId);
+    }
+
+    @Test
+    @DisplayName("과목 약점 분석 조회 - 분석 데이터 없음")
+    void findCourseWeaknessAnalysis_NoData() {
+        // Given
+        testCourse.setCourseWeaknessAnalysis(null);
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
+
+        // When
+        CourseWeaknessAnalysis result = courseService.findCourseWeaknessAnalysis(courseId);
+
+        // Then
+        assertNull(result);
+        verify(courseRepository).findById(courseId);
     }
 
     @Test
