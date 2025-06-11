@@ -45,7 +45,7 @@ public class QuizResultElement {
 
         element.setQuizResponseId(quizResponse.getId());
         element.setIsCorrect(quizResponse.getIsCorrect());
-        element.setScore(null);
+        element.setScore(quizResponse.getScore());
         
         if (quizItem.getQuestionType() == QuestionType.true_or_false) {
             element.setIsTrueAnswer(quizItem.getIsTrueAnswer());
