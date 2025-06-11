@@ -1,6 +1,7 @@
 package com.example.api.service;
 
 import com.example.api.entity.Course;
+import com.example.api.entity.CourseWeaknessAnalysis;
 import com.example.api.entity.CourseAssessment;
 import com.example.api.entity.Semester;
 import com.example.api.entity.User;
@@ -9,6 +10,7 @@ import com.example.api.repository.CourseRepository;
 import com.example.api.repository.SemesterRepository;
 import com.example.api.repository.UserRepository;
 import com.example.api.service.dto.course.*;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,6 +74,14 @@ public class CourseServiceImpl implements CourseService {
                 course.get().setEarnedGrade(0.0f);
         }
         return course;
+    }
+
+    @Override
+    public CourseWeaknessAnalysis findCourseWeaknessAnalysis(UUID courseId) {
+        Course course = courseRepo.findById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Course not found: " + courseId));
+
+        return course.getCourseWeaknessAnalysis();
     }
 
     @Override

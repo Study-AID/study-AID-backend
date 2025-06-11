@@ -15,6 +15,7 @@ public class SQSMessageConfig {
     private GenerateExam generateExam = new GenerateExam();
     private GradeQuizEssay gradeQuizEssay = new GradeQuizEssay();
     private GradeExamEssay gradeExamEssay = new GradeExamEssay();
+    private GenerateCourseWeaknessAnalysis generateCourseWeaknessAnalysis = new GenerateCourseWeaknessAnalysis();
 
     @Getter
     @Setter
@@ -39,10 +40,16 @@ public class SQSMessageConfig {
     public static class GradeQuizEssay {
         private String queueUrl;
     }
-    
+
     @Getter
     @Setter
     public static class GradeExamEssay {
+        private String queueUrl;
+    }
+
+    @Getter
+    @Setter
+    public static class GenerateCourseWeaknessAnalysis {
         private String queueUrl;
     }
 }

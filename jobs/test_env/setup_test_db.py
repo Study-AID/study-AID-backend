@@ -165,12 +165,17 @@ def insert_test_data(conn):
                            ON CONFLICT (id) DO NOTHING
                            """, (test_semester_id, test_user_id, 'Test Semester', 2025, 'spring'))
 
-            # Insert test course
+            # Insert test course with existing weakness analysis
+            existing_analysis = {
+                "weaknesses": "기존 약점: 객체지향 개념 이해 부족, 데이터베이스 설계 원칙 이해 부족",
+                "suggestions": "기존 학습 제안: 객체지향 프로그래밍 기초 서적 학습, 데이터베이스 설계 예제 문제 풀어보기",
+                "analyzed_at": "2024-01-15T10:30:00"
+            }
             cursor.execute("""
-                           INSERT INTO app.courses (id, semester_id, user_id, name)
-                           VALUES (%s, %s, %s, %s)
-                           ON CONFLICT (id) DO NOTHING
-                           """, (test_course_id, test_semester_id, test_user_id, 'Test Course'))
+                           INSERT INTO app.courses (id, semester_id, user_id, name, course_weakness_analysis)
+                           VALUES (%s, %s, %s, %s, %s)
+                           ON CONFLICT (id) DO UPDATE SET course_weakness_analysis = EXCLUDED.course_weakness_analysis
+                           """, (test_course_id, test_semester_id, test_user_id, 'Test Course', json.dumps(existing_analysis, ensure_ascii=False)))
 
             # Insert test lecture with parsed_text field
             cursor.execute("""

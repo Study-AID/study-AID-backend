@@ -4,6 +4,7 @@ import com.example.api.config.TestSecurityConfig;
 import com.example.api.controller.dto.course.CreateCourseRequest;
 import com.example.api.controller.dto.course.UpdateCourseGradesRequest;
 import com.example.api.controller.dto.course.UpdateCourseRequest;
+import com.example.api.entity.CourseWeaknessAnalysis;
 import com.example.api.repository.UserRepository;
 import com.example.api.security.jwt.JwtAuthenticationFilter;
 import com.example.api.security.jwt.JwtProvider;
@@ -208,6 +209,110 @@ class CourseControllerTest {
                 .andExpect(status().isForbidden());
 
         verify(courseService).findCourseById(courseId);
+    }
+
+    @Test
+    @DisplayName("과목 약점 분석 조회 - 분석 데이터 있음")
+    @WithMockUser
+    void getCourseWeaknessAnalysis_WithData() throws Exception {
+        // Given
+        CourseWeaknessAnalysis weaknessAnalysis = new CourseWeaknessAnalysis();
+        weaknessAnalysis.setWeaknesses("SQL 기본 문법에 대한 이해가 부족합니다. 특히 SELECT 문의 사용법과 WHERE 절의 개념이 명확하지 않습니다.");
+        weaknessAnalysis.setSuggestions("SQL 기본 문법을 체계적으로 학습하고, 간단한 쿼리부터 차근차근 연습해보세요.");
+        weaknessAnalysis.setAnalyzedAt(LocalDateTime.of(2024, 6, 11, 15, 30, 45));
+
+        when(courseService.findCourseById(courseId))
+                .thenReturn(Optional.of(testCourseOutput));
+        when(courseService.findCourseWeaknessAnalysis(courseId))
+                .thenReturn(weaknessAnalysis);
+
+        // When/Then
+        mockMvc.perform(get("/v1/courses/{courseId}/weakness-analysis", courseId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.weaknesses", is("SQL 기본 문법에 대한 이해가 부족합니다. 특히 SELECT 문의 사용법과 WHERE 절의 개념이 명확하지 않습니다.")))
+                .andExpect(jsonPath("$.suggestions", is("SQL 기본 문법을 체계적으로 학습하고, 간단한 쿼리부터 차근차근 연습해보세요.")))
+                .andExpect(jsonPath("$.analyzed_at", is("2024-06-11T15:30:45")));
+
+        verify(courseService).findCourseById(courseId);
+        verify(courseService).findCourseWeaknessAnalysis(courseId);
+    }
+
+    @Test
+    @DisplayName("과목 약점 분석 조회 - 분석 데이터 없음")
+    @WithMockUser
+    void getCourseWeaknessAnalysis_NoData() throws Exception {
+        // Given
+        when(courseService.findCourseById(courseId))
+                .thenReturn(Optional.of(testCourseOutput));
+        when(courseService.findCourseWeaknessAnalysis(courseId))
+                .thenReturn(null); // 분석 데이터 없음
+
+        // When/Then
+        mockMvc.perform(get("/v1/courses/{courseId}/weakness-analysis", courseId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.weaknesses").doesNotExist()) // null 값은 JSON에서 제외됨
+                .andExpect(jsonPath("$.suggestions").doesNotExist())
+                .andExpect(jsonPath("$.analyzed_at").doesNotExist());
+
+        verify(courseService).findCourseById(courseId);
+        verify(courseService).findCourseWeaknessAnalysis(courseId);
+    }
+
+    @Test
+    @DisplayName("과목 약점 분석 조회 - 과목 찾을 수 없음")
+    @WithMockUser
+    void getCourseWeaknessAnalysis_CourseNotFound() throws Exception {
+        // Given
+        when(courseService.findCourseById(courseId))
+                .thenReturn(Optional.empty());
+
+        // When/Then
+        mockMvc.perform(get("/v1/courses/{courseId}/weakness-analysis", courseId))
+                .andExpect(status().isNotFound());
+
+        verify(courseService).findCourseById(courseId);
+        verify(courseService, never()).findCourseWeaknessAnalysis(any());
+    }
+
+    @Test
+    @DisplayName("과목 약점 분석 조회 - 권한 없음")
+    @WithMockUser
+    void getCourseWeaknessAnalysis_Forbidden() throws Exception {
+        // Given
+        UUID otherUserId = UUID.randomUUID();
+        CourseOutput forbiddenCourseOutput = new CourseOutput();
+        forbiddenCourseOutput.setId(courseId);
+        forbiddenCourseOutput.setUserId(otherUserId);
+        forbiddenCourseOutput.setSemesterId(semesterId);
+        forbiddenCourseOutput.setName("권한없는 과목");
+
+        when(courseService.findCourseById(courseId))
+                .thenReturn(Optional.of(forbiddenCourseOutput));
+
+        // When/Then
+        mockMvc.perform(get("/v1/courses/{courseId}/weakness-analysis", courseId))
+                .andExpect(status().isForbidden());
+
+        verify(courseService).findCourseById(courseId);
+        verify(courseService, never()).findCourseWeaknessAnalysis(any());
+    }
+
+    @Test
+    @DisplayName("과목 약점 분석 조회 - 서버 에러")
+    @WithMockUser
+    void getCourseWeaknessAnalysis_ServerError() throws Exception {
+        // Given
+        when(courseService.findCourseById(courseId))
+                .thenReturn(Optional.of(testCourseOutput));
+        when(courseService.findCourseWeaknessAnalysis(courseId))
+                .thenThrow(new RuntimeException("Database connection error"));
+
+        // When/Then
+        mockMvc.perform(get("/v1/courses/{courseId}/weakness-analysis", courseId))
+                .andExpect(status().isInternalServerError());
+
+        verify(courseService).findCourseById(courseId);
+        verify(courseService).findCourseWeaknessAnalysis(courseId);
     }
 
     @Test

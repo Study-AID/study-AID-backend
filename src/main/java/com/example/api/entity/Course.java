@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -45,6 +47,10 @@ public class Course {
 
     @Column(name = "completed_credits")
     private Integer completedCredits;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "course_weakness_analysis", columnDefinition = "jsonb")
+    private CourseWeaknessAnalysis courseWeaknessAnalysis;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

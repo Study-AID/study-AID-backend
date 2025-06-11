@@ -1,5 +1,6 @@
 package com.example.api.service;
 
+import com.example.api.adapters.sqs.GenerateCourseWeaknessAnalysisMessage;
 import com.example.api.adapters.sqs.GradeQuizEssayMessage;
 import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.entity.*;
@@ -134,12 +135,14 @@ public class QuizServiceImpl implements QuizService {
         UUID quizId = inputs.get(0).getQuizId();
         UUID userId = inputs.get(0).getUserId();
         Quiz quiz = quizRepo.getReferenceById(quizId);
+        UUID courseId = getCourseIdFromQuiz(quizId);
 
         // 서술형 문제 유무 확인
         boolean hasEssay = hasEssayQuestions(quizId);
         if (!hasEssay) {
             gradeNonEssayQuestions(quizId);
             quiz.setStatus(Status.graded);
+            sendGenerateCourseWeaknessAnalysisMessage(userId, quizId, null, courseId);
         } else {
             gradeNonEssayQuestions(quizId);
             quiz.setStatus(Status.partially_graded);
@@ -153,6 +156,52 @@ public class QuizServiceImpl implements QuizService {
     // 서술형 문제 존재 여부 확인 함수
     private boolean hasEssayQuestions(UUID quizId) {
         return quizItemRepo.existsByQuizIdAndQuestionTypeAndDeletedAtIsNull(quizId, QuestionType.essay);
+    }
+
+    // 서술형 문제 채점 위해 SQS 메시지 전송하는 함수
+    private void sendGradeQuizEssayMessage(UUID userId, UUID quizId) {
+        GradeQuizEssayMessage message = GradeQuizEssayMessage.builder()
+                .schemaVersion("1.0.0")
+                .requestId(UUID.randomUUID())
+                .occurredAt(OffsetDateTime.now())
+                .userId(userId)
+                .quizId(quizId)
+                .build();
+
+        try {
+            sqsClient.sendGradeQuizEssayMessage(message);
+            log.info("Successfully sent grade quiz essay message to SQS: quizId={}, userId={}", quizId, userId);
+        } catch (Exception e) {
+            log.error("Failed to send grade quiz essay message to SQS: quizId={}, userId={}, error={}", quizId, userId, e.getMessage());
+        }
+    }
+
+    // 퀴즈로부터 과목 ID를 가져오는 함수
+    private UUID getCourseIdFromQuiz(UUID quizId) {
+        Quiz quiz = quizRepo.getReferenceById(quizId);
+        return quiz.getLecture().getCourse().getId();
+    }
+
+    // 과목 약점 분석 위한 SQS 메시지 전송하는 함수
+    private void sendGenerateCourseWeaknessAnalysisMessage(UUID userId, UUID quizId, UUID examId, UUID courseId) {
+        GenerateCourseWeaknessAnalysisMessage message = new GenerateCourseWeaknessAnalysisMessage(
+                "1.0.0",
+                UUID.randomUUID(),
+                OffsetDateTime.now(),
+                userId,
+                quizId,
+                examId,
+                courseId
+        );
+
+        try {
+            sqsClient.sendGenerateCourseWeaknessAnalysisMessage(message);
+            log.info("Successfully sent generate course weakness analysis message to SQS: courseId={}, userId={}, quizId={}, examId={}",
+                    courseId, userId, quizId, examId);
+        } catch (Exception e) {
+            log.error("Failed to send generate course weakness analysis message to SQS: courseId={}, userId={}, error={}",
+                    courseId, userId, e.getMessage());
+        }
     }
 
     @Override
@@ -235,23 +284,6 @@ public class QuizServiceImpl implements QuizService {
             quizItemRepo.updateQuizItem(quizItem);
         }
         return initialMaxScore;
-    }
-
-    private void sendGradeQuizEssayMessage(UUID userId, UUID quizId) {
-        GradeQuizEssayMessage message = GradeQuizEssayMessage.builder()
-                .schemaVersion("1.0.0")
-                .requestId(UUID.randomUUID())
-                .occurredAt(OffsetDateTime.now())
-                .userId(userId)
-                .quizId(quizId)
-                .build();
-
-        try {
-            sqsClient.sendGradeQuizEssayMessage(message);
-            log.info("Successfully sent grade quiz essay message to SQS: quizId={}, userId={}", quizId, userId);
-        } catch (Exception e) {
-            log.error("Failed to send grade quiz essay message to SQS: quizId={}, userId={}, error={}", quizId, userId, e.getMessage());
-        }
     }
 
     @Override

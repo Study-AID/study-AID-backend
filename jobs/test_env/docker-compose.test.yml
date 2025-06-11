@@ -248,6 +248,35 @@ services:
     profiles:
       - grade-exam-essay
 
+  # 과목 약점 분석 및 학습 제안 레포트 생성 기능 테스트 (generate_course_weakness_analysis)
+  test-generate-course-weakness-analysis:
+    build:
+      context: ../../
+      dockerfile: jobs/test_env/Dockerfile.test
+    depends_on:
+      - postgres-test
+      - localstack-test
+      - setup-db
+    environment:
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: studyaid
+      AWS_ENDPOINT_URL: http://localstack-test:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: ap-northeast-2
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-test_key}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      PROMPT_VERSION: latest
+    volumes:
+      - ../../:/app
+    command: [ "python", "/app/jobs/test_env/run_test_job.py", "--job", "generate_course_weakness_analysis" ]
+    profiles:
+      - generate-course-weakness-analysis
+
+
 volumes:
   postgres-test-data:
   localstack-test-data:

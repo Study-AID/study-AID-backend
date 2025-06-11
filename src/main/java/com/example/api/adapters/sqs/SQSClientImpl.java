@@ -155,4 +155,32 @@ public class SQSClientImpl implements SQSClient {
             throw new RuntimeException("Failed to send SQS message", e);
         }
     }
+
+    @Async
+    @Override
+    public void sendGenerateCourseWeaknessAnalysisMessage(GenerateCourseWeaknessAnalysisMessage message) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
+            String messageBody = mapper.writeValueAsString(message);
+
+            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
+                    .queueUrl(sqsMessageConfig.getGenerateCourseWeaknessAnalysis().getQueueUrl())
+                    .messageGroupId(message.getUserId().toString())
+                    .messageBody(messageBody)
+                    .build();
+
+            SendMessageResponse response = sqsClient.sendMessage(sendMessageRequest);
+
+            logger.info("Successfully sent generate course weakness analysis message with requestId: {} and messageId: {}",
+                    message.getRequestId(), response.messageId());
+
+        } catch (Exception e) {
+            logger.error("Failed to send generate course weakness analysis message for userId: {}", message.getUserId(), e);
+            throw new RuntimeException("Failed to send SQS message", e);
+        }
+    }
+
 }

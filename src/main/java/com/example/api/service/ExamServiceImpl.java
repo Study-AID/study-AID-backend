@@ -1,6 +1,7 @@
 package com.example.api.service;
 
 import com.example.api.adapters.sqs.GradeExamEssayMessage;
+import com.example.api.adapters.sqs.GenerateCourseWeaknessAnalysisMessage;
 import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.entity.*;
 import com.example.api.entity.enums.QuestionType;
@@ -130,14 +131,16 @@ public class ExamServiceImpl implements ExamService {
         ExamResponseListOutput examResponseListOutput = new ExamResponseListOutput(examResponseOutputs);
 
         UUID examId = inputs.get(0).getExamId();
-        UUID userId = inputs.get(0).getUserId();
         Exam exam = examRepo.getReferenceById(examId);
+        UUID userId = inputs.get(0).getUserId();
+        UUID courseId = exam.getCourse().getId();
 
         // 서술형 문제 유무 확인
         boolean hasEssay = hasEssayQuestions(examId);
         if (!hasEssay) {
             gradeNonEssayQuestions(examId);
             exam.setStatus(Status.graded);
+            sendGenerateCourseWeaknessAnalysisMessage(userId, null, examId, courseId);
         } else {
             gradeNonEssayQuestions(examId);
             exam.setStatus(Status.partially_graded);
@@ -153,6 +156,7 @@ public class ExamServiceImpl implements ExamService {
         return examItemRepo.existsByExamIdAndQuestionTypeAndDeletedAtIsNull(examId, QuestionType.essay);
     }
 
+    // 서술형 채점 위한 SQS 메세지 전송 함수
     private void sendGradeExamEssayMessage(UUID userId, UUID examId) {
         GradeExamEssayMessage message = GradeExamEssayMessage.builder()
                 .schemaVersion("1.0.0")
@@ -167,6 +171,28 @@ public class ExamServiceImpl implements ExamService {
             log.info("Successfully sent grade exam essay message to SQS: examId={}, userId={}", examId, userId);
         } catch (Exception e) {
             log.error("Failed to send grade exam essay message to SQS: examId={}, userId={}, error={}", examId, userId, e.getMessage());
+        }
+    }
+
+    // 과목 약점 분석 위한 SQS 메시지 전송하는 함수
+    private void sendGenerateCourseWeaknessAnalysisMessage(UUID userId, UUID quizId, UUID examId, UUID courseId) {
+        GenerateCourseWeaknessAnalysisMessage message = new GenerateCourseWeaknessAnalysisMessage(
+                "1.0.0",
+                UUID.randomUUID(),
+                OffsetDateTime.now(),
+                userId,
+                quizId,
+                examId,
+                courseId
+        );
+
+        try {
+            sqsClient.sendGenerateCourseWeaknessAnalysisMessage(message);
+            log.info("Successfully sent generate course weakness analysis message to SQS: courseId={}, userId={}, quizId={}, examId={}",
+                    courseId, userId, quizId, examId);
+        } catch (Exception e) {
+            log.error("Failed to send generate course weakness analysis message to SQS: courseId={}, userId={}, error={}",
+                    courseId, userId, e.getMessage());
         }
     }
 
@@ -357,5 +383,5 @@ public class ExamServiceImpl implements ExamService {
             throw new RuntimeException("Failed to update exam item like status");
         }
         return ExamItemOutput.fromEntity(updatedExamItem);
-    }    
+    }
 }

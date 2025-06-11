@@ -1,46 +1,47 @@
-.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win open-test-report open-coverage-report migrate migration-info test-env-start test-env-setup test-job-summarize test-job-quiz test-job-exam test-job-grade-quiz-essay test-job-grade-exam-essay test-job-shell test-env-stop test-env-clean
+.PHONY: help build run logs logs-api down clean ps redis-cli pgsql-cli test test_win test-coverage test-coverage_win open-test-report open-coverage-report migrate migration-info test-env-start test-env-setup test-job-summarize test-job-quiz test-job-exam test-job-grade-quiz-essay test-job-grade-exam-essay test-job-generate-course-weakness-analysis test-job-shell test-env-stop test-env-clean
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  make build                     - Build Docker images"
-	@echo "  make run                       - Start all services"
-	@echo "  make logs                      - Follow logs from all containers"
-	@echo "  make logs-api                  - Follow logs from API service"
-	@echo "  make down                      - Stop all services"
-	@echo "  make clean                     - Remove all containers, volumes, and images"
-	@echo "  make ps                        - List running containers"
-	@echo "  make pgsql-cli                 - Connect to PostgreSQL CLI"
-	@echo "  make redis-cli                 - Connect to Redis CLI"
-	@echo "  make test                      - Run tests"
-	@echo "  make test-win                  - Run tests (Windows)"
-	@echo "  make test-coverage             - Run tests with coverage report"
-	@echo "  make test-coverage-win         - Run tests with coverage report (Windows)"
-	@echo "  make open-test-report          - Open test report in browser"
-	@echo "  make open-coverage-report      - Open coverage report in browser"
-	@echo "  make migrate                   - Run Flyway migration"
-	@echo "  make migration-info            - Check migrated schema versions and status"
-	@echo "  make migration-repair          - Repair migration checksum mismatches"
+	@echo "  make build                                        - Build Docker images"
+	@echo "  make run                                          - Start all services"
+	@echo "  make logs                                         - Follow logs from all containers"
+	@echo "  make logs-api                                     - Follow logs from API service"
+	@echo "  make down                                         - Stop all services"
+	@echo "  make clean                                        - Remove all containers, volumes, and images"
+	@echo "  make ps                                           - List running containers"
+	@echo "  make pgsql-cli                                    - Connect to PostgreSQL CLI"
+	@echo "  make redis-cli                                    - Connect to Redis CLI"
+	@echo "  make test                                         - Run tests"
+	@echo "  make test-win                                     - Run tests (Windows)"
+	@echo "  make test-coverage                                - Run tests with coverage report"
+	@echo "  make test-coverage-win                            - Run tests with coverage report (Windows)"
+	@echo "  make open-test-report                             - Open test report in browser"
+	@echo "  make open-coverage-report                         - Open coverage report in browser"
+	@echo "  make migrate                                      - Run Flyway migration"
+	@echo "  make migration-info                               - Check migrated schema versions and status"
+	@echo "  make migration-repair                             - Repair migration checksum mismatches"
 	@echo ""
 	@echo "Lambda Job Test Commands:"
-	@echo "  make test-env-start            - Start test environment (PostgreSQL, LocalStack)"
-	@echo "  make test-env-setup            - Setup test database with sample data"
-	@echo "  make test-job-summarize        - Test summarize_lecture job"
-	@echo "  make test-job-quiz             - Test generate_quiz job"
-	@echo "  make test-job-exam             - Test generate_exam job"
-	@echo "  make test-job-grade-quiz-essay - Test grade_quiz_essay job"
-	@echo "  make test-job-grade-exam-essay - Test grade_exam_essay job"
-	@echo "  make test-job-shell            - Start a shell in test container for debugging"
-	@echo "  make test-env-stop             - Stop test environment containers"
-	@echo "  make test-env-clean            - Remove test environment including volumes"
+	@echo "  make test-env-start                               - Start test environment (PostgreSQL, LocalStack)"
+	@echo "  make test-env-setup                               - Setup test database with sample data"
+	@echo "  make test-job-summarize                           - Test summarize_lecture job"
+	@echo "  make test-job-quiz                                - Test generate_quiz job"
+	@echo "  make test-job-exam                                - Test generate_exam job"
+	@echo "  make test-job-grade-quiz-essay                    - Test grade_quiz_essay job"
+	@echo "  make test-job-grade-exam-essay                    - Test grade_exam_essay job"
+	@echo "  make test-job-generate-course-weakness-analysis   - Test generate_course_weakness_analysis job"
+	@echo "  make test-job-shell                               - Start a shell in test container for debugging"
+	@echo "  make test-env-stop                                - Stop test environment containers"
+	@echo "  make test-env-clean                               - Remove test environment including volumes"
 	@echo ""
 	@echo "QnA Chat Langchain Commands:"
-	@echo "  make langchain-build           - Build LangChain Docker image"
-	@echo "  make langchain-up              - Run LangChain QnA Chat Context Generating Server"
-	@echo "  make langchain-rebuild         - Rebuild LangChain Docker image"
-	@echo "  make langchain-restart         - Restart LangChain server to apply code changes"
-	@echo "  make langchain-stop            - Stop LangChain QnA Chat Context Generating Server"
-	@echo "  make langchain-down            - Stop and remove LangChain QnA Chat Context Generating Server"
+	@echo "  make langchain-build                              - Build LangChain Docker image"
+	@echo "  make langchain-up                                 - Run LangChain QnA Chat Context Generating Server"
+	@echo "  make langchain-rebuild                            - Rebuild LangChain Docker image"
+	@echo "  make langchain-restart                            - Restart LangChain server to apply code changes"
+	@echo "  make langchain-stop                               - Stop LangChain QnA Chat Context Generating Server"
+	@echo "  make langchain-down                               - Stop and remove LangChain QnA Chat Context Generating Server"
 
 # Build Docker images
 build:
@@ -159,15 +160,20 @@ test-job-exam:
 	@echo "Testing generate_exam job..."
 	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile exam up --build
 
-# 퀴즈 서술형 채점 기능 테스트
+# 퀴즈 서술형 채점 기능 테스트 (grade_quiz_essay)
 test-job-grade-quiz-essay:
 	@echo "Testing grade_quiz_essay job..."
 	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile grade-quiz-essay up --build
 
-# 시험 서술형 채점 기능 테스트
+# 시험 서술형 채점 기능 테스트 (grade_exam_essay)
 test-job-grade-exam-essay:
 	@echo "Testing grade_exam_essay job..."
 	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile grade-exam-essay up --build
+
+# 과목별 약점 분석 및 학습 제안 레포트 생성 기능 테스트 (generate_course_weakness_analysis)
+test-job-generate-course-weakness-analysis:
+	@echo "Testing generate_course_weakness_analysis job..."
+	cd jobs/test_env && docker-compose -f docker-compose.test.yml --profile generate-course-weakness-analysis up --build
 
 # 테스트용 셸 실행 (디버깅용)
 test-job-shell:

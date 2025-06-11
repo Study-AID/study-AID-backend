@@ -258,6 +258,16 @@ def get_event_data(job_name, event_file=None):
                 })
             }]
         }
+    elif job_name == 'generate_course_weakness_analysis':
+        return {
+            'Records': [{
+                'body': json.dumps({
+                    'user_id': USER_ID,
+                    'course_id': COURSE_ID,
+                    'quiz_id': QUIZ_ID  # quiz를 기반으로 약점 분석 수행
+                })
+            }]
+        }
     else:
         # Generic event
         return {
