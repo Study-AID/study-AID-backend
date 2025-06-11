@@ -306,6 +306,9 @@ public class SemesterController extends BaseController {
             }
             Season season = Season.fromString(request.getSeason());
 
+            // TODO: 향후 개선 - Service 레이어에서 entity를 직접 반환하여 재사용하는 방식으로 변경 예정
+            // 현재는 Controller에서 find하고 Service에서도 find하여 중복 조회가 발생하는 비효율적인 구조
+            // Service DTO 구조 변경이 필요하여 일단 현재 구조 유지
             // Check semester exists and user owns it.
             Optional<SemesterOutput> existingSemesterOutput = semesterService.findSemesterById(id);
             if (existingSemesterOutput.isEmpty()) {

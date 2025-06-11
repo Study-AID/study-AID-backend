@@ -65,8 +65,9 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional
     public CourseOutput updateCourse(UpdateCourseInput input) {
-        Course course = new Course();
-        course.setId(input.getId());
+        // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
+        Course course = courseRepo.findById(input.getId())
+                .orElseThrow(() -> new RuntimeException("Course not found: " + input.getId()));
         course.setName(input.getName());
         Course updatedCourse = courseRepo.updateCourse(course);
         return CourseOutput.fromEntity(updatedCourse);
@@ -75,8 +76,9 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional
     public CourseOutput updateCourseGrades(UpdateCourseGradesInput input) {
-        Course course = new Course();
-        course.setId(input.getId());
+        // 기존 Entity 조회 후 필드 업데이트 (new Entity 방식에서 get and set 방식으로 변경)
+        Course course = courseRepo.findById(input.getId())
+                .orElseThrow(() -> new RuntimeException("Course not found: " + input.getId()));
         course.setTargetGrade(input.getTargetGrade());
         course.setEarnedGrade(input.getEarnedGrade());
         course.setCompletedCredits(input.getCompletedCredits());
