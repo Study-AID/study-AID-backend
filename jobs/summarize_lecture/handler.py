@@ -286,7 +286,7 @@ def send_summary_email(receiver_email, user_name, lecture_title, semester_id, co
     frontend_domain = FRONTEND_DOMAIN
     summary_url = f"{frontend_domain}/{semester_id}/{course_id}/{lecture_id}/note"
 
-    subject = f"'[Study AID] 🕊️요약본 생성 완료: {lecture_title}"
+    subject = f"[Study AID] 🪄요약본 생성 완료: {lecture_title}"
     body_text = f"{user_name}님, 강의 '{lecture_title}' 요약이 완료되었어요! {summary_url} 에서 확인하세요."
 
     body_html = f"""
@@ -314,6 +314,8 @@ def send_summary_email(receiver_email, user_name, lecture_title, semester_id, co
         </p>
     
         <p>감사합니다.<br/>Study AID 팀 드림</p>
+        <p>문의: studyaiddev@gmail.com</p>
+        <p style="color: gray; font-size: 10px;"><br/>Unsubscribe</p>
       </body>
     </html>
     """

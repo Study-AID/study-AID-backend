@@ -1,13 +1,12 @@
 package com.example.api.repository;
 
-import com.example.api.entity.QuizQuestionReport;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface QuizQuestionReportRepository extends JpaRepository<QuizQuestionReport, UUID>, QuizQuestionReportRepositoryCustom {
+import com.example.api.entity.QuizQuestionReport;
+
+public interface QuizQuestionReportRepositoryCustom {
     Optional<QuizQuestionReport> findByQuizIdAndQuizItemIdAndUserId(UUID quizId, UUID quizItemId, UUID userId);
 
     List<QuizQuestionReport> findByUserIdOrderByCreatedAtDesc(UUID userId);
@@ -15,6 +14,6 @@ public interface QuizQuestionReportRepository extends JpaRepository<QuizQuestion
     QuizQuestionReport createQuizQuestionReport(QuizQuestionReport quizQuestionReport);
 
     void deleteById(UUID id);
-
+    
     Long countByQuizItemId(UUID quizItemId);
 }

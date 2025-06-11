@@ -39,4 +39,9 @@ public interface QuizService {
 
     @Transactional
     Float calculateQuizAverageScore(UUID courseId);
+    
+    QuizItemListOutput findLikedQuizItemByLectureId(UUID lectureId);
+
+    @Transactional
+    QuizItemOutput toggleLikeQuizItem(ToggleLikeQuizItemInput input);
 }
