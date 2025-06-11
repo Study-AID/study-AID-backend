@@ -56,8 +56,7 @@ class OpenAIClient:
 
     def analyze_new_weakness(self, course_name, new_incorrect_items, prompt_path):
         """
-        기존 분석에 새로운 틀린 문제들을 반영하여 증분 약점 분석을 수행합니다.
-        토큰 절약을 위해 새로운 문제만 분석해서 기존에 append하는 방식으로 동작합니다.
+        새로운 틀린 문제들을 기반으로 약점 분석을 수행합니다.
         """
         try:
             template = self.load_prompt_template(prompt_path)
@@ -93,15 +92,9 @@ class OpenAIClient:
                 logger.error(f"Response content: {response_text}")
                 raise ValueError(f"Invalid JSON response from OpenAI: {e}")
 
-            # 기존 분석과 새로운 분석 통합
-            final_analysis = self._merge_analysis(existing_analysis, new_analysis_data)
-
-            # 분석 시간 업데이트
-            final_analysis['analyzed_at'] = datetime.now().isoformat()
-
             logger.info("Course weakness analysis completed successfully")
-            return final_analysis
+            return new_analysis_data
 
         except Exception as e:
-            logger.error(f"Error in analyze_weakness_and_suggest_learning_incremental: {e}")
+            logger.error(f"Error in analyze_new_weakness: {e}")
             raise

@@ -259,8 +259,8 @@ def get_prompt_path():
     return os.path.join(prompt_dir, prompt_file)
 
 
-    def merge_analysis(existing_analysis, new_analysis):
-        """기존 분석과 새로운 분석을 통합합니다."""
+def merge_analysis(existing_analysis, new_analysis):
+    """기존 분석과 새로운 분석을 통합합니다."""
     try:
         if existing_analysis:
             if isinstance(existing_analysis, str):

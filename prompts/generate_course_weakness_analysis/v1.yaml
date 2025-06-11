@@ -1,8 +1,7 @@
 model: gpt-4o
 temperature: 0.7
 max_tokens: 4096
-
-system_prompt: |
+system: |
   당신은 학습 컨설팅 전문가입니다. 학생의 {course_name} 과목에서 새로운 틀린 문제들을 참고하여 사용자의 약점을 분석하고, 극복을 위한 학습 방법을 제안합니다.
   
   1. 약점 분석 가이드라인:
@@ -23,8 +22,7 @@ system_prompt: |
     "weaknesses": "구체적인 약점 분석 내용",
     "suggestions": "구체적인 학습 제안 내용"
   }
-
-user_prompt: |
+user: |
   {course_name} 과목에서 학생이 새로 틀린 문제들을 분석해주세요.
   약점 분석 및 학습 제안은 가이드라인을 참고하세요.
   
