@@ -323,7 +323,7 @@ def send_exam_email(receiver_email, user_name, exam_title, semester_id, course_i
     # TODO(jin): check correct url
     exam_url = f"{frontend_domain}/{semester_id}/{course_id}/exam"
 
-    subject = f"[Study AID] 🕊️모의시험 생성 완료: '{exam_title}'"
+    subject = f"[Study AID] 🪄모의시험 생성 완료: '{exam_title}'"
     body_text = f"{user_name}님, 모의시험 '{exam_title}'의 생성이 완료되었어요! {exam_url} 에서 확인하세요."
 
     body_html = f"""
@@ -351,6 +351,8 @@ def send_exam_email(receiver_email, user_name, exam_title, semester_id, course_i
         </p>
     
         <p>감사합니다.<br/>Study AID 팀 드림</p>
+        <p>문의: studyaiddev@gmail.com</p>
+        <p style="color: gray; font-size: 10px;"><br/>Unsubscribe</p>
       </body>
     </html>
     """
