@@ -5,12 +5,7 @@ import com.example.api.entity.enums.SummaryStatus;
 import com.example.api.repository.CourseRepository;
 import com.example.api.repository.LectureRepository;
 import com.example.api.repository.UserRepository;
-import com.example.api.service.dto.lecture.CreateLectureInput;
-import com.example.api.service.dto.lecture.LectureListOutput;
-import com.example.api.service.dto.lecture.LectureOutput;
-import com.example.api.service.dto.lecture.UpdateLectureInput;
-import com.example.api.service.dto.lecture.UpdateLectureNoteInput;
-
+import com.example.api.service.dto.lecture.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -196,6 +191,7 @@ public class LectureServiceTest {
         input.setId(lectureId);
         input.setTitle("Updated Title");
 
+        when(lectureRepository.findById(lectureId)).thenReturn(Optional.of(testLecture));
         when(lectureRepository.updateLecture(any(Lecture.class))).thenReturn(testLecture);
 
         // When
@@ -204,21 +200,9 @@ public class LectureServiceTest {
         // Then
         assertNotNull(output);
         assertEquals(testLectureOutput.getId(), output.getId());
-        assertEquals(testLectureOutput.getTitle(), output.getTitle());
-        verify(lectureRepository).updateLecture(any(Lecture.class));
-    }
-
-    @Test
-    @DisplayName("강의 삭제")
-    void deleteLecture() {
-        // Given
-        doNothing().when(lectureRepository).deleteLecture(lectureId);
-
-        // When
-        lectureService.deleteLecture(lectureId);
-
-        // Then
-        verify(lectureRepository).deleteLecture(lectureId);
+        assertEquals("Updated Title", output.getTitle());
+        verify(lectureRepository, times(1)).findById(lectureId);
+        verify(lectureRepository, times(1)).updateLecture(any(Lecture.class));
     }
 
     @Test
@@ -260,4 +244,18 @@ public class LectureServiceTest {
         assertEquals(testLectureOutput.getMaterialPath(), output.getMaterialPath());
         assertEquals(testLectureOutput.getMaterialType(), output.getMaterialType());
     }
+
+    @Test
+    @DisplayName("강의 삭제")
+    void deleteLecture() {
+        // Given
+        doNothing().when(lectureRepository).deleteLecture(lectureId);
+
+        // When
+        lectureService.deleteLecture(lectureId);
+
+        // Then
+        verify(lectureRepository).deleteLecture(lectureId);
+    }
 }
+

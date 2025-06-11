@@ -181,6 +181,7 @@ class CourseServiceTest {
 
         CourseOutput updatedCourseOutput = CourseOutput.fromEntity(updatedCourse);
 
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
         when(courseRepository.updateCourse(any(Course.class))).thenReturn(updatedCourse);
 
         // When
@@ -189,7 +190,8 @@ class CourseServiceTest {
         // Then
         assertEquals(updatedCourseOutput.getId(), result.getId());
         assertEquals(updatedCourseOutput.getName(), result.getName());
-        verify(courseRepository).updateCourse(argThat(course ->
+        verify(courseRepository, times(1)).findById(courseId);
+        verify(courseRepository, times(1)).updateCourse(argThat(course ->
                 course.getId().equals(courseId) &&
                         course.getName().equals("고급 운영체제")
         ));
@@ -216,13 +218,15 @@ class CourseServiceTest {
         updatedCourse.setCreatedAt(testCourse.getCreatedAt());
         updatedCourse.setUpdatedAt(LocalDateTime.now());
 
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
         when(courseRepository.updateCourse(any(Course.class))).thenReturn(updatedCourse);
 
         // When
         courseService.updateCourseGrades(input);
 
         // Then
-        verify(courseRepository).updateCourse(argThat(course ->
+        verify(courseRepository, times(1)).findById(courseId);
+        verify(courseRepository, times(1)).updateCourse(argThat(course ->
                 course.getId().equals(courseId) &&
                         course.getTargetGrade() == 4.0f &&
                         course.getEarnedGrade() == 3.5f &&
