@@ -1,5 +1,6 @@
 package com.example.api.service.dto.exam;
 
+import com.example.api.entity.EssayCriteriaAnalysis;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -31,6 +32,7 @@ public class ExamResultElement {
     private Boolean selectedBool;
     private Integer[] selectedIndices;
     private String textAnswerOfUser;
+    private EssayCriteriaAnalysis essayCriteriaAnalysis;
     private Float score;
 
     public static ExamResultElement fromExamItemAndResponse(ExamItem examItem, ExamResponse examResponse) {
@@ -40,17 +42,10 @@ public class ExamResultElement {
         element.setQuestionType(examItem.getQuestionType());
         element.setExplanation(examItem.getExplanation());
         element.setIsTrueAnswer(examItem.getIsTrueAnswer());
-        element.setChoices(null);
-        element.setAnswerIndices(null);
-        element.setTextAnswer(null);
-        element.setPoints(null);
 
         element.setExamResponseId(examResponse.getId());
         element.setIsCorrect(examResponse.getIsCorrect());
-        element.setSelectedBool(null);
-        element.setSelectedIndices(null);
-        element.setTextAnswerOfUser(null);
-        element.setScore(null);
+        element.setEssayCriteriaAnalysis(examResponse.getEssayCriteriaAnalysis());
 
         if (examItem.getQuestionType() == QuestionType.true_or_false) {
             element.setChoices(examItem.getChoices());
@@ -61,8 +56,7 @@ public class ExamResultElement {
         } else if (examItem.getQuestionType() == QuestionType.short_answer || examItem.getQuestionType() == QuestionType.essay) {
             element.setTextAnswer(examItem.getTextAnswer());
             element.setTextAnswerOfUser(examResponse.getTextAnswer());
-            // Points can be set based on the grading logic
-            // For now, we leave it as null
+            element.setEssayCriteriaAnalysis(examResponse.getEssayCriteriaAnalysis());
         }
 
         return element;

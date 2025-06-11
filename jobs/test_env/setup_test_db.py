@@ -93,9 +93,9 @@ def insert_test_data(conn):
     test_semester_id = "d993e3bc-f563-457e-a8b4-8f8d83a889cd"
     test_course_id = "d993e3bc-f563-457e-a8b4-8f8d83a889cd"
     test_lecture_id = "743b2baa-16a5-4982-aa21-010ba83ca283"
-    test_quiz_id = "a82f7c3e-5a9d-4e2a-b48f-32fc4539d6d0"
 
     # Quiz related IDs
+    test_quiz_id = "a82f7c3e-5a9d-4e2a-b48f-32fc4539d6d0"
     test_quiz_item1_id = "b1234567-8901-2345-6789-012345678901"
     test_quiz_item2_id = "c2345678-9012-3456-7890-123456789012"
     test_quiz_response1_id = "d3456789-0123-4567-8901-234567890123"

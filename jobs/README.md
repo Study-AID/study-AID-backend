@@ -7,6 +7,7 @@ AWS Lambda로 실행되는 백그라운드 LLM Job들을 관리합니다.
 ```
 jobs/
 ├── grade_quiz_essay    # 퀴즈 서술형 채점 작업
+├── grade_exam_essay    # 시험 서술형 채점 작업
 ├── generate_exam/      # 시험 문제 생성 작업
 ├── generate_quiz/      # 퀴즈 생성 작업
 ├── summarize_lecture/  # 강의 요약 작업
@@ -19,6 +20,7 @@ jobs/
 - **Generate Quiz**: [README](generate_quiz/README.md)
 - **Generate Exam**: [README](generate_exam/README.md)
 - **Grade Quiz Essay**: [README](grade_quiz_essay/README.md)
+- **Grade Exam Essay**: [README](grade_exam_essay/README.md)
 
 ## Lambda Job 테스트
 
@@ -48,6 +50,9 @@ make test-job-exam
 
 # 퀴즈 서술형 채점 기능 테스트
 make test-job-grade-quiz-essay
+
+# 시험 서술형 채점 기능 테스트
+make test-job-grade-exam-essay
 ```
 
 # 테스트용 셸 실행 (디버깅용)
@@ -89,6 +94,10 @@ git push origin deploy-job-generate-quiz-1.0.0-dev
 # Grade Quiz Essay
 git tag deploy-job-grade-quiz-essay-1.0.0-dev
 git push origin deploy-job-grade-quiz-essay-1.0.0-dev
+
+# Grade Exam Essay
+git tag deploy-job-grade-exam-essay-1.0.0-dev
+git push origin deploy-job-grade-exam-essay-1.0.0-dev
 ```
 
 #### Prod 환경
@@ -121,6 +130,7 @@ git push origin deploy-job-generate-quiz-1.0.0
 - `generate-exam`: 시험 생성
 - `generate-quiz`: 퀴즈 생성
 - `grade-quiz-essay`: 퀴즈 서술형 채점
+- `grade-exam-essay`: 시험 서술형 채점
 
 ## 프롬프트 관리
 

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -51,6 +53,10 @@ public class ExamResponse {
 
     @Column(name = "score")
     private Float score;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "essay_criteria_analysis")
+    private EssayCriteriaAnalysis essayCriteriaAnalysis;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
