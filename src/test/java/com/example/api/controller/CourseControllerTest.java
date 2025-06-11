@@ -523,6 +523,44 @@ class CourseControllerTest {
     }
 
     @Test
+    @DisplayName("일부 성적 정보만 업데이트")
+    @WithMockUser
+        void updateCourseGrades_PartialUpdate() throws Exception {
+                // Given
+                UpdateCourseGradesRequest updateGradesRequest = new UpdateCourseGradesRequest();
+                updateGradesRequest.setEarnedGrade(3.8f); // Target grade는 업데이트하지 않음
+                updateGradesRequest.setCompletedCredits(3);
+        
+                CourseOutput updatedCourseOutput = new CourseOutput();
+                updatedCourseOutput.setId(courseId);
+                updatedCourseOutput.setUserId(userId);
+                updatedCourseOutput.setSemesterId(semesterId);
+                updatedCourseOutput.setName(testCourseOutput.getName());
+                updatedCourseOutput.setTargetGrade(testCourseOutput.getTargetGrade()); // 기존 값 유지
+                updatedCourseOutput.setEarnedGrade(3.8f);
+                updatedCourseOutput.setCompletedCredits(3);
+                updatedCourseOutput.setCreatedAt(testCourseOutput.getCreatedAt());
+                updatedCourseOutput.setUpdatedAt(LocalDateTime.now());
+        
+                when(courseService.findCourseById(courseId))
+                        .thenReturn(Optional.of(testCourseOutput));
+                when(courseService.updateCourseGrades(any(UpdateCourseGradesInput.class)))
+                        .thenReturn(updatedCourseOutput);
+                // When/Then
+                mockMvc.perform(put("/v1/courses/{id}/grades", courseId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(updateGradesRequest)))
+                        .andExpect(status().isNoContent());
+        verify(courseService).findCourseById(courseId);
+        verify(courseService).updateCourseGrades(argThat(input ->
+                input.getId().equals(courseId) &&
+                        input.getTargetGrade() == null && // Target grade는 업데이트하지 않음
+                        input.getEarnedGrade() == 3.8f &&
+                        input.getCompletedCredits() == 3
+        ));
+    }
+
+    @Test
     @DisplayName("유효하지 않은 성적 정보로 업데이트")
     @WithMockUser
     void updateCourseGrades_InvalidGrades() throws Exception {
@@ -532,6 +570,8 @@ class CourseControllerTest {
         updateGradesRequest.setEarnedGrade(3.8f);
         updateGradesRequest.setCompletedCredits(3);
 
+        when(courseService.findCourseById(courseId))
+                .thenReturn(Optional.of(testCourseOutput));
         // When/Then
         mockMvc.perform(put("/v1/courses/{id}/grades", courseId)
                         .contentType(MediaType.APPLICATION_JSON)
