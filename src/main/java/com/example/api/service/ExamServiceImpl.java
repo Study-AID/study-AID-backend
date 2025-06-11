@@ -312,12 +312,6 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional
     public ExamItemOutput toggleLikeExamItem(ToggleLikeExamItemInput input) {
-        ExamItem examItem = examItemRepo.getReferenceById(input.getExamItemId());
-
-        if (!examItem.getExam().getId().equals(input.getExamId())) {
-            throw new IllegalArgumentException("Exam item does not belong to the specified exam");
-        }
-
         Optional<ExamItem> existingExamItem = examItemRepo.findById(input.getExamItemId());
         if (existingExamItem.isEmpty()) {
             throw new NoSuchElementException("Exam item not found");

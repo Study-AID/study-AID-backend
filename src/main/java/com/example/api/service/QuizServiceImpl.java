@@ -347,14 +347,6 @@ public class QuizServiceImpl implements QuizService {
     @Override
     @Transactional
     public QuizItemOutput toggleLikeQuizItem(ToggleLikeQuizItemInput input) {
-        // 퀴즈 존재 확인
-        QuizItem quizItem = quizItemRepo.getReferenceById(input.getQuizItemId());
-
-        // 퀴즈 문제가 해당 퀴즈에 속하는지 확인
-        if (!quizItem.getQuiz().getId().equals(input.getQuizId())) {
-            throw new IllegalArgumentException("Quiz item does not belong to the specified quiz");
-        }
-
         // 좋아요 토글을 위한 기존 좋아요 조회
         Optional<QuizItem> existingQuizItem = quizItemRepo.findById(input.getQuizItemId());
         if (existingQuizItem.isEmpty()) {

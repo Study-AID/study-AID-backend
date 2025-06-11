@@ -1087,7 +1087,6 @@ public class QuizServiceTest {
         updatedQuizItem.setQuestionType(QuestionType.multiple_choice);
         updatedQuizItem.setIsLiked(true); // false에서 true로 변경
 
-        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
         when(quizItemRepository.findById(quizItemId4)).thenReturn(Optional.of(testQuizItem));
         when(quizItemRepository.updateQuizItem(any(QuizItem.class))).thenReturn(updatedQuizItem);
 
@@ -1102,7 +1101,6 @@ public class QuizServiceTest {
         assertEquals(QuestionType.multiple_choice, result.getQuestionType());
         assertEquals(Boolean.TRUE, result.getIsLiked());
 
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
         verify(quizItemRepository, times(1)).findById(quizItemId4);
         verify(quizItemRepository, times(1)).updateQuizItem(argThat(item -> 
                 item.getId().equals(quizItemId4) && Boolean.TRUE.equals(item.getIsLiked())));
@@ -1127,7 +1125,6 @@ public class QuizServiceTest {
         updatedQuizItem.setQuestionType(QuestionType.multiple_choice);
         updatedQuizItem.setIsLiked(false); // true에서 false로 변경
 
-        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
         when(quizItemRepository.findById(quizItemId4)).thenReturn(Optional.of(testQuizItem));
         when(quizItemRepository.updateQuizItem(any(QuizItem.class))).thenReturn(updatedQuizItem);
 
@@ -1142,33 +1139,9 @@ public class QuizServiceTest {
         assertEquals(QuestionType.multiple_choice, result.getQuestionType());
         assertEquals(Boolean.FALSE, result.getIsLiked());
 
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
         verify(quizItemRepository, times(1)).findById(quizItemId4);
         verify(quizItemRepository, times(1)).updateQuizItem(argThat(item -> 
                 item.getId().equals(quizItemId4) && Boolean.FALSE.equals(item.getIsLiked())));
-    }
-
-    @Test
-    @DisplayName("퀴즈 문제 좋아요 토글 - 퀴즈 문제가 해당 퀴즈에 속하지 않는 경우 예외 발생")
-    void toggleLikeQuizItem_QuizItemDoesNotBelongToQuiz() {
-        // given
-        UUID wrongQuizId = UUID.randomUUID();
-        ToggleLikeQuizItemInput input = new ToggleLikeQuizItemInput();
-        input.setQuizId(wrongQuizId); // 다른 퀴즈 ID
-        input.setQuizItemId(quizItemId4);
-        input.setUserId(userId);
-
-        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
-
-        // when, then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
-                () -> quizService.toggleLikeQuizItem(input));
-        
-        assertEquals("Quiz item does not belong to the specified quiz", exception.getMessage());
-
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
-        verify(quizItemRepository, never()).findById(any(UUID.class));
-        verify(quizItemRepository, never()).updateQuizItem(any(QuizItem.class));
     }
 
     @Test
@@ -1180,7 +1153,6 @@ public class QuizServiceTest {
         input.setQuizItemId(quizItemId4);
         input.setUserId(userId);
 
-        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
         when(quizItemRepository.findById(quizItemId4)).thenReturn(Optional.empty());
 
         // when, then
@@ -1189,7 +1161,6 @@ public class QuizServiceTest {
         
         assertEquals("Quiz item not found", exception.getMessage());
 
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
         verify(quizItemRepository, times(1)).findById(quizItemId4);
         verify(quizItemRepository, never()).updateQuizItem(any(QuizItem.class));
     }
@@ -1203,7 +1174,6 @@ public class QuizServiceTest {
         input.setQuizItemId(quizItemId4);
         input.setUserId(userId);
 
-        when(quizItemRepository.getReferenceById(quizItemId4)).thenReturn(testQuizItem);
         when(quizItemRepository.findById(quizItemId4)).thenReturn(Optional.of(testQuizItem));
         when(quizItemRepository.updateQuizItem(any(QuizItem.class))).thenReturn(null); // 업데이트 실패
 
@@ -1213,7 +1183,6 @@ public class QuizServiceTest {
         
         assertEquals("Failed to update quiz item like status", exception.getMessage());
 
-        verify(quizItemRepository, times(1)).getReferenceById(quizItemId4);
         verify(quizItemRepository, times(1)).findById(quizItemId4);
         verify(quizItemRepository, times(1)).updateQuizItem(any(QuizItem.class));
     }

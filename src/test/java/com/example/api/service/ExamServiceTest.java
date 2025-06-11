@@ -1262,7 +1262,6 @@ public class ExamServiceTest {
         updatedExamItem.setQuestionType(QuestionType.true_or_false);
         updatedExamItem.setIsLiked(true); // false에서 true로 변경
 
-        when(examItemRepo.getReferenceById(examItemId4)).thenReturn(testExamItem);
         when(examItemRepo.findById(examItemId4)).thenReturn(Optional.of(testExamItem));
         when(examItemRepo.updateExamItem(any(ExamItem.class))).thenReturn(updatedExamItem);
 
@@ -1277,7 +1276,6 @@ public class ExamServiceTest {
         assertEquals(QuestionType.true_or_false, result.getQuestionType());
         assertEquals(Boolean.TRUE, result.getIsLiked());
 
-        verify(examItemRepo, times(1)).getReferenceById(examItemId4);
         verify(examItemRepo, times(1)).findById(examItemId4);
         verify(examItemRepo, times(1)).updateExamItem(argThat(item -> 
                 item.getId().equals(examItemId4) && Boolean.TRUE.equals(item.getIsLiked())));
@@ -1302,7 +1300,6 @@ public class ExamServiceTest {
         updatedExamItem.setQuestionType(QuestionType.true_or_false);
         updatedExamItem.setIsLiked(false); // true에서 false로 변경
 
-        when(examItemRepo.getReferenceById(examItemId4)).thenReturn(testExamItem);
         when(examItemRepo.findById(examItemId4)).thenReturn(Optional.of(testExamItem));
         when(examItemRepo.updateExamItem(any(ExamItem.class))).thenReturn(updatedExamItem);
 
@@ -1317,33 +1314,9 @@ public class ExamServiceTest {
         assertEquals(QuestionType.true_or_false, result.getQuestionType());
         assertEquals(Boolean.FALSE, result.getIsLiked());
 
-        verify(examItemRepo, times(1)).getReferenceById(examItemId4);
         verify(examItemRepo, times(1)).findById(examItemId4);
         verify(examItemRepo, times(1)).updateExamItem(argThat(item -> 
                 item.getId().equals(examItemId4) && Boolean.FALSE.equals(item.getIsLiked())));
-    }
-
-    @Test
-    @DisplayName("시험 문제 좋아요 토글 - 시험 문제가 해당 시험에 속하지 않는 경우 예외 발생")
-    void toggleLikeExamItem_ExamItemDoesNotBelongToExam() {
-        // given
-        UUID wrongExamId = UUID.randomUUID();
-        ToggleLikeExamItemInput input = new ToggleLikeExamItemInput();
-        input.setExamId(wrongExamId); // 다른 시험 ID
-        input.setExamItemId(examItemId4);
-        input.setUserId(userId);
-
-        when(examItemRepo.getReferenceById(examItemId4)).thenReturn(testExamItem);
-
-        // when, then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
-                () -> examService.toggleLikeExamItem(input));
-        
-        assertEquals("Exam item does not belong to the specified exam", exception.getMessage());
-
-        verify(examItemRepo, times(1)).getReferenceById(examItemId4);
-        verify(examItemRepo, never()).findById(any(UUID.class));
-        verify(examItemRepo, never()).updateExamItem(any(ExamItem.class));
     }
 
     @Test
@@ -1355,7 +1328,6 @@ public class ExamServiceTest {
         input.setExamItemId(examItemId4);
         input.setUserId(userId);
 
-        when(examItemRepo.getReferenceById(examItemId4)).thenReturn(testExamItem);
         when(examItemRepo.findById(examItemId4)).thenReturn(Optional.empty());
 
         // when, then
@@ -1364,7 +1336,6 @@ public class ExamServiceTest {
         
         assertEquals("Exam item not found", exception.getMessage());
 
-        verify(examItemRepo, times(1)).getReferenceById(examItemId4);
         verify(examItemRepo, times(1)).findById(examItemId4);
         verify(examItemRepo, never()).updateExamItem(any(ExamItem.class));
     }
@@ -1378,7 +1349,6 @@ public class ExamServiceTest {
         input.setExamItemId(examItemId4);
         input.setUserId(userId);
 
-        when(examItemRepo.getReferenceById(examItemId4)).thenReturn(testExamItem);
         when(examItemRepo.findById(examItemId4)).thenReturn(Optional.of(testExamItem));
         when(examItemRepo.updateExamItem(any(ExamItem.class))).thenReturn(null); // 업데이트 실패
 
@@ -1388,7 +1358,6 @@ public class ExamServiceTest {
         
         assertEquals("Failed to update exam item like status", exception.getMessage());
 
-        verify(examItemRepo, times(1)).getReferenceById(examItemId4);
         verify(examItemRepo, times(1)).findById(examItemId4);
         verify(examItemRepo, times(1)).updateExamItem(any(ExamItem.class));
     }
