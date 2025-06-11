@@ -48,10 +48,11 @@ public class QuizResultElement {
         element.setScore(null);
         
         if (quizItem.getQuestionType() == QuestionType.true_or_false) {
-            element.setChoices(quizItem.getChoices());
+            element.setIsTrueAnswer(quizItem.getIsTrueAnswer());
             element.setSelectedBool(quizResponse.getSelectedBool());
         } else if (quizItem.getQuestionType() == QuestionType.multiple_choice) {
             element.setChoices(quizItem.getChoices());
+            element.setAnswerIndices(quizItem.getAnswerIndices());
             element.setSelectedIndices(quizResponse.getSelectedIndices());
         } else if (quizItem.getQuestionType() == QuestionType.short_answer) {
             element.setTextAnswer(quizItem.getTextAnswer());
