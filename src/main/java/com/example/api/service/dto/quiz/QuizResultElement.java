@@ -41,19 +41,11 @@ public class QuizResultElement {
         element.setQuestion(quizItem.getQuestion());
         element.setQuestionType(quizItem.getQuestionType());
         element.setExplanation(quizItem.getExplanation());
-        element.setIsTrueAnswer(quizItem.getIsTrueAnswer());
-        element.setChoices(null);
-        element.setAnswerIndices(null);
-        element.setTextAnswer(null);
-        element.setPoints(null);
+        element.setPoints(quizItem.getPoints());
 
         element.setQuizResponseId(quizResponse.getId());
         element.setIsCorrect(quizResponse.getIsCorrect());
-        element.setSelectedBool(null);
-        element.setSelectedIndices(null);
-        element.setTextAnswerOfUser(null);
         element.setScore(null);
-        element.setEssayCriteriaAnalysis(quizResponse.getEssayCriteriaAnalysis());
         
         if (quizItem.getQuestionType() == QuestionType.true_or_false) {
             element.setChoices(quizItem.getChoices());
