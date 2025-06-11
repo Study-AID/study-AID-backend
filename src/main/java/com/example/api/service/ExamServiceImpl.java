@@ -1,6 +1,7 @@
 package com.example.api.service;
 
 import com.example.api.adapters.sqs.GradeExamEssayMessage;
+import com.example.api.adapters.sqs.GenerateCourseWeaknessAnalysisMessage;
 import com.example.api.adapters.sqs.SQSClient;
 import com.example.api.entity.*;
 import com.example.api.entity.enums.QuestionType;
