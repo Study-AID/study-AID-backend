@@ -9,7 +9,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class UpdateCourseGradesInput {
     private UUID id;
-    private float targetGrade;
-    private float earnedGrade;
-    private int completedCredits;
+    private Float targetGrade;
+    private Float earnedGrade;
+    private Integer completedCredits;
 }

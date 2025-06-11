@@ -316,16 +316,6 @@ public class CourseController extends BaseController {
         UUID userId = getAuthenticatedUserId();
 
         try {
-            // Validate grade values
-            if (request.getTargetGrade() < 0 || request.getTargetGrade() > 4.5 ||
-                    request.getEarnedGrade() < 0 || request.getEarnedGrade() > 4.5) {
-                return ResponseEntity.badRequest().build();
-            }
-            // Validate credits
-            if (request.getCompletedCredits() < 0) {
-                return ResponseEntity.badRequest().build();
-            }
-
             // TODO: 향후 개선 - Service 레이어에서 entity를 직접 반환하여 재사용하는 방식으로 변경 예정
             // 현재는 Controller에서 find하고 Service에서도 find하여 중복 조회가 발생하는 비효율적인 구조
             // Service DTO 구조 변경이 필요하여 일단 현재 구조 유지
@@ -340,10 +330,25 @@ public class CourseController extends BaseController {
 
             UpdateCourseGradesInput serviceInput = new UpdateCourseGradesInput();
             serviceInput.setId(id);
-            serviceInput.setTargetGrade(request.getTargetGrade());
-            serviceInput.setEarnedGrade(request.getEarnedGrade());
-            serviceInput.setCompletedCredits(request.getCompletedCredits());
 
+            if (request.getTargetGrade() != null) {
+                if (request.getTargetGrade() < 0 || request.getTargetGrade() > 4.5) {
+                    return ResponseEntity.badRequest().build();
+                }
+                serviceInput.setTargetGrade(request.getTargetGrade());
+            }
+            if (request.getEarnedGrade() != null) {
+                if (request.getEarnedGrade() < 0 || request.getEarnedGrade() > 4.5) {
+                    return ResponseEntity.badRequest().build();
+                }
+                serviceInput.setEarnedGrade(request.getEarnedGrade());
+            }
+            if (request.getCompletedCredits() != null) {
+                if (request.getCompletedCredits() < 0) {
+                    return ResponseEntity.badRequest().build();
+                }
+                serviceInput.setCompletedCredits(request.getCompletedCredits());
+            }
             courseService.updateCourseGrades(serviceInput);
             return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException e) {
