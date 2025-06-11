@@ -70,6 +70,7 @@ public class ExamServiceImpl implements ExamService {
         exam.setCourse(course);
         exam.setTitle(input.getTitle());
         exam.setStatus(Status.generate_in_progress);
+        exam.setReferencedLectures(input.getReferencedLectures());
 
         Exam createdExam = examRepo.createExam(exam);
         return ExamOutput.fromEntity(createdExam, List.of());
