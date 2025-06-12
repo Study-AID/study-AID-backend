@@ -20,7 +20,7 @@ public class GenerateExamMessage {
     private UUID courseId;
     private UUID examId;
     private String title;
-    private UUID[] referencedLectures;
+    private UUID[] referencedLectureIds;
     private int trueOrFalseCount;
     private int multipleChoiceCount;
     private int shortAnswerCount;
