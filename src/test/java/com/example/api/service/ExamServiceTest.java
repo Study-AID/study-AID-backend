@@ -197,7 +197,6 @@ public class ExamServiceTest {
         testExamResult.setUser(testUser);
         testExamResult.setScore(85.0f);
         testExamResult.setMaxScore(100.0f);
-        testExamResult.setFeedback("Good job!");
         testExamResult.setStartTime(LocalDateTime.now().minusHours(1));
         testExamResult.setEndTime(LocalDateTime.now());
         testExamResult.setCreatedAt(LocalDateTime.now());
@@ -497,7 +496,6 @@ public class ExamServiceTest {
         assertEquals(testExamResult.getUser().getId(), result.get().getUserId());
         assertEquals(testExamResult.getScore(), result.get().getScore());
         assertEquals(testExamResult.getMaxScore(), result.get().getMaxScore());
-        assertEquals(testExamResult.getFeedback(), result.get().getFeedback());
         assertEquals(testExamResult.getStartTime(), result.get().getStartTime());
         assertEquals(testExamResult.getEndTime(), result.get().getEndTime());
 
@@ -622,7 +620,6 @@ public class ExamServiceTest {
         examResult1.setUser(testUser);
         examResult1.setScore(85.0f);
         examResult1.setMaxScore(100.0f);
-        examResult1.setFeedback("Excellent!");
         examResult1.setStartTime(LocalDateTime.now().minusHours(3));
         examResult1.setEndTime(LocalDateTime.now().minusHours(1));
         examResult1.setCreatedAt(LocalDateTime.now());
@@ -639,7 +636,6 @@ public class ExamServiceTest {
         examResult2.setUser(testUser);
         examResult2.setScore(90.0f);
         examResult2.setMaxScore(100.0f);
-        examResult2.setFeedback("Excellent!");
         examResult2.setStartTime(LocalDateTime.now().minusHours(3));
         examResult2.setEndTime(LocalDateTime.now().minusHours(2));
         examResult2.setCreatedAt(LocalDateTime.now());

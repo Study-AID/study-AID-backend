@@ -25,7 +25,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/v1/lectures/{lectureId}/qna-chat")
 @RequiredArgsConstructor
-@Tag(name = "QnA Chat-2", description = "강의 자료 기반 QnA Chat API")
+@Tag(name = "QnA Chat-3", description = "강의 자료 기반 QnA Chat API")
 public class QnaChatController {
     private final QnaChatService qnaChatService;
 

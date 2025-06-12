@@ -174,7 +174,7 @@ public class ExamController extends BaseController {
                 .courseId(examOutput.getCourseId())
                 .examId(examOutput.getId())
                 .title(examOutput.getTitle())
-                .referencedLectures(examOutput.getReferencedLectures())
+                .referencedLectureIds(examOutput.getReferencedLectures())
                 .trueOrFalseCount(trueOrFalseCount)
                 .multipleChoiceCount(multipleChoiceCount)
                 .shortAnswerCount(shortAnswerCount)
@@ -182,9 +182,9 @@ public class ExamController extends BaseController {
                 .build();
         try {
             sqsClient.sendGenerateExamMessage(message);
-            log.info("Successfully sent generate quiz message to SQS: {}", examOutput.getId());
+            log.info("Successfully sent generate exam message to SQS: {}", examOutput.getId());
         } catch (Exception e) {
-            log.error("Failed to send generate quiz message to SQS: {}", e.getMessage());
+            log.error("Failed to send generate exam message to SQS: {}", e.getMessage());
         }
     }
 

@@ -218,7 +218,6 @@ public class QuizServiceTest {
         testQuizResult.setUser(testUser);
         testQuizResult.setScore(85.0f);
         testQuizResult.setMaxScore(100.0f);
-        testQuizResult.setFeedback("Good job!");
         testQuizResult.setStartTime(LocalDateTime.now().minusHours(1));
         testQuizResult.setEndTime(LocalDateTime.now());
         testQuizResult.setCreatedAt(LocalDateTime.now());
@@ -486,7 +485,6 @@ public class QuizServiceTest {
         assertEquals(testQuizResult.getUser().getId(), result.get().getUserId());
         assertEquals(testQuizResult.getScore(), result.get().getScore());
         assertEquals(testQuizResult.getMaxScore(), result.get().getMaxScore());
-        assertEquals(testQuizResult.getFeedback(), result.get().getFeedback());
         assertEquals(testQuizResult.getStartTime(), result.get().getStartTime());
         assertEquals(testQuizResult.getEndTime(), result.get().getEndTime());
 
