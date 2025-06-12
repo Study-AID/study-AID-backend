@@ -1,5 +1,6 @@
 package com.example.api.adapters.sqs;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,7 @@ public class GenerateExamMessage {
     private UUID courseId;
     private UUID examId;
     private String title;
+    @JsonProperty("referenced_lecture_ids")
     private UUID[] referencedLectures;
     private int trueOrFalseCount;
     private int multipleChoiceCount;
