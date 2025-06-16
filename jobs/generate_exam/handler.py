@@ -199,14 +199,6 @@ def update_exam_in_db(exam_id, course_id, user_id, exam_data, title=None, refere
                     
             cursor.execute(query, (title, 'not_started', referenced_lectures, exam_id))
 
-            # Delete existing exam items to replace with new ones
-            query = """
-                    DELETE
-                    FROM app.exam_items
-                    WHERE exam_id = %s
-                    """
-            cursor.execute(query, (exam_id,))
-
             # Debug: Log exam data structure
             logger.info(f"Exam data structure: {exam_data}")
 
