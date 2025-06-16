@@ -19,7 +19,8 @@ import java.util.UUID;
         name = "exams",
         schema = "app",
         indexes = {
-                @Index(name = "idx_exams_course_created_at", columnList = "course_id, created_at")
+                @Index(name = "idx_exams_course_created_at", columnList = "course_id, created_at"),
+                @Index(name = "idx_exams_course_updated_at", columnList = "course_id, updated_at")
         }
 )
 @Check(constraints = "status IN ('generate_in_progress', 'not_started', 'submitted', 'partially_graded', 'graded')")

@@ -162,26 +162,53 @@ def extract_text_from_pdf(file_path):
         raise
 
 
-def save_exam_to_db(course_id, user_id, exam_data, title=None, referenced_lectures=None):
-    """Save the generated exam to the database using bulk insert"""
+def update_exam_in_db(exam_id, course_id, user_id, exam_data, title=None, referenced_lectures=None):
+    """Update the generated exam to the database"""
     conn = None
     try:
         conn = get_db_connection()
-
-        # Generate a UUID for the exam
-        exam_id = str(uuid.uuid4())
 
         # Default title if not provided
         if not title:
             title = f"Exam on {datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
         with conn.cursor() as cursor:
+            # check if exam exists
             query = """
-                    INSERT INTO app.exams
-                    (id, course_id, user_id, title, status, referenced_lectures, contents_generated_at, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s::uuid[], NOW(), NOW()) \
+                    SELECT id
+                    FROM app.exams
+                    WHERE id = %s
                     """
-            cursor.execute(query, (exam_id, course_id, user_id, title, 'not_started', referenced_lectures))
+            cursor.execute(query, (exam_id,))
+            existing_exam = cursor.fetchone()
+
+            if not existing_exam:
+                logger.error(f"Exam with id {exam_id} does not exist")
+                raise ValueError(f"Exam with id {exam_id} does not exist")
+
+            # Update exam details
+            query = """
+                    UPDATE app.exams
+                    SET title                    = %s,
+                        status                   = %s,
+                        referenced_lectures      = %s::uuid[],
+                        contents_generated_at    = NOW(),
+                        updated_at               = NOW()
+                    WHERE id = %s
+                    """
+                    
+            cursor.execute(query, (title, 'not_started', referenced_lectures, exam_id))
+
+            # Delete existing exam items to replace with new ones
+            query = """
+                    DELETE
+                    FROM app.exam_items
+                    WHERE exam_id = %s
+                    """
+            cursor.execute(query, (exam_id,))
+
+            # Debug: Log exam data structure
+            logger.info(f"Exam data structure: {exam_data}")
 
             # Prepare bulk data for exam items
             bulk_values = []
@@ -515,7 +542,7 @@ def lambda_handler(event, context):
             exam_data = openai_client.generate_exam(lecture_content, question_counts, prompt_path)
 
             # Save exam to database
-            exam_id = save_exam_to_db(course_id, user_id, exam_data, exam_title, referenced_lecture_ids)
+            exam_id = update_exam_in_db(exam_id, course_id, user_id, exam_data, exam_title, referenced_lecture_ids)
 
             # Send email to user with exam link
             if user_email and user_name and exam_title:
