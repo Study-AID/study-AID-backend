@@ -178,6 +178,7 @@ def update_exam_in_db(exam_id, course_id, user_id, exam_data, title=None, refere
                     SELECT id
                     FROM app.exams
                     WHERE id = %s
+                    FOR UPDATE
                     """
             cursor.execute(query, (exam_id,))
             existing_exam = cursor.fetchone()
