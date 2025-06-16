@@ -178,7 +178,6 @@ def update_exam_in_db(exam_id, course_id, user_id, exam_data, title=None, refere
                     SELECT id
                     FROM app.exams
                     WHERE id = %s
-                    FOR UPDATE
                     """
             cursor.execute(query, (exam_id,))
             existing_exam = cursor.fetchone()
@@ -508,6 +507,7 @@ def lambda_handler(event, context):
             course_id = message.get('course_id')
             exam_title = message.get('title')
             referenced_lecture_ids = message.get('referenced_lecture_ids', [])
+            exam_id = message.get('exam_id')
 
             # get user info via db
             user_info = get_user_info(user_id)
@@ -524,6 +524,10 @@ def lambda_handler(event, context):
                 'short_answer_count': message.get('short_answer_count', 3),
                 'essay_count': message.get('essay_count', 3),
             }
+
+            if not exam_id:
+                logger.error("Missing required exam_id in message")
+                continue
 
             # Referenced lecture IDs must be provided
             if not referenced_lecture_ids:
@@ -543,7 +547,7 @@ def lambda_handler(event, context):
             exam_data = openai_client.generate_exam(lecture_content, question_counts, prompt_path)
 
             # Save exam to database
-            exam_id = update_exam_in_db(exam_id, course_id, user_id, exam_data, exam_title, referenced_lecture_ids)
+            update_exam_in_db(exam_id, course_id, user_id, exam_data, exam_title, referenced_lecture_ids)
 
             # Send email to user with exam link
             if user_email and user_name and exam_title:
