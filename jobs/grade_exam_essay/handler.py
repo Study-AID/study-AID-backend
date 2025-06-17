@@ -26,6 +26,9 @@ DB_CONFIG = {
     'port': int(os.environ.get('DB_PORT'))
 }
 
+# Initialize SQS client
+sqs_client = boto3.client('sqs', region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'))
+
 
 def get_db_connection():
     """데이터베이스 연결을 생성합니다."""
@@ -341,6 +344,66 @@ def grade_single_question(openai_client, prompt_path, exam_item, exam_response, 
         return max_points
 
 
+def get_course_id_from_exam(exam_id):
+    """시험으로부터 과목 ID를 가져옵니다."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            query = """
+                SELECT course_id
+                FROM app.exams
+                WHERE id = %s AND deleted_at IS NULL
+            """
+            cursor.execute(query, (exam_id,))
+            result = cursor.fetchone()
+
+            if result:
+                return result[0]
+            else:
+                logger.error(f"Course not found for exam: {exam_id}")
+                return None
+
+    except Exception as e:
+        logger.error(f"Error getting course ID from exam: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
+def send_generate_course_weakness_analysis_message(user_id, exam_id, course_id):
+    """과목 약점 분석을 위한 SQS 메시지를 전송합니다."""
+    try:
+        message = {
+            "schema_version": "1.0.0",
+            "request_id": str(uuid.uuid4()),
+            "occurred_at": datetime.utcnow().isoformat() + "Z",
+            "user_id": str(user_id),
+            "quiz_id": None,  # 시험인 경우 None
+            "exam_id": str(exam_id),
+            "course_id": str(course_id)
+        }
+
+        # SQS 큐 URL
+        queue_url = os.environ.get('GENERATE_COURSE_WEAKNESS_ANALYSIS_QUEUE_URL')
+        if not queue_url:
+            logger.error("GENERATE_COURSE_WEAKNESS_ANALYSIS_QUEUE_URL environment variable not set")
+            return
+
+        # 메시지 전송
+        response = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageGroupId=str(user_id),
+            MessageBody=json.dumps(message)
+        )
+
+        logger.info(f"Successfully sent generate course weakness analysis message: exam_id={exam_id}, user_id={user_id}, course_id={course_id}, message_id={response['MessageId']}")
+
+    except Exception as e:
+        logger.error(f"Failed to send generate course weakness analysis message: exam_id={exam_id}, user_id={user_id}, error={e}")
+
+
 def lambda_handler(event, context):
     """Main function to handle the event from SQS - 한 시험의 모든 서술형 문항 처리"""
     try:
@@ -398,8 +461,15 @@ def lambda_handler(event, context):
 
             # 5. 시험 상태를 'graded'로 업데이트
             update_exam_status_to_graded(exam_id)
-
             logger.info(f"Exam evaluation completed for exam {exam_id}, user {user_id}, total score added: {total_essay_score}")
+
+            # 6. 과목 약점 분석 SQS 메시지 전송
+            course_id = get_course_id_from_exam(exam_id)
+            if course_id:
+                send_generate_course_weakness_analysis_message(user_id, exam_id, course_id)
+            else:
+                logger.warning(f"Could not send weakness analysis message - course_id not found for exam: {exam_id}")
+
 
         return {
             'statusCode': 200,
