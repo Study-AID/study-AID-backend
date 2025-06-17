@@ -46,7 +46,7 @@ public class ExamResponse {
     private LocalDateTime updatedAt;
 
     @Schema(description = "Exam item list")
-    private List<ExamItem> examItems;
+    private List<ExamItemResponse> examItems;
 
     public static ExamResponse fromServiceDto(ExamOutput exam) {
         return new ExamResponse(
@@ -59,7 +59,10 @@ public class ExamResponse {
                 exam.getContentsGenerateAt(),
                 exam.getCreatedAt(),
                 exam.getUpdatedAt(),
-                exam.getExamItems() // Assuming examItems is a field in ExamOutput
+                exam.getExamItems() != null ? 
+                    exam.getExamItems().stream()
+                        .map(ExamItemResponse::fromEntity)
+                        .toList() : List.of()
         );
     }
 }
