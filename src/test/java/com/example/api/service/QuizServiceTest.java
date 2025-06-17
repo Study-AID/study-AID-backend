@@ -748,6 +748,7 @@ public class QuizServiceTest {
         when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
         when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
         when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+        when(quizRepository.findById(quizId)).thenReturn(Optional.of(testQuiz));
 
         // when
         QuizResponseListOutput result = quizService.submitAndGradeQuizWithStatus(inputs);
@@ -846,6 +847,7 @@ public class QuizServiceTest {
         when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
         when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
         when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+        when(quizRepository.findById(quizId)).thenReturn(Optional.of(testQuiz));
     
         // when
         QuizResponseListOutput result = quizService.submitAndGradeQuizWithStatus(inputs);
@@ -949,6 +951,7 @@ public class QuizServiceTest {
         when(quizResponseRepository.updateQuizResponse(any(QuizResponse.class))).thenReturn(new QuizResponse());
         when(quizResultRepository.createQuizResult(any(QuizResult.class))).thenReturn(new QuizResult());
         when(quizRepository.updateQuiz(any(Quiz.class))).thenReturn(testQuiz);
+        when(quizRepository.findById(quizId)).thenReturn(Optional.of(testQuiz));
 
         // when
         QuizResponseListOutput result = quizService.submitAndGradeQuizWithStatus(inputs);
@@ -1058,6 +1061,7 @@ public class QuizServiceTest {
         when(quizItemRepository.getReferenceById(quizItemId1)).thenReturn(item1);
         when(quizItemRepository.getReferenceById(quizItemId2)).thenReturn(item2);
         when(quizItemRepository.getReferenceById(quizItemId3)).thenReturn(item3);
+        when(quizRepository.findById(quizId)).thenReturn(Optional.of(testQuiz));
         
         when(quizResponseRepository.createQuizResponse(any(QuizResponse.class)))
             .thenAnswer(invocation -> {

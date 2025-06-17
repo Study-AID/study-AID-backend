@@ -178,7 +178,8 @@ public class QuizServiceImpl implements QuizService {
 
     // 퀴즈로부터 과목 ID를 가져오는 함수
     private UUID getCourseIdFromQuiz(UUID quizId) {
-        Quiz quiz = quizRepo.getReferenceById(quizId);
+        Quiz quiz = quizRepo.findById(quizId)
+            .orElseThrow(() -> new RuntimeException("Quiz not found: " + quizId));
         return quiz.getLecture().getCourse().getId();
     }
 
