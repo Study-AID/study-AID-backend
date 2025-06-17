@@ -12,10 +12,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /var/task
 
 # Create jobs directory structure
-RUN mkdir -p /var/task/jobs/grade_quiz_essay
+RUN mkdir -p /var/task/jobs/generate_course_weakness_analysis
 
 # Copy function code and prompts from repository root context first
-COPY jobs/grade_quiz_essay/ /var/task/jobs/generate_course_weakness_analysis/
+COPY jobs/generate_course_weakness_analysis/ /var/task/jobs/generate_course_weakness_analysis/
 COPY prompts/ /var/task/prompts/
 
 # Install Python dependencies
