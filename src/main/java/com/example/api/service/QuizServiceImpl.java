@@ -178,8 +178,8 @@ public class QuizServiceImpl implements QuizService {
 
     // 퀴즈로부터 과목 ID를 가져오는 함수
     private UUID getCourseIdFromQuiz(UUID quizId) {
-        Quiz quiz = quizRepo.getReferenceById(quizId);
-        return quiz.getLecture().getCourse().getId();
+        Optional<Quiz> quiz = quizRepo.findById(quizId);
+        return quiz.get().getLecture().getCourse().getId();
     }
 
     // 과목 약점 분석 위한 SQS 메시지 전송하는 함수
