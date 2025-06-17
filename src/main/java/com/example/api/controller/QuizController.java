@@ -497,8 +497,10 @@ public class QuizController extends BaseController {
             
             return ResponseEntity.ok(new SubmitQuizListResponse(submitQuizListResponse));
         } catch (IllegalArgumentException e) {
+            log.error("Bad request in submitQuiz: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
+            log.error("Internal server error in submitQuiz for quizId: {}, userId: {}", id, userId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
