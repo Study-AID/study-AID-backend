@@ -14,7 +14,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 # Constants
-S3_BUCKET_NAME = 'study-aid-materials'
+S3_BUCKET_NAME = 'study-aid-lecture-materials'
 SAMPLE_PDF_PATH = '/app/jobs/test_env/samples/sample_lecture.pdf'
 S3_KEY = 'sample_lecture.pdf'
 USER_ID = '3da59f94-0b80-48cc-a891-7d1ab58dd308'
