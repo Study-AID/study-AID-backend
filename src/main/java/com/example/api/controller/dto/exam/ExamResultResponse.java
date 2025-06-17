@@ -1,9 +1,11 @@
 package com.example.api.controller.dto.exam;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import com.example.api.service.dto.exam.ExamResultOutput;
+import com.example.api.service.dto.exam.ExamResultElement;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -42,6 +44,9 @@ public class ExamResultResponse {
     @Schema(description = "Last Update Time")
     private LocalDateTime updatedAt;
 
+    @Schema(description = "Elements of the Exam Result(Exam Item, Exam Response)")
+    private List<ExamResultElement> examResultElements;
+
     public static ExamResultResponse fromServiceDto(ExamResultOutput examResultOutput) {
         return new ExamResultResponse(
                 examResultOutput.getId(),
@@ -52,7 +57,8 @@ public class ExamResultResponse {
                 examResultOutput.getStartTime(),
                 examResultOutput.getEndTime(),
                 examResultOutput.getCreatedAt(),
-                examResultOutput.getUpdatedAt()
+                examResultOutput.getUpdatedAt(),
+                examResultOutput.getExamResultElements()
         );
     }
 
