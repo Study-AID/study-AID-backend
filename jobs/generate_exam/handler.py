@@ -126,7 +126,7 @@ def get_lecture_content(lecture_info):
             raise ValueError(f"No material path found for lecture: {lecture_info['id']}")
 
         # Download from S3
-        s3_bucket = os.environ.get('S3_BUCKET', 'study-aid-materials')  # Use environment variable or default
+        s3_bucket = os.environ.get('AWS_S3_BUCKET', 'study-aid-lecture-materials')  # Use environment variable or default
         local_file_path = f"/tmp/{os.path.basename(s3_key)}"
 
         # Download from S3

@@ -46,7 +46,7 @@ services:
       AWS_DEFAULT_REGION: ap-northeast-2
     entrypoint: >
       /bin/sh -c "
-        aws --endpoint-url=http://localstack-test:4566 s3 mb s3://study-aid-materials || true;
+        aws --endpoint-url=http://localstack-test:4566 s3 mb s3://study-aid-lecture-materials || true;
         echo 'S3 bucket created.';
         exit 0;
       "
@@ -69,7 +69,7 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_REGION: ap-northeast-2
-      S3_BUCKET: study-aid-materials
+      AWS_S3_BUCKET: study-aid-lecture-materials
       OPENAI_API_KEY: ${OPENAI_API_KEY:-test_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
     volumes:
@@ -94,7 +94,7 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_REGION: ap-northeast-2
-      S3_BUCKET: study-aid-materials
+      AWS_S3_BUCKET: study-aid-lecture-materials
       OPENAI_API_KEY: ${OPENAI_API_KEY:-test_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
     volumes:
@@ -124,7 +124,7 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_REGION: ap-northeast-2
-      S3_BUCKET: study-aid-materials
+      AWS_S3_BUCKET: study-aid-lecture-materials
       OPENAI_API_KEY: ${OPENAI_API_KEY:-test_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
       DEFAULT_CHUNK_SIZE: 3
@@ -154,7 +154,7 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_REGION: ap-northeast-2
-      S3_BUCKET: study-aid-materials
+      AWS_S3_BUCKET: study-aid-lecture-materials
       OPENAI_API_KEY: ${OPENAI_API_KEY:-test_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
     volumes:
@@ -183,7 +183,7 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_REGION: ap-northeast-2
-      S3_BUCKET: study-aid-materials
+      AWS_S3_BUCKET: study-aid-lecture-materials
       OPENAI_API_KEY: ${OPENAI_API_KEY:-test_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
     volumes:
